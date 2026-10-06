@@ -1,0 +1,1497 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+</head>
+<body>
+<title>棒立ち騎士とゴブリン</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
+<style>
+  /* Layout: full-bleed 3D field; retro RPG windows pinned to the corners, message log along the bottom. */
+  :root {
+    --ink: #f5f3ea;          /* window text, borders */
+    --window: rgba(10, 12, 34, 0.86);
+    --gold: #ffd863;         /* levels, numbers */
+    --hp: #6fe08a;
+    --muted: #a9b0d6;
+    --night: #0b0d22;        /* page ground behind the canvas */
+    --font-pixel: "DotGothic16", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--night);
+    color: var(--ink);
+    font-family: var(--font-pixel);
+    overflow: hidden;
+  }
+  #stage { position: fixed; inset: 0; }
+  #stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  #stage canvas:active { cursor: grabbing; }
+
+  .hud {
+    position: fixed; inset: 0; pointer-events: none;
+    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+  }
+  .win {
+    background: var(--window);
+    border: 3px solid var(--ink);
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px rgba(0,0,0,.55), inset 0 0 0 2px rgba(0,0,0,.55);
+    padding: 8px 12px;
+    line-height: 1.5;
+    letter-spacing: .04em;
+    font-size: 15px;
+  }
+  .status { justify-self: start; align-self: start; min-width: 9.5em; }
+  .status .name { color: var(--ink); }
+  .status .row { display: flex; justify-content: space-between; gap: 1.2em; font-variant-numeric: tabular-nums; }
+  .status .lv { color: var(--gold); }
+  .bar { height: 5px; background: rgba(255,255,255,.15); border-radius: 2px; margin: 1px 0 3px; }
+  .bar > i { display: block; height: 100%; width: 100%; background: var(--hp); border-radius: 2px; }
+  .tally { justify-self: end; align-self: start; font-size: 13px; }
+  .tally .row { display: flex; justify-content: space-between; gap: 1em; font-variant-numeric: tabular-nums; }
+  .tally b { color: var(--gold); font-weight: normal; }
+
+  .bottom {
+    grid-column: 1 / -1; grid-row: 3;
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end;
+  }
+  .log { min-height: 6.4em; font-size: 15px; }
+  .log p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .log p.new { animation: pop .25s steps(3); }
+  .log p .hl { color: var(--gold); }
+  @keyframes pop { from { opacity: 0; } to { opacity: 1; } }
+
+  .cmd { pointer-events: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 10px; padding: 8px 10px; }
+  .cmd button {
+    font: inherit; font-size: 15px; color: var(--ink); background: none; border: 0;
+    text-align: left; padding: 4px 4px 4px 1.1em; position: relative; cursor: pointer; white-space: nowrap;
+  }
+  .cmd button::before { content: "▶"; position: absolute; left: 0; top: 4px; font-size: 11px; line-height: 1.9; opacity: 0; color: var(--ink); }
+  .cmd button:hover::before, .cmd button:focus-visible::before { opacity: 1; animation: blink .6s steps(2) infinite; }
+  .cmd button:focus-visible { outline: 1px dashed var(--muted); outline-offset: 1px; }
+  .cmd .sep { grid-column: 1 / -1; height: 1px; background: rgba(245,243,234,.35); margin: 4px 0; }
+  .cmd .call { color: var(--gold); }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .pops { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .dmg {
+    position: absolute; left: 0; top: 0; font-size: 22px; color: #fff; will-change: transform, opacity;
+    text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 2px 2px #000, -2px -2px #000, 2px -2px #000, -2px 2px #000;
+  }
+  .dmg.miss { color: var(--muted); font-size: 17px; }
+  .dmg.crit { color: var(--gold); font-size: 28px; }
+  .bubble {
+    position: absolute; left: 0; top: 0; transform: translate(-50%, -100%);
+    background: var(--window); border: 2px solid var(--ink); border-radius: 8px;
+    padding: 4px 10px; font-size: 14px; white-space: nowrap; opacity: 0; transition: opacity .2s;
+  }
+  .bubble.on { opacity: 1; }
+  .bubble::after {
+    content: ""; position: absolute; left: 50%; bottom: -8px; width: 10px; height: 10px; margin-left: -5px;
+    background: var(--window); border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg);
+  }
+  .flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+  .hint { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 14px); transform: translateX(-50%); font-size: 12px; color: var(--muted); pointer-events: none; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    .win { font-size: 13px; padding: 6px 9px; }
+    .tally { font-size: 11px; }
+    .bottom { grid-template-columns: minmax(0, 1fr); }
+    .cmd { order: -1; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 4px 8px; }
+    .cmd .sep { display: none; }
+    .cmd button { font-size: 13px; padding-block: 3px; }
+    .log { font-size: 13px; min-height: 4.6em; }
+    .log p:nth-last-child(n+4) { display: none; }
+    .hint { display: none; }
+  }
+  @media (max-height: 520px) {
+    .hud { padding-top: calc(env(safe-area-inset-top, 0px) + 8px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); }
+    .win { font-size: 12px; padding: 4px 8px; line-height: 1.4; }
+    .tally { font-size: 11px; }
+    .bottom { grid-template-columns: minmax(0, 1fr) auto; }
+    .cmd { order: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; padding: 4px 8px; }
+    .cmd .sep { display: none; }
+    .cmd button { font-size: 12px; padding-block: 1px; }
+    .log { font-size: 12px; min-height: 2.9em; }
+    .log p:nth-last-child(n+3) { display: none; }
+    .hint { display: none; }
+  }
+</style>
+
+<div id="stage"></div>
+<div class="pops" id="pops"><div class="bubble" id="bubble"></div></div>
+<div class="flash" id="flash"></div>
+<div class="hint">ドラッグで視点をまわす ・ ホイール / ピンチでズーム</div>
+
+<div class="hud">
+  <div class="win status" aria-label="勇者のステータス">
+    <div class="name">ゆうしゃ</div>
+    <div class="row"><span>Lv</span><span class="lv">99</span></div>
+    <div class="row"><span>HP</span><span id="hp">9999</span></div>
+    <div class="bar"><i></i></div>
+    <div class="row"><span>MP</span><span>999</span></div>
+  </div>
+  <div class="win tally" aria-label="戦闘の記録">
+    <div class="row"><span>こうげきされた</span><span><b id="tHits">0</b>かい</span></div>
+    <div class="row"><span>うけたダメージ</span><span><b id="tDmg">0</b></span></div>
+    <div class="row"><span>てが しびれた</span><span><b id="tNumb">0</b>かい</span></div>
+    <div class="row"><span>ゴブリン</span><span><b>4</b>ひき</span></div>
+  </div>
+  <div class="bottom">
+    <div class="win log" id="log" aria-live="polite"></div>
+    <div class="win cmd" role="group" aria-label="コマンド">
+      <button id="cFight">たたかう</button>
+      <button id="cGuard">ぼうぎょ</button>
+      <button id="cItem">どうぐ</button>
+      <button id="cRun">にげる</button>
+      <div class="sep"></div>
+      <button id="cCall" class="call">いっせいこうげき</button>
+      <button id="cSound">おと：OFF</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+(() => {
+  "use strict";
+  const T = THREE;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[(Math.random() * arr.length) | 0];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = (t) => t * t * (3 - 2 * t);
+  const C = (hex) => new T.Color(hex).convertSRGBToLinear();
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- renderer / scene ----------
+  const stage = document.getElementById("stage");
+  const renderer = new T.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = T.PCFSoftShadowMap;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new T.Scene();
+  const HORIZON = 0xf3c9a2;
+  scene.fog = new T.Fog(C(HORIZON), 38, 150);
+  const camera = new T.PerspectiveCamera(42, 1, 0.1, 600);
+
+  // Sky: gradient dome, also used to bake the environment map for the armor.
+  const skyMat = new T.ShaderMaterial({
+    side: T.BackSide, depthWrite: false, fog: false,
+    uniforms: {
+      top: { value: new T.Color(0x2c4f9c) }, mid: { value: new T.Color(0x7fb2d6) },
+      hor: { value: new T.Color(HORIZON) }, gnd: { value: new T.Color(0x41522f) },
+    },
+    vertexShader: "varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+    fragmentShader: `uniform vec3 top, mid, hor, gnd; varying vec3 vDir;
+      void main(){ float y = vDir.y; vec3 c;
+        if (y > 0.0) { c = mix(hor, mid, smoothstep(0.0, 0.25, y)); c = mix(c, top, smoothstep(0.25, 0.9, y)); }
+        else { c = mix(hor, gnd, smoothstep(0.0, 0.12, -y)); }
+        gl_FragColor = vec4(c, 1.0); }`,
+  });
+  const sky = new T.Mesh(new T.SphereGeometry(400, 48, 24), skyMat);
+  scene.add(sky);
+
+  // Environment for the armor reflections: a painted equirect gradient (sky above, meadow below).
+  {
+    const c = document.createElement("canvas"); c.width = 256; c.height = 128;
+    const g = c.getContext("2d"), gr = g.createLinearGradient(0, 0, 0, 128);
+    gr.addColorStop(0, "#2c4f9c"); gr.addColorStop(0.3, "#7fb2d6"); gr.addColorStop(0.49, "#f3c9a2");
+    gr.addColorStop(0.53, "#6f8a48"); gr.addColorStop(1, "#33402a");
+    g.fillStyle = gr; g.fillRect(0, 0, 256, 128);
+    const sg = g.createRadialGradient(170, 38, 0, 170, 38, 22);
+    sg.addColorStop(0, "rgba(255,250,235,1)"); sg.addColorStop(1, "rgba(255,250,235,0)");
+    g.fillStyle = sg; g.fillRect(140, 10, 60, 60);
+    const tex = new T.CanvasTexture(c);
+    tex.mapping = T.EquirectangularReflectionMapping;
+    tex.encoding = T.sRGBEncoding;
+    const pmrem = new T.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromEquirectangular(tex).texture;
+    pmrem.dispose();
+    tex.dispose();
+  }
+
+  // Two moons: the quickest way to say "this is not Earth".
+  function moon(color, r, dir) {
+    const m = new T.Mesh(new T.SphereGeometry(r, 32, 16), new T.MeshBasicMaterial({ color, fog: false }));
+    m.position.copy(dir.normalize().multiplyScalar(360));
+    scene.add(m);
+    const halo = new T.Mesh(new T.SphereGeometry(r * 1.6, 32, 16), new T.MeshBasicMaterial({ color, fog: false, transparent: true, opacity: 0.12, depthWrite: false }));
+    halo.position.copy(m.position);
+    scene.add(halo);
+  }
+  moon(0xf6f1ff, 26, new T.Vector3(-0.55, 0.42, -1));
+  moon(0xffc0d2, 11, new T.Vector3(-0.2, 0.62, -1));
+
+  // Lights
+  scene.add(new T.HemisphereLight(C(0xbcd6ff), C(0x50603a), 0.55));
+  const sun = new T.DirectionalLight(C(0xffe2bd), 2.4);
+  sun.position.set(14, 22, 10);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 70 });
+  sun.shadow.bias = -0.0005;
+  sun.shadow.normalBias = 0.02;
+  scene.add(sun);
+
+  // ---------- terrain ----------
+  const groundH = (x, z) => {
+    const r = Math.hypot(x, z);
+    const k = clamp((r - 16) / 30, 0, 1);
+    return k * k * (Math.sin(x * 0.08) * 2.2 + Math.cos(z * 0.07) * 2.6 + Math.sin((x + z) * 0.15) * 0.9);
+  };
+  {
+    const g = new T.CircleGeometry(170, 160, 0, Math.PI * 2);
+    g.rotateX(-Math.PI / 2);
+    const p = g.attributes.position, col = [];
+    const a = C(0x5d8a3a), b = C(0x7aa24a), d = C(0x8a7a4e), tmp = new T.Color();
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i), z = p.getZ(i);
+      p.setY(i, groundH(x, z));
+      const n = Math.sin(x * 0.7) * Math.cos(z * 0.6) * 0.5 + 0.5;
+      tmp.copy(a).lerp(b, n);
+      if (Math.hypot(x, z) < 2.2) tmp.lerp(d, 0.35);
+      col.push(tmp.r, tmp.g, tmp.b);
+    }
+    g.setAttribute("color", new T.Float32BufferAttribute(col, 3));
+    g.computeVertexNormals();
+    const ground = new T.Mesh(g, new T.MeshLambertMaterial({ vertexColors: true }));
+    ground.receiveShadow = true;
+    scene.add(ground);
+  }
+
+  // Grass: instanced blades swaying in the wind (shader patch on a Lambert material).
+  const timeU = { value: 0 };
+  {
+    const blade = new T.BufferGeometry();
+    blade.setAttribute("position", new T.Float32BufferAttribute([-0.035, 0, 0, 0.035, 0, 0, 0, 0.42, 0, 0.035, 0, 0, -0.035, 0, 0, 0, 0.42, 0], 3));
+    blade.setAttribute("color", new T.Float32BufferAttribute([0.35, 0.5, 0.25, 0.35, 0.5, 0.25, 1, 1, 0.8, 0.35, 0.5, 0.25, 0.35, 0.5, 0.25, 1, 1, 0.8], 3));
+    blade.setAttribute("normal", new T.Float32BufferAttribute([0, 1, 0.3, 0, 1, 0.3, 0, 1, 0.3, 0, 1, -0.3, 0, 1, -0.3, 0, 1, -0.3], 3));
+    const mat = new T.MeshLambertMaterial({ vertexColors: true });
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uTime = timeU;
+      sh.vertexShader = "uniform float uTime;\n" + sh.vertexShader.replace("#include <begin_vertex>",
+        `#include <begin_vertex>
+         float ph = instanceMatrix[3].x * 0.35 + instanceMatrix[3].z * 0.25;
+         float h = position.y / 0.42;
+         transformed.x += sin(uTime * 1.6 + ph) * 0.09 * h * h;
+         transformed.z += cos(uTime * 1.3 + ph) * 0.05 * h * h;`);
+    };
+    const N = 9000;
+    const mesh = new T.InstancedMesh(blade, mat, N);
+    const m4 = new T.Matrix4(), q = new T.Quaternion(), s = new T.Vector3(), pos = new T.Vector3(), c = new T.Color();
+    const g1 = C(0x6fa548), g2 = C(0xa5c75a);
+    for (let i = 0; i < N; i++) {
+      const r = 1.0 + Math.sqrt(Math.random()) * 34, a = Math.random() * Math.PI * 2;
+      pos.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+      pos.y = groundH(pos.x, pos.z) - 0.02;
+      q.setFromAxisAngle(new T.Vector3(0, 1, 0), Math.random() * Math.PI);
+      const k = rand(0.6, 1.5);
+      s.set(k, k * rand(0.7, 1.3), k);
+      m4.compose(pos, q, s);
+      mesh.setMatrixAt(i, m4);
+      mesh.setColorAt(i, c.copy(g1).lerp(g2, Math.random()));
+    }
+    scene.add(mesh);
+
+    // flowers
+    const fl = new T.InstancedMesh(new T.SphereGeometry(0.06, 6, 4), new T.MeshLambertMaterial(), 420);
+    const fcols = [0xfff4f0, 0xffd1e8, 0xffe27a, 0xb9c7ff].map(C);
+    for (let i = 0; i < 420; i++) {
+      const r = 3 + Math.random() * 30, a = Math.random() * Math.PI * 2;
+      pos.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+      pos.y = groundH(pos.x, pos.z) + rand(0.15, 0.3);
+      m4.compose(pos, q.identity(), s.set(1, 0.7, 1));
+      fl.setMatrixAt(i, m4);
+      fl.setColorAt(i, pick(fcols));
+    }
+    scene.add(fl);
+  }
+
+  // Trees ringing the clearing
+  {
+    const trunkM = new T.MeshLambertMaterial({ color: C(0x5b3d26) });
+    const leafMs = [0x2f6b3a, 0x3a7a3c, 0x295c3b].map((h) => new T.MeshStandardMaterial({ color: C(h), roughness: 1, flatShading: true }));
+    for (let i = 0; i < 70; i++) {
+      const a = Math.random() * Math.PI * 2, r = rand(19, 48);
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      const t = new T.Group();
+      const h = rand(2.5, 5.5);
+      const trunk = new T.Mesh(new T.CylinderGeometry(0.12 * h / 3, 0.2 * h / 3, h * 0.4, 6), trunkM);
+      trunk.position.y = h * 0.2;
+      t.add(trunk);
+      const lm = pick(leafMs);
+      for (let k = 0; k < 3; k++) {
+        const cone = new T.Mesh(new T.ConeGeometry(h * (0.42 - k * 0.1), h * 0.45, 7), lm);
+        cone.position.y = h * (0.42 + k * 0.2);
+        cone.castShadow = r < 26;
+        t.add(cone);
+      }
+      t.position.set(x, groundH(x, z) - 0.05, z);
+      t.rotation.y = Math.random() * 6;
+      scene.add(t);
+    }
+  }
+
+  // Distant mountains and a castle on the ridge
+  {
+    const mm = new T.MeshStandardMaterial({ color: C(0x6c7fa6), roughness: 1, flatShading: true });
+    const snow = new T.MeshStandardMaterial({ color: C(0xf2f0ff), roughness: 1, flatShading: true });
+    for (let i = 0; i < 26; i++) {
+      const a = (i / 26) * Math.PI * 2 + rand(-0.1, 0.1), r = rand(110, 140);
+      const h = rand(22, 52), w = h * rand(0.9, 1.4);
+      const m = new T.Mesh(new T.ConeGeometry(w, h, 6), mm);
+      m.position.set(Math.cos(a) * r, h / 2 - 3, Math.sin(a) * r);
+      m.rotation.y = Math.random() * 3;
+      scene.add(m);
+      const cap = new T.Mesh(new T.ConeGeometry(w * 0.26, h * 0.26, 6), snow);
+      cap.position.set(0, h * 0.37 + 0.01, 0);
+      m.add(cap);
+    }
+    const stone = new T.MeshLambertMaterial({ color: C(0xc8c2d6) });
+    const roof = new T.MeshLambertMaterial({ color: C(0x3b4f8f) });
+    const castle = new T.Group();
+    const base = new T.Mesh(new T.BoxGeometry(14, 6, 8), stone);
+    base.position.y = 3;
+    castle.add(base);
+    [[-7, 11, -4], [7, 11, -4], [-7, 11, 4], [7, 11, 4], [0, 18, 0]].forEach(([x, h, z]) => {
+      const tw = new T.Mesh(new T.CylinderGeometry(1.6, 1.8, h, 10), stone);
+      tw.position.set(x, h / 2, z);
+      castle.add(tw);
+      const rf = new T.Mesh(new T.ConeGeometry(2.2, 4.5, 10), roof);
+      rf.position.set(x, h + 2.2, z);
+      castle.add(rf);
+    });
+    castle.position.set(-30, groundH(-30, -70) + 2, -70);
+    castle.rotation.y = 0.4;
+    scene.add(castle);
+  }
+
+  // Floating islands
+  const islands = [];
+  {
+    const rock = new T.MeshStandardMaterial({ color: C(0x7a6a5c), roughness: 1, flatShading: true });
+    const turf = new T.MeshStandardMaterial({ color: C(0x6e9d45), roughness: 1, flatShading: true });
+    const leaf = new T.MeshStandardMaterial({ color: C(0x2f6b3a), roughness: 1, flatShading: true });
+    [[38, 16, -44, 4.5], [-52, 22, -18, 6], [10, 28, -78, 8], [64, 20, 10, 3.5]].forEach(([x, y, z, s]) => {
+      const g = new T.Group();
+      const under = new T.Mesh(new T.ConeGeometry(s, s * 1.8, 7), rock);
+      under.rotation.x = Math.PI;
+      under.position.y = -s * 0.9;
+      g.add(under);
+      const top = new T.Mesh(new T.CylinderGeometry(s * 1.02, s, s * 0.25, 7), turf);
+      g.add(top);
+      const tree = new T.Mesh(new T.ConeGeometry(s * 0.3, s * 0.8, 6), leaf);
+      tree.position.set(s * 0.3, s * 0.5, 0);
+      g.add(tree);
+      g.position.set(x, y, z);
+      g.userData.y0 = y;
+      g.userData.ph = Math.random() * 6;
+      islands.push(g);
+      scene.add(g);
+    });
+  }
+
+  // ---------- the knight ----------
+  const steel = new T.MeshStandardMaterial({ color: C(0xc9ced8), metalness: 0.92, roughness: 0.28, envMapIntensity: 1.1 });
+  const darkSteel = new T.MeshStandardMaterial({ color: C(0x464c5a), metalness: 0.8, roughness: 0.45 });
+  const gold = new T.MeshStandardMaterial({ color: C(0xd9a93a), metalness: 0.95, roughness: 0.3 });
+  const leather = new T.MeshStandardMaterial({ color: C(0x5a3a22), roughness: 0.8 });
+  const capeM = new T.MeshStandardMaterial({ color: C(0x8a1427), roughness: 0.85, side: T.DoubleSide });
+  const plumeM = new T.MeshStandardMaterial({ color: C(0xd8243a), roughness: 0.7 });
+  const slitM = new T.MeshBasicMaterial({ color: 0x050508 });
+
+  const up = new T.Vector3(0, 1, 0);
+  function limb(a, b, r1, r2, mat) {
+    const dir = new T.Vector3().subVectors(b, a);
+    const len = dir.length();
+    const m = new T.Mesh(new T.CylinderGeometry(r2, r1, len, 12), mat);
+    m.position.copy(a).addScaledVector(dir, 0.5);
+    m.quaternion.setFromUnitVectors(up, dir.normalize());
+    return m;
+  }
+  function ball(r, mat, x, y, z, sx = 1, sy = 1, sz = 1) {
+    const m = new T.Mesh(new T.SphereGeometry(r, 20, 14), mat);
+    m.position.set(x, y, z);
+    m.scale.set(sx, sy, sz);
+    return m;
+  }
+  const V = (x, y, z) => new T.Vector3(x, y, z);
+
+  const knight = new T.Group();
+  const body = new T.Group();     // breathes
+  knight.add(body);
+
+  // legs
+  for (const sx of [-1, 1]) {
+    const x = 0.17 * sx;
+    body.add(limb(V(x * 1.05, 0.12, 0), V(x, 0.55, 0), 0.105, 0.12, steel));       // greave
+    body.add(ball(0.11, steel, x, 0.58, 0.03, 1, 0.9, 1.05));                       // knee cop
+    body.add(limb(V(x, 0.6, 0), V(x * 0.9, 1.0, 0), 0.125, 0.14, darkSteel));      // thigh
+    body.add(limb(V(x, 0.62, 0.02), V(x * 0.92, 0.95, 0.03), 0.13, 0.15, steel));  // cuisse
+    const boot = new T.Mesh(new T.BoxGeometry(0.2, 0.13, 0.34), steel);
+    boot.position.set(x * 1.06, 0.065, 0.06);
+    body.add(boot);
+    const toe = ball(0.1, steel, x * 1.06, 0.07, 0.22, 1, 0.65, 0.9);
+    body.add(toe);
+  }
+  // faulds (skirt plates)
+  for (let i = 0; i < 3; i++) {
+    const f = new T.Mesh(new T.CylinderGeometry(0.3 + i * 0.02, 0.34 + i * 0.03, 0.12, 20, 1, true), i % 2 ? darkSteel : steel);
+    f.position.y = 1.08 - i * 0.1;
+    f.material.side = T.DoubleSide;
+    body.add(f);
+  }
+  const torso = new T.Group();
+  torso.position.y = 1.12;
+  body.add(torso);
+  {
+    const pts = [[0.29, 0], [0.31, 0.08], [0.34, 0.22], [0.37, 0.36], [0.36, 0.46], [0.3, 0.54], [0.16, 0.6], [0.0, 0.62]].map(([x, y]) => new T.Vector2(x, y));
+    const cuirass = new T.Mesh(new T.LatheGeometry(pts, 28), steel);
+    cuirass.scale.set(1, 1, 0.72);
+    torso.add(cuirass);
+    const ridge = new T.Mesh(new T.BoxGeometry(0.025, 0.5, 0.05), gold);
+    ridge.position.set(0, 0.3, 0.255);
+    ridge.rotation.x = -0.12;
+    torso.add(ridge);
+    const belt = new T.Mesh(new T.TorusGeometry(0.31, 0.035, 8, 28), leather);
+    belt.rotation.x = Math.PI / 2;
+    belt.scale.set(1, 0.74, 1);
+    belt.position.y = 0.02;
+    torso.add(belt);
+    const buckle = new T.Mesh(new T.BoxGeometry(0.09, 0.07, 0.03), gold);
+    buckle.position.set(0, 0.02, 0.235);
+    torso.add(buckle);
+    // emblem
+    const emb = new T.Mesh(new T.OctahedronGeometry(0.06), gold);
+    emb.scale.set(1, 1.4, 0.4);
+    emb.position.set(0, 0.36, 0.27);
+    torso.add(emb);
+    const gorget = new T.Mesh(new T.CylinderGeometry(0.13, 0.19, 0.1, 18), steel);
+    gorget.position.y = 0.62;
+    torso.add(gorget);
+    // pauldrons
+    for (const sx of [-1, 1]) {
+      for (let k = 0; k < 3; k++) {
+        const p = new T.Mesh(new T.SphereGeometry(0.2 - k * 0.025, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), k === 0 ? steel : (k === 1 ? gold : steel));
+        p.position.set(sx * (0.39 + k * 0.03), 0.5 - k * 0.075, 0);
+        p.rotation.z = -sx * (0.45 + k * 0.15);
+        p.scale.set(1, 0.85, 1.05);
+        torso.add(p);
+      }
+    }
+  }
+  // arms: hands resting on the pommel of the planted sword
+  const POMMEL = V(0, 1.12, 0.5);
+  for (const sx of [-1, 1]) {
+    const sh = V(sx * 0.38, 1.55, 0.0), el = V(sx * 0.36, 1.22, 0.2), hand = V(sx * 0.07, 1.1, 0.47);
+    body.add(limb(sh, el, 0.085, 0.095, darkSteel));
+    body.add(limb(V(sh.x, sh.y - 0.07, sh.z), V(el.x, el.y + 0.05, el.z), 0.095, 0.1, steel));
+    body.add(ball(0.085, steel, el.x, el.y, el.z));
+    body.add(limb(el, hand, 0.075, 0.09, steel));
+    const g = new T.Mesh(new T.BoxGeometry(0.11, 0.1, 0.13), steel);
+    g.position.copy(hand);
+    g.position.y += 0.01;
+    body.add(g);
+  }
+  // cape (vertices animated)
+  const capeGeo = new T.PlaneGeometry(0.82, 1.45, 10, 18);
+  const capeBase = capeGeo.attributes.position.array.slice();
+  const cape = new T.Mesh(capeGeo, capeM);
+  cape.position.set(0, 1.0, -0.24);
+  cape.castShadow = true;
+  body.add(cape);
+  // shield on the back
+  {
+    const sh = new T.Group();
+    const disc = new T.Mesh(new T.CylinderGeometry(0.34, 0.34, 0.05, 6), steel);
+    disc.rotation.x = Math.PI / 2;
+    disc.scale.set(1, 1, 1.25);
+    sh.add(disc);
+    const rim = new T.Mesh(new T.TorusGeometry(0.34, 0.025, 6, 6), gold);
+    rim.scale.set(1, 1.25, 1);
+    rim.rotation.z = Math.PI / 6;
+    sh.add(rim);
+    for (const [w, h] of [[0.05, 0.42], [0.3, 0.05]]) {
+      const bar = new T.Mesh(new T.BoxGeometry(w, h, 0.02), gold);
+      bar.position.set(0, h > 0.1 ? 0 : 0.06, 0.035);
+      sh.add(bar);
+    }
+    sh.position.set(0, 1.42, -0.36);
+    sh.rotation.y = Math.PI;
+    sh.rotation.z = 0.15;
+    body.add(sh);
+  }
+  // head / helmet
+  const head = new T.Group();
+  head.position.set(0, 1.86, 0.0);
+  body.add(head);
+  {
+    head.add(ball(0.21, steel, 0, 0, 0, 0.95, 1.05, 1.05));
+    const visor = new T.Mesh(new T.SphereGeometry(0.218, 24, 12, -Math.PI / 2.4, Math.PI / 1.2, Math.PI * 0.32, Math.PI * 0.42), steel);
+    visor.scale.set(0.96, 1.05, 1.18);
+    head.add(visor);
+    const slit = new T.Mesh(new T.BoxGeometry(0.24, 0.022, 0.06), slitM);
+    slit.position.set(0, 0.02, 0.215);
+    head.add(slit);
+    const slit2 = new T.Mesh(new T.BoxGeometry(0.02, 0.1, 0.05), slitM);
+    slit2.position.set(0, -0.06, 0.225);
+    head.add(slit2);
+    const crest = new T.Mesh(new T.BoxGeometry(0.03, 0.08, 0.38), gold);
+    crest.position.set(0, 0.2, -0.01);
+    head.add(crest);
+    const circ = new T.Mesh(new T.TorusGeometry(0.205, 0.018, 6, 30), gold);
+    circ.rotation.x = Math.PI / 2;
+    circ.position.y = 0.06;
+    head.add(circ);
+  }
+  const plume = new T.Group();
+  plume.position.set(0, 0.22, -0.02);
+  head.add(plume);
+  for (let i = 0; i < 22; i++) {
+    const t = i / 21;
+    const p = ball(0.075 * (1 - t * 0.55), plumeM, 0, 0.06 + Math.sin(t * 2.2) * 0.16, -t * 0.45, 0.75, 1, 1.3);
+    plume.add(p);
+  }
+  // sword planted in the ground
+  const sword = new T.Group();
+  {
+    const bladeM = new T.MeshStandardMaterial({ color: C(0xe6efff), metalness: 1, roughness: 0.12, emissive: C(0x3a6cff), emissiveIntensity: 0.22 });
+    const blade = new T.Mesh(new T.BoxGeometry(0.075, 1.0, 0.018), bladeM);
+    blade.position.y = 0.36;
+    sword.add(blade);
+    const fuller = new T.Mesh(new T.BoxGeometry(0.018, 0.85, 0.02), new T.MeshStandardMaterial({ color: C(0x9fb7ff), metalness: 1, roughness: 0.2, emissive: C(0x6f9bff), emissiveIntensity: 0.6 }));
+    fuller.position.y = 0.4;
+    sword.add(fuller);
+    const guard = new T.Mesh(new T.BoxGeometry(0.34, 0.045, 0.06), gold);
+    guard.position.y = 0.88;
+    sword.add(guard);
+    for (const sx of [-1, 1]) sword.add(ball(0.035, gold, sx * 0.18, 0.88, 0));
+    const grip = new T.Mesh(new T.CylinderGeometry(0.025, 0.028, 0.18, 10), leather);
+    grip.position.y = 1.0;
+    sword.add(grip);
+    sword.add(ball(0.045, gold, 0, 1.1, 0));
+    const gem = ball(0.03, new T.MeshStandardMaterial({ color: C(0x2b6bff), emissive: C(0x2b6bff), emissiveIntensity: 0.9, roughness: 0.1 }), 0, 0.88, 0.03);
+    sword.add(gem);
+    sword.position.set(POMMEL.x, POMMEL.y - 1.1, POMMEL.z);
+    sword.rotation.x = -0.04;
+  }
+  knight.add(sword);
+  knight.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  const knightHolder = new T.Group();   // holds the built-in knight, or the loaded model in its place
+  knightHolder.add(knight);
+  scene.add(knightHolder);
+
+  // A faint golden ring under the knight: the Lv.99 aura.
+  const auraTex = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 128;
+    const g = c.getContext("2d"), gr = g.createRadialGradient(64, 64, 20, 64, 64, 64);
+    gr.addColorStop(0, "rgba(255,220,120,0)"); gr.addColorStop(0.72, "rgba(255,220,120,0.55)"); gr.addColorStop(1, "rgba(255,220,120,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    return new T.CanvasTexture(c);
+  })();
+  const aura = new T.Mesh(new T.PlaneGeometry(2.4, 2.4), new T.MeshBasicMaterial({ map: auraTex, transparent: true, depthWrite: false, blending: T.AdditiveBlending, opacity: 0.6 }));
+  aura.rotation.x = -Math.PI / 2;
+  aura.position.y = 0.03;
+  scene.add(aura);
+
+  // ---------- particles (sparks + aura motes) ----------
+  const dotTex = (() => {
+    const c = document.createElement("canvas"); c.width = c.height = 64;
+    const g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.35, "rgba(255,255,255,.8)"); gr.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    return new T.CanvasTexture(c);
+  })();
+  const PMAX = 600;
+  const pPos = new Float32Array(PMAX * 3), pCol = new Float32Array(PMAX * 3);
+  const parts = [];
+  const pGeo = new T.BufferGeometry();
+  pGeo.setAttribute("position", new T.BufferAttribute(pPos, 3));
+  pGeo.setAttribute("color", new T.BufferAttribute(pCol, 3));
+  const pts = new T.Points(pGeo, new T.PointsMaterial({ size: 0.12, map: dotTex, vertexColors: true, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+  pts.frustumCulled = false;
+  scene.add(pts);
+  function emit(p, v, life, color) {
+    if (parts.length >= PMAX) parts.shift();
+    parts.push({ p: p.clone(), v: v.clone(), life, max: life, c: new T.Color(color) });
+  }
+  function sparks(at, n, color = 0xfff2b0) {
+    for (let i = 0; i < n; i++) {
+      const v = V(rand(-1, 1), rand(-0.2, 1.4), rand(-1, 1)).normalize().multiplyScalar(rand(1.5, 4));
+      emit(at, v, rand(0.25, 0.5), color);
+    }
+  }
+
+  // ---------- hit effects ----------
+  function canvasTex(draw, size = 128) {
+    const c = document.createElement("canvas"); c.width = c.height = size;
+    draw(c.getContext("2d"), size);
+    return new T.CanvasTexture(c);
+  }
+  const starTex = canvasTex((g, n) => {
+    const h = n / 2;
+    g.translate(h, h);
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, h);
+    gr.addColorStop(0, "rgba(255,255,255,1)"); gr.addColorStop(0.25, "rgba(255,240,180,.9)"); gr.addColorStop(1, "rgba(255,200,80,0)");
+    g.fillStyle = gr;
+    g.beginPath();
+    const spikes = 10;
+    for (let i = 0; i < spikes * 2; i++) {
+      const r = i % 2 ? h * 0.28 : h * (i % 4 ? 0.8 : 1);
+      const a = (i / (spikes * 2)) * Math.PI * 2;
+      g.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    g.closePath(); g.fill();
+  });
+  const ringTex = canvasTex((g, n) => {
+    const h = n / 2, gr = g.createRadialGradient(h, h, h * 0.55, h, h, h);
+    gr.addColorStop(0, "rgba(255,230,150,0)"); gr.addColorStop(0.6, "rgba(255,240,190,1)"); gr.addColorStop(1, "rgba(255,230,150,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, n, n);
+  });
+  const fx = [];
+  function addFx(obj, dur, update) {
+    scene.add(obj);
+    fx.push({ obj, t: 0, dur, update });
+  }
+  function spriteFx(tex, at, size, dur, color = 0xffffff, grow = 1.6) {
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: tex, color, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending }));
+    sp.position.copy(at);
+    sp.material.rotation = Math.random() * Math.PI;
+    addFx(sp, dur, (k) => {
+      const s = size * (0.4 + ease(Math.min(1, k * 2.2)) * grow);
+      sp.scale.set(s, s, 1);
+      sp.material.opacity = 1 - k * k;
+    });
+  }
+  // A crescent swoosh drawn along the weapon's swing.
+  function slashFx(at, dirAngle, vertical = true, color = 0xfff3c4, radius = 0.42) {
+    const g = new T.RingGeometry(radius * 0.72, radius, 32, 1, -0.3, 2.4);
+    const m = new T.Mesh(g, new T.MeshBasicMaterial({ color, transparent: true, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending }));
+    const holder = new T.Group();
+    holder.position.copy(at);
+    holder.rotation.y = dirAngle + (vertical ? Math.PI / 2 : 0);
+    if (!vertical) m.rotation.x = -Math.PI / 2;
+    m.rotation.z = vertical ? -0.4 : 0;
+    holder.add(m);
+    addFx(holder, 0.24, (k) => {
+      m.material.opacity = (1 - k) * 0.95;
+      m.rotation.z += 0.12;
+      const s = 1 + k * 0.35;
+      m.scale.set(s, s, s);
+    });
+  }
+  // Golden shell that lights up on every hit: the Lv.99 defence made visible.
+  const barrierMat = new T.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: T.AdditiveBlending, side: T.FrontSide,
+    uniforms: { uOp: { value: 0 }, uCol: { value: new T.Color(0xffd36a) }, uHit: { value: new T.Vector3(0, 1, 1) }, uTime: timeU },
+    vertexShader: `varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main(){ vec4 wp = modelMatrix * vec4(position,1.0); vP = wp.xyz;
+        vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - wp.xyz);
+        gl_Position = projectionMatrix * viewMatrix * wp; }`,
+    fragmentShader: `uniform float uOp; uniform vec3 uCol; uniform vec3 uHit; uniform float uTime;
+      varying vec3 vN; varying vec3 vV; varying vec3 vP;
+      void main(){ float f = pow(1.0 - abs(dot(vN, vV)), 2.2);
+        float d = distance(vP, uHit);
+        float ripple = smoothstep(0.5, 0.0, abs(d - (1.0 - uOp) * 1.6)) * uOp;
+        float hex = 0.5 + 0.5 * sin(vP.x * 28.0 + uTime) * sin(vP.y * 28.0) * sin(vP.z * 28.0);
+        float a = (f * 0.8 + ripple * 0.9 + smoothstep(0.6, 0.0, d) * 0.6) * uOp * (0.75 + hex * 0.25);
+        gl_FragColor = vec4(uCol * a, a); }`,
+  });
+  const barrier = new T.Mesh(new T.SphereGeometry(1, 40, 24), barrierMat);
+  barrier.scale.set(0.62, 1.2, 0.62);
+  barrier.position.set(0, 1.02, 0);
+  barrier.renderOrder = 5;
+  scene.add(barrier);
+  function hitFx(at, power = 1, color = 0xfff2b0) {
+    spriteFx(starTex, at, 0.45 * power, 0.18, color);
+    spriteFx(ringTex, at, 0.5 * power, 0.32, 0xffe39a, 2.2);
+    sparks(at, (10 * power) | 0, color);
+    barrierMat.uniforms.uOp.value = Math.min(1, 0.55 + power * 0.3);
+    barrierMat.uniforms.uHit.value.copy(at);
+  }
+  function shardsFx(at) {
+    for (let i = 0; i < 10; i++) {
+      const b = new T.Mesh(new T.DodecahedronGeometry(rand(0.02, 0.045)), rockM);
+      b.position.copy(at);
+      const v = V(rand(-1, 1), rand(0.3, 1.6), rand(-1, 1)).multiplyScalar(rand(1, 2.6));
+      addFx(b, 0.9, (k, dt) => { v.y -= 9.8 * dt; b.position.addScaledVector(v, dt); if (b.position.y < 0.02) { b.position.y = 0.02; v.set(v.x * 0.5, 0, v.z * 0.5); } b.rotation.x += dt * 9; });
+    }
+  }
+
+  // ---------- goblins ----------
+  const tmpV = new T.Vector3(), tmpV2 = new T.Vector3();
+  const GOBLIN_H = 0.7;               // about a third of the knight (2.1)
+  const skinCols = [0x6e9b3a, 0x7fa83f, 0x5f8f43, 0x88a64a];
+  const clothM = new T.MeshStandardMaterial({ color: C(0x6b4a2c), roughness: 0.9 });
+  const woodM = new T.MeshStandardMaterial({ color: C(0x7a5432), roughness: 0.85 });
+  const ironM = new T.MeshStandardMaterial({ color: C(0xb7bcc6), metalness: 0.9, roughness: 0.35 });
+  const rockM = new T.MeshStandardMaterial({ color: C(0x8c8579), roughness: 1, flatShading: true });
+  const eyeM = new T.MeshBasicMaterial({ color: C(0xffe14d) });
+  const darkM = new T.MeshBasicMaterial({ color: 0x1a1208 });
+  const toothM = new T.MeshStandardMaterial({ color: C(0xf3ecd0), roughness: 0.5 });
+
+  // Procedural goblin, 1 unit tall; parts are exposed for posing.
+  function buildGoblin(skin, weapon) {
+    const skinM = new T.MeshStandardMaterial({ color: C(skin), roughness: 0.65 });
+    const g = new T.Group();
+    const parts = {};
+    const pelvis = new T.Group(); pelvis.position.y = 0.4; g.add(pelvis); parts.pelvis = pelvis;
+    for (const sx of [-1, 1]) {
+      const leg = new T.Group(); leg.position.set(sx * 0.09, 0, 0); pelvis.add(leg);
+      leg.add(limb(V(0, 0, 0), V(0, -0.2, 0.02), 0.055, 0.06, skinM));
+      leg.add(limb(V(0, -0.2, 0.02), V(0, -0.36, -0.01), 0.045, 0.05, skinM));
+      leg.add(ball(0.06, skinM, 0, -0.37, 0.05, 1, 0.55, 1.6));
+      parts[sx < 0 ? "legL" : "legR"] = leg;
+    }
+    const torso = new T.Group(); pelvis.add(torso); parts.torso = torso;
+    torso.add(ball(0.2, skinM, 0, 0.17, 0, 1, 1.05, 0.85));
+    const loin = new T.Mesh(new T.CylinderGeometry(0.17, 0.22, 0.14, 10, 1, true), clothM);
+    loin.material.side = T.DoubleSide; loin.position.y = 0.02; torso.add(loin);
+    const strap = new T.Mesh(new T.TorusGeometry(0.19, 0.018, 6, 20), clothM);
+    strap.rotation.set(0.2, 0, 0.75); strap.position.y = 0.2; torso.add(strap);
+    const head = new T.Group(); head.position.set(0, 0.42, 0.02); torso.add(head); parts.head = head;
+    head.add(ball(0.17, skinM, 0, 0, 0, 1.05, 0.95, 1));
+    for (const sx of [-1, 1]) {
+      const ear = new T.Mesh(new T.ConeGeometry(0.06, 0.28, 8), skinM);
+      ear.position.set(sx * 0.2, 0.04, -0.02);
+      ear.rotation.set(0.25, 0, -sx * 1.25);
+      ear.scale.set(1, 1, 0.45);
+      head.add(ear);
+      head.add(ball(0.038, eyeM, sx * 0.07, 0.03, 0.14, 1.2, 0.8, 0.6));
+      head.add(ball(0.017, darkM, sx * 0.07, 0.03, 0.163, 0.5, 1.2, 0.5));
+      const brow = new T.Mesh(new T.BoxGeometry(0.08, 0.02, 0.03), darkM);
+      brow.position.set(sx * 0.07, 0.085, 0.145); brow.rotation.z = sx * 0.45; head.add(brow);
+      const tooth = new T.Mesh(new T.ConeGeometry(0.012, 0.04, 5), toothM);
+      tooth.position.set(sx * 0.045, -0.085, 0.14); tooth.rotation.x = Math.PI; head.add(tooth);
+    }
+    const nose = new T.Mesh(new T.ConeGeometry(0.035, 0.16, 8), skinM);
+    nose.position.set(0, -0.01, 0.2); nose.rotation.x = Math.PI / 2 + 0.35; head.add(nose);
+    const mouth = new T.Mesh(new T.BoxGeometry(0.12, 0.022, 0.02), darkM);
+    mouth.position.set(0, -0.075, 0.15); head.add(mouth);
+    for (const sx of [-1, 1]) {
+      const arm = new T.Group(); arm.position.set(sx * 0.2, 0.3, 0); torso.add(arm);
+      arm.add(limb(V(0, 0, 0), V(sx * 0.03, -0.3, 0.02), 0.04, 0.045, skinM));
+      const hand = new T.Group(); hand.position.set(sx * 0.03, -0.32, 0.03); arm.add(hand);
+      hand.add(ball(0.05, skinM, 0, 0, 0));
+      parts[sx < 0 ? "armL" : "armR"] = arm;
+      if (sx > 0) parts.hand = hand;
+    }
+    // weapon in the right hand
+    const w = new T.Group();
+    if (weapon === "club") {
+      w.add(limb(V(0, -0.06, 0), V(0, 0.36, 0.0), 0.022, 0.065, woodM));
+      for (let i = 0; i < 4; i++) { const k = new T.Mesh(new T.ConeGeometry(0.015, 0.05, 5), ironM); const a = i * 1.6; k.position.set(Math.cos(a) * 0.06, 0.28, Math.sin(a) * 0.06); k.rotation.z = -Math.cos(a) * 1.5; k.rotation.x = Math.sin(a) * 1.5; w.add(k); }
+      w.rotation.x = Math.PI / 2;
+    } else if (weapon === "dagger") {
+      const blade = new T.Mesh(new T.ConeGeometry(0.03, 0.26, 4), ironM); blade.position.y = 0.16; blade.scale.z = 0.3; w.add(blade);
+      const guard = new T.Mesh(new T.BoxGeometry(0.09, 0.02, 0.025), woodM); guard.position.y = 0.03; w.add(guard);
+      w.rotation.x = Math.PI / 2;
+    } else if (weapon === "rock") {
+      const r = new T.Mesh(new T.DodecahedronGeometry(0.075), rockM); r.position.y = 0.04; w.add(r); parts.rock = r;
+    } else {
+      // bare-fisted: a spiky bracer
+      const br = new T.Mesh(new T.CylinderGeometry(0.055, 0.055, 0.07, 8), clothM); br.position.y = 0.06; w.add(br);
+    }
+    parts.hand.add(w); parts.weapon = w;
+    g.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+    return { group: g, parts };
+  }
+
+  const GOBLIN_DEFS = [
+    { name: "ゴブリンA", weapon: "club",   style: "smash", angle: 0.35,  r: 0.88 },
+    { name: "ゴブリンB", weapon: "dagger", style: "stab",  angle: -0.85, r: 0.8 },
+    { name: "ゴブリンC", weapon: "fist",   style: "jump",  angle: 2.3,   r: 1.55 },
+    { name: "ゴブリンD", weapon: "rock",   style: "throw", angle: -2.4,  r: 3.0 },
+  ];
+  const goblins = GOBLIN_DEFS.map((d, i) => {
+    const { group, parts } = buildGoblin(skinCols[i], d.weapon);
+    const root = new T.Group();
+    const squashG = new T.Group();    // squash from the feet
+    const pose = new T.Group();       // lean / lunge / flips around the body centre (works for loaded models too)
+    root.add(squashG);
+    squashG.add(pose);
+    pose.position.y = 0.5;
+    group.position.y = -0.5;
+    pose.add(group);
+    root.scale.setScalar(GOBLIN_H);
+    const gb = {
+      ...d, root, pose, squashG, visual: group, parts, state: "idle", t: 0,
+      wait: 0.6 + i * 0.7, slotA: d.angle, slotR: d.r, phase: Math.random() * 6,
+      hits: 0, mixer: null, clips: {}, numb: 0, poseBaseY: 0.5,
+      from: new T.Vector3(), to: new T.Vector3(),
+    };
+    root.position.set(Math.sin(d.angle) * d.r, 0, Math.cos(d.angle) * d.r);
+    scene.add(root);
+    return gb;
+  });
+  const projectiles = [];
+
+  const knightHead = V(0, 1.9, 0);
+  function contactPoint(gb, y) {
+    const p = gb.root.position;
+    const d = tmpV2.set(p.x, 0, p.z).normalize();
+    return V(d.x * 0.4, y, d.z * 0.4);
+  }
+  function faceAngle(gb) { const p = gb.root.position; return Math.atan2(-p.x, -p.z); }
+  function turnToKnight(gb, k) {
+    let d = faceAngle(gb) - gb.root.rotation.y;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    gb.root.rotation.y += d * k;
+  }
+  function setPose(gb, o) {
+    const P = gb.parts;
+    if (P.armR) P.armR.rotation.set(o.armR || 0, 0, o.armRz || 0);
+    if (P.armL) P.armL.rotation.set(o.armL || 0, 0, o.armLz || 0);
+    if (P.legL) P.legL.rotation.x = o.legL || 0;
+    if (P.legR) P.legR.rotation.x = o.legR || 0;
+    if (P.torso) P.torso.rotation.x = o.lean || 0;
+    if (P.head) { P.head.rotation.x = o.headX || 0; P.head.rotation.z = o.headZ || 0; }
+    if (P.torso) { gb.pose.rotation.x = o.poseX || 0; gb.pose.rotation.z = 0; }
+    else {
+      // a loaded model has no limbs to pose: express the same motion with the whole body
+      gb.pose.rotation.x = (o.poseX || 0) + (o.lean || 0) * 0.8 + (o.armR ? Math.sin(o.armR) * -0.08 : 0);
+      gb.pose.rotation.z = (o.headZ || 0) * 0.7 + (o.armRz || 0) * 0.3;
+    }
+    gb.pose.position.y = gb.poseBaseY + (o.hop || 0);
+    gb.pose.position.z = o.poseZ || 0;
+    const sq = o.squash || 0;
+    gb.squashG.scale.set(1 + sq * 0.5, 1 - sq, 1 + sq * 0.5);
+  }
+  function playClip(gb, key) {
+    if (!gb.mixer) return;
+    const c = gb.clips[key] || gb.clips.idle;
+    if (!c || gb.curClip === c) return;
+    const a = gb.mixer.clipAction(c);
+    a.reset();
+    a.setLoop(key === "attack" ? T.LoopOnce : T.LoopRepeat);
+    a.clampWhenFinished = true;
+    if (gb.curAction) a.crossFadeFrom(gb.curAction, 0.12, false);
+    a.play();
+    gb.curAction = a; gb.curClip = c;
+  }
+
+  const LINES = {
+    smash: (g) => pick([g.weapon === "club" && !g.loaded ? `${g.name}は こんぼうで なぐりかかった！` : `${g.name}は きりかかった！`, `${g.name}の ちからいっぱいの いちげき！`]),
+    stab:  (g) => pick([`${g.name}の れんぞくづき！`, `${g.name}は たんけんで つきさした！`]),
+    jump:  (g) => pick([`${g.name}の とびげり！`, `${g.name}は おどりかかってきた！`]),
+    throw: (g) => pick([`${g.name}は いしを なげつけた！`, `${g.name}の とうてき！`]),
+  };
+
+  const stats = { hits: 0, numb: 0 };
+  let hitStop = 0;
+  function registerHit(gb, at, opts = {}) {
+    stats.hits++;
+    gb.hits++;
+    if (gb.quietOnce) opts.quiet = true;
+    const crit = !opts.quiet && Math.random() < 0.07;
+    const miss = !crit && !opts.noMiss && Math.random() < 0.1;
+    hitFx(at, (opts.power || 1) * (crit ? 1.8 : 1), crit ? 0xffd863 : 0xfff2b0);
+    sfx[opts.sound || "hit"]();
+    if (crit) {
+      flash(0.5); hitStop = 0.09; shake = Math.max(shake, 0.2);
+      if (!opts.quiet) { log(hl("かいしんの いちげき！")); log(`ゆうしゃに ${hl("0")}の ダメージ！`); }
+      popup(at, "0", "crit");
+    } else if (miss) {
+      if (!opts.quiet) log("ミス！ ゆうしゃは ダメージを うけない！");
+      popup(at, "MISS", "miss");
+    } else {
+      if (!opts.quiet) log(opts.line || `ゆうしゃに ${hl("0")}の ダメージ！`);
+      popup(at, "0");
+    }
+    if (Math.random() < 0.15) lookAt(gb);
+    updateTally();
+  }
+
+  function startAttack(gb) {
+    gb.state = gb.style; gb.t = 0; gb.didHit = 0;
+    gb.from.copy(gb.root.position);
+    if (!gb.quietOnce) log(LINES[gb.style](gb));
+    playClip(gb, "attack");
+  }
+  function backToIdle(gb, wait) {
+    gb.quietOnce = false;
+    gb.state = "idle"; gb.t = 0;
+    gb.wait = wait ?? rand(0.9, 2.6);
+    playClip(gb, "idle");
+    // sometimes shuffle to a new spot around the knight
+    if (Math.random() < 0.3) {
+      gb.slotA += rand(-0.9, 0.9);
+      gb.state = "walk";
+      playClip(gb, "walk");
+    }
+  }
+
+  function updateGoblin(gb, dt, t) {
+    gb.t += dt;
+    const p = gb.root.position;
+    const k = gb.t;
+    const bob = Math.sin(t * 6 + gb.phase);
+    switch (gb.state) {
+      case "idle": {
+        turnToKnight(gb, 0.15);
+        setPose(gb, { armR: -0.3 + bob * 0.08, armL: 0.1 - bob * 0.05, lean: 0.12, squash: bob * 0.03, headX: -0.15 });
+        gb.wait -= dt;
+        if (gb.wait <= 0) startAttack(gb);
+        break;
+      }
+      case "walk": {
+        const to = tmpV.set(Math.sin(gb.slotA) * gb.slotR, 0, Math.cos(gb.slotA) * gb.slotR);
+        const d = to.sub(p); d.y = 0;
+        const dist = d.length();
+        const sw = Math.sin(t * 16);
+        setPose(gb, { legL: sw * 0.7, legR: -sw * 0.7, armR: -sw * 0.5, armL: sw * 0.5, lean: 0.2 });
+        gb.root.rotation.y = Math.atan2(d.x, d.z);
+        if (dist < 0.05) { gb.state = "idle"; gb.wait = rand(0.4, 1.4); playClip(gb, "idle"); break; }
+        p.addScaledVector(d.normalize(), Math.min(dist, dt * 1.2));
+        break;
+      }
+      case "smash": {
+        turnToKnight(gb, 0.3);
+        const W = 0.5, S = 0.12, R = 0.55;
+        if (k < W) { const e = ease(k / W); setPose(gb, { armR: lerp(-0.3, -3.0, e), armL: -0.6 * e, lean: -0.35 * e, headX: -0.3 * e, squash: 0.08 * e }); }
+        else if (k < W + S) {
+          const e = (k - W) / S;
+          setPose(gb, { armR: lerp(-3.0, -0.2, e), armL: lerp(-0.6, 0.4, e), lean: lerp(-0.35, 0.5, e), poseZ: 0.12 * e, squash: -0.05, hop: Math.sin(e * Math.PI) * 0.12 });
+          if (!gb.slashed) { gb.slashed = true; slashFx(V(p.x * 0.75, 0.75, p.z * 0.75), faceAngle(gb), true, 0xfff3c4, 0.45); sfx.swing(); }
+        } else {
+          if (!gb.didHit) {
+            gb.didHit = 1; gb.slashed = false;
+            registerHit(gb, contactPoint(gb, rand(0.55, 0.8)), { power: 1.2, sound: "clank" });
+            shake = Math.max(shake, 0.08);
+          }
+          const e = clamp((k - W - S) / R, 0, 1);
+          setPose(gb, { armR: lerp(-0.2, -0.3, e) + Math.sin(e * 30) * 0.25 * (1 - e), lean: lerp(0.5, 0.12, e), poseZ: 0.12 * (1 - e), squash: Math.sin(e * 12) * 0.05 * (1 - e) });
+          if (e >= 1) {
+            if (Math.random() < 0.3) { gb.state = "numb"; gb.t = 0; stats.numb++; log(`${gb.name}は てが しびれた！`); updateTally(); }
+            else backToIdle(gb);
+          }
+        }
+        break;
+      }
+      case "stab": {
+        turnToKnight(gb, 0.4);
+        const IN = 0.18, N = 3, each = 0.17, OUT = 0.3;
+        const dir = tmpV2.set(-p.x, 0, -p.z).normalize();
+        if (k < IN) {
+          const e = ease(k / IN);
+          p.lerpVectors(gb.from, V(dir.x * -0.62, 0, dir.z * -0.62), e);
+          setPose(gb, { legL: 0.5 * e, legR: -0.5 * e, lean: 0.3 * e, armR: -1.0 * e });
+        } else if (k < IN + N * each) {
+          const i = Math.floor((k - IN) / each), e = ((k - IN) % each) / each;
+          const thrust = Math.sin(e * Math.PI);
+          setPose(gb, { armR: -1.0 - thrust * 0.55, lean: 0.3 + thrust * 0.15, poseZ: thrust * 0.1, armL: 0.5 });
+          if (gb.didHit <= i && e > 0.5) {
+            gb.didHit = i + 1;
+            const at = contactPoint(gb, rand(0.45, 0.7));
+            spriteFx(starTex, at, 0.28, 0.12, 0xdde8ff);
+            registerHit(gb, at, { power: 0.6, sound: "tink", quiet: true, noMiss: true });
+            if (i === N - 1) log(`ゆうしゃに ${hl("0")}・${hl("0")}・${hl("0")}の ダメージ！`);
+          }
+        } else {
+          const e = clamp((k - IN - N * each) / OUT, 0, 1);
+          p.lerpVectors(V(dir.x * -0.62, 0, dir.z * -0.62), gb.from, ease(e));
+          setPose(gb, { legL: 0.5 * (1 - e), legR: -0.5 * (1 - e), lean: 0.3 * (1 - e), armR: -1.0 * (1 - e) - 0.3 * e });
+          if (e >= 1) backToIdle(gb);
+        }
+        break;
+      }
+      case "jump": {
+        turnToKnight(gb, 0.3);
+        const CR = 0.32, UP = 0.36, BACK = 0.6;
+        const dir = tmpV2.set(-p.x, 0, -p.z).normalize();
+        const hitPos = V(-dir.x * 0.55, 0.62, -dir.z * 0.55);
+        if (k < CR) { const e = k / CR; setPose(gb, { squash: 0.25 * ease(e), legL: -0.4 * e, legR: -0.4 * e, armR: 0.6 * e, armL: 0.6 * e, lean: 0.3 * e }); }
+        else if (k < CR + UP) {
+          const e = (k - CR) / UP;
+          p.lerpVectors(gb.from, hitPos, ease(e));
+          p.y += Math.sin(e * Math.PI) * 0.5;
+          setPose(gb, { squash: -0.1, legR: -1.4 * e, legL: 0.6 * e, armR: 0.8, armL: 0.8, poseX: -0.4 * e, lean: -0.2 });
+          if (!gb.whoosh) { gb.whoosh = true; sfx.swing(); }
+        } else {
+          if (!gb.didHit) {
+            gb.didHit = 1; gb.whoosh = false;
+            const at = contactPoint(gb, 0.95);
+            slashFx(at, faceAngle(gb), false, 0xffe9a8, 0.3);
+            registerHit(gb, at, { power: 1.1, sound: "thump" });
+            gb.bounceFrom = p.clone();
+          }
+          const e = clamp((k - CR - UP) / BACK, 0, 1);
+          p.lerpVectors(gb.bounceFrom, gb.from, e);
+          p.y = Math.max(0, lerp(gb.bounceFrom.y, 0, e) + Math.sin(e * Math.PI) * 0.6);
+          setPose(gb, { poseX: -0.4 - e * Math.PI * 2, squash: e > 0.9 ? 0.15 : 0, armR: 1, armL: 1 });
+          if (e >= 1) { gb.pose.rotation.x = 0; backToIdle(gb); }
+        }
+        break;
+      }
+      case "throw": {
+        turnToKnight(gb, 0.3);
+        const W = 0.45, REL = 0.15, F = 0.5;
+        if (k < W) { const e = ease(k / W); setPose(gb, { armR: -2.6 * e, armL: 0.6 * e, lean: -0.3 * e, legL: 0.4 * e }); }
+        else if (k < W + REL) {
+          const e = (k - W) / REL;
+          setPose(gb, { armR: lerp(-2.6, -0.6, e), armL: 0.6, lean: lerp(-0.3, 0.35, e), legL: 0.4 });
+          if (!gb.thrown) {
+            gb.thrown = true;
+            if (gb.parts.rock) gb.parts.rock.visible = false;
+            const start = new T.Vector3();
+            if (gb.parts.hand) gb.parts.hand.getWorldPosition(start);
+            else start.copy(p).add(V(0, GOBLIN_H * 0.8, 0));
+            const rock = new T.Mesh(new T.DodecahedronGeometry(0.06), rockM);
+            rock.castShadow = true;
+            rock.position.copy(start);
+            scene.add(rock);
+            const tgt = knightHead.clone().add(V(rand(-0.05, 0.05), rand(-0.05, 0.08), 0));
+            const toward = tmpV.set(p.x, 0, p.z).normalize().multiplyScalar(0.2);
+            tgt.add(toward);
+            projectiles.push({ mesh: rock, from: start, to: tgt, t: 0, dur: 0.55, h: 0.9, gb });
+            sfx.swing();
+          }
+        } else {
+          const e = clamp((k - W - REL) / F, 0, 1);
+          setPose(gb, { armR: lerp(-0.6, -0.3, e), lean: lerp(0.35, 0.12, e) });
+          if (e >= 1) { gb.thrown = false; if (gb.parts.rock) gb.parts.rock.visible = true; backToIdle(gb, rand(1.2, 2.8)); }
+        }
+        break;
+      }
+      case "numb": {
+        // shaking a stinging hand
+        const s = Math.sin(k * 40);
+        setPose(gb, { armR: -1.2 + s * 0.4, armRz: 0.3, lean: 0.25, headZ: Math.sin(k * 7) * 0.2, legL: Math.abs(Math.sin(k * 9)) * 0.5 });
+        if (k > 1.4) backToIdle(gb, rand(0.6, 1.4));
+        break;
+      }
+    }
+    if (gb.mixer) gb.mixer.update(dt);
+  }
+
+  function updateProjectiles(dt) {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+      const pr = projectiles[i];
+      pr.t += dt;
+      const e = clamp(pr.t / pr.dur, 0, 1);
+      pr.mesh.position.lerpVectors(pr.from, pr.to, e);
+      pr.mesh.position.y += Math.sin(e * Math.PI) * pr.h;
+      pr.mesh.rotation.x += dt * 14; pr.mesh.rotation.y += dt * 9;
+      if (e >= 1) {
+        scene.remove(pr.mesh);
+        projectiles.splice(i, 1);
+        shardsFx(pr.to);
+        registerHit(pr.gb, pr.to, { power: 0.9, sound: "kotsun", line: `ゆうしゃの かぶとに あたった！ ${hl("0")}の ダメージ！` });
+      }
+    }
+  }
+
+  // ---------- optional: user-supplied models (models/knight.glb, models/goblin.glb) ----------
+  function fitHeight(obj, h) {
+    obj.updateMatrixWorld(true);
+    const box = new T.Box3().setFromObject(obj);
+    const size = box.getSize(new T.Vector3());
+    const s = h / (size.y || 1);
+    obj.scale.multiplyScalar(s);
+    obj.updateMatrixWorld(true);
+    const b2 = new T.Box3().setFromObject(obj);
+    const c = b2.getCenter(new T.Vector3());
+    obj.position.x -= c.x; obj.position.z -= c.z; obj.position.y -= b2.min.y;
+  }
+  function findClips(anims) {
+    const f = (re) => anims.find((a) => re.test(a.name));
+    return {
+      idle: f(/idle|stand|wait|breath/i) || anims[0],
+      walk: f(/walk|run|move/i),
+      attack: f(/attack|slash|swing|hit|punch|strike|stab|throw/i),
+    };
+  }
+  function loadGLB(url) {
+    return new Promise((res) => {
+      if (!T.GLTFLoader) return res(null);
+      try { new T.GLTFLoader().load(url, res, undefined, () => res(null)); } catch (e) { res(null); }
+    });
+  }
+  const modelStatus = { knight: "仮モデル", goblin: "仮モデル" };
+  let knightMixer = null, userKnight = null;
+  async function loadUserModels() {
+    const [kg, gg] = await Promise.all([loadGLB("models/knight.glb"), loadGLB("models/goblin.glb")]);
+    if (kg) {
+      const m = kg.scene;
+      m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      fitHeight(m, 2.1);
+      knight.visible = false;
+      knightHolder.add(m);
+      userKnight = m;
+      if (kg.animations && kg.animations.length) {
+        knightMixer = new T.AnimationMixer(m);
+        knightMixer.clipAction(findClips(kg.animations).idle).play();
+      }
+      modelStatus.knight = "models/knight.glb";
+    }
+    if (gg) {
+      const clips = findClips(gg.animations || []);
+      const tints = [0xffffff, 0xd9ffc8, 0xfff0cf, 0xd6e4ff];
+      goblins.forEach((gb, gi) => {
+        const m = T.SkeletonUtils ? T.SkeletonUtils.clone(gg.scene) : gg.scene.clone(true);
+        m.traverse((o) => {
+          if (!o.isMesh) return;
+          o.castShadow = true;
+          o.material = o.material.clone();
+          o.material.color.multiply(C(tints[gi]));
+        });
+        gb.loaded = true;
+        gb.poseBaseY = GOBLIN_H / 2;
+        gb.pose.remove(gb.visual);
+        gb.root.scale.setScalar(1);
+        const holder = new T.Group();
+        holder.add(m);
+        fitHeight(m, GOBLIN_H);
+        holder.position.y = -GOBLIN_H / 2;
+        gb.pose.position.y = GOBLIN_H / 2;
+        gb.pose.add(holder);
+        gb.visual = holder;
+        gb.parts = {};                // procedural limb posing no longer applies
+        if (gg.animations && gg.animations.length) {
+          gb.mixer = new T.AnimationMixer(m);
+          gb.clips = clips;
+          playClip(gb, "idle");
+        }
+      });
+      modelStatus.goblin = "models/goblin.glb";
+    }
+  }
+  // ---------- HUD ----------
+  const logEl = document.getElementById("log");
+  const LOG_LINES = 4;
+  function log(html) {
+    const p = document.createElement("p");
+    p.className = "new";
+    p.innerHTML = html;
+    logEl.appendChild(p);
+    while (logEl.children.length > LOG_LINES) logEl.removeChild(logEl.firstChild);
+  }
+  const hl = (s) => `<span class="hl">${s}</span>`;
+  const el = (id) => document.getElementById(id);
+  function updateTally() {
+    el("tHits").textContent = stats.hits.toLocaleString("ja-JP");
+    el("tNumb").textContent = stats.numb;
+  }
+
+  const popsEl = document.getElementById("pops");
+  const pops = [];
+  const proj = new T.Vector3();
+  function toScreen(v) {
+    proj.copy(v).project(camera);
+    return { x: (proj.x * 0.5 + 0.5) * innerWidth, y: (-proj.y * 0.5 + 0.5) * innerHeight, behind: proj.z > 1 };
+  }
+  function popup(at, text, cls) {
+    const d = document.createElement("div");
+    d.className = "dmg" + (cls ? " " + cls : "");
+    d.textContent = text;
+    popsEl.appendChild(d);
+    pops.push({ el: d, at: at.clone(), t: 0, dx: rand(-14, 14) });
+    if (pops.length > 40) { const o = pops.shift(); o.el.remove(); }
+  }
+
+  const bubble = document.getElementById("bubble");
+  let bubbleT = 0;
+  function say(text, secs = 2.6) {
+    bubble.textContent = text;
+    bubble.classList.add("on");
+    bubbleT = secs;
+  }
+
+  const flashEl = document.getElementById("flash");
+  function flash(op = 0.5) {
+    flashEl.animate([{ opacity: op }, { opacity: 0 }], { duration: 220, easing: "ease-out" });
+  }
+
+  // ---------- sound (WebAudio, off until the player turns it on) ----------
+  let actx = null, soundOn = false;
+  function tone(type, f0, f1, dur, vol, delay = 0) {
+    if (!soundOn || !actx) return;
+    const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(actx.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  }
+  function noise(dur, vol, hp = 1200) {
+    if (!soundOn || !actx) return;
+    const n = actx.sampleRate * dur, buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+    src.buffer = buf; f.type = "highpass"; f.frequency.value = hp; g.gain.value = vol;
+    src.connect(f).connect(g).connect(actx.destination);
+    src.start();
+  }
+  const sfx = {
+    hit() { tone("square", 2100, 1500, 0.06, 0.025); tone("triangle", 3300, 2600, 0.12, 0.03); },
+    clank() { tone("square", 1700, 900, 0.09, 0.03); tone("triangle", 2500, 2300, 0.35, 0.035); noise(0.08, 0.08, 2000); },
+    tink() { tone("triangle", 3800, 3400, 0.07, 0.025); },
+    thump() { tone("sine", 160, 60, 0.18, 0.18); noise(0.05, 0.05, 800); },
+    kotsun() { tone("square", 1200, 1100, 0.04, 0.03); tone("triangle", 2600, 2500, 0.2, 0.03, 0.01); noise(0.1, 0.05, 1500); },
+    swing() { noise(0.12, 0.05, 3000); },
+    menu() { tone("square", 880, 880, 0.05, 0.03); },
+  };
+
+  // ---------- knight idle ----------
+  const IDLE_LINES = [
+    "……", "ふぁ〜あ", "（きょうの ばんごはん なにかな）", "くすぐったい", "（そろそろ かえりたい）",
+    "Lv99 だからな…", "（あ、ちょうちょ）", "かゆい", "……まだ やるのか", "（よろいの なかが むれる）",
+    "ひまだな", "（こいつら げんきだな）", "（その たんけん さびてるぞ）",
+  ];
+  let headYaw = 0, headYawTarget = 0, headPitchTarget = 0, lookTimer = 2, idleTimer = 5;
+  let shake = 0;
+  function lookAt(gb) {
+    const p = gb.root.position;
+    headYawTarget = clamp(Math.atan2(p.x, p.z), -0.9, 0.9);
+    headPitchTarget = 0.35;
+    lookTimer = 1.6;
+  }
+
+  // ---------- commands ----------
+  function cmd(id, fn) {
+    el(id).addEventListener("click", () => { initAudio(); sfx.menu(); fn(); });
+  }
+  cmd("cFight", () => {
+    log("ゆうしゃは けんを ぬこうとした！");
+    log(pick(["しかし めんどうに なって やめた。", "しかし ゴブリンが かわいそうに なった。", "しかし ぬくまでも ないと おもった。"]));
+    say("……やめておこう");
+  });
+  cmd("cGuard", () => {
+    log("ゆうしゃは みを まもっている。");
+    log("…もともと ダメージは 0だ。");
+    say("（いみ ないな）");
+  });
+  cmd("cItem", () => {
+    log("ゆうしゃは やくそうを とりだした！");
+    log("しかし HPは まんたんだった。");
+    say("（もったいない）");
+  });
+  cmd("cRun", () => {
+    log("ゆうしゃは にげだした！");
+    log("…しかし ゴブリンに かこまれていて うごくのが めんどうだ。");
+    say("（まあ いいか）");
+  });
+  cmd("cCall", () => {
+    if (!ready) return;
+    log(`ゴブリンたちの ${hl("いっせいこうげき")}！`);
+    goblins.forEach((gb, i) => {
+      if (gb.state === "idle" || gb.state === "walk" || gb.state === "numb") {
+        gb.root.rotation.y = faceAngle(gb);
+        gb.state = "idle";
+        gb.wait = i * 0.12;
+        gb.quietOnce = true;
+      }
+    });
+    setTimeout(() => { if (ready) { flash(0.35); shake = Math.max(shake, 0.25); log(`ゆうしゃに ${hl("0")}の ダメージ！`); } }, 1100);
+  });
+  const soundBtn = el("cSound");
+  function initAudio() {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { actx = null; } }
+    if (actx && actx.state === "suspended") actx.resume();
+  }
+  soundBtn.addEventListener("click", () => {
+    initAudio();
+    soundOn = !soundOn && !!actx;
+    soundBtn.textContent = soundOn ? "おと：ON" : "おと：OFF";
+    sfx.menu();
+  });
+  // ---------- camera orbit (drag / wheel / pinch) ----------
+  const target = V(0, 1.15, 0);
+  const orbit = { theta: 0.55, phi: 1.33, r: 8.5, minR: 3.2, maxR: 22 };
+  let lastInteract = -10;
+  const pointers = new Map();
+  let pinch0 = 0, r0 = 0;
+  const cv = renderer.domElement;
+  cv.addEventListener("pointerdown", (e) => { cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch0 = Math.hypot(a.x - b.x, a.y - b.y); r0 = orbit.r; } });
+  cv.addEventListener("pointermove", (e) => {
+    const prev = pointers.get(e.pointerId);
+    if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY };
+    pointers.set(e.pointerId, cur);
+    lastInteract = clock.elapsedTime;
+    if (pointers.size === 1) {
+      orbit.theta -= (cur.x - prev.x) * 0.006;
+      orbit.phi = clamp(orbit.phi - (cur.y - prev.y) * 0.005, 0.35, 1.52);
+    } else if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch0 > 0) orbit.r = clamp(r0 * pinch0 / d, orbit.minR, orbit.maxR);
+    }
+  });
+  const up2 = (e) => { pointers.delete(e.pointerId); pinch0 = 0; };
+  cv.addEventListener("pointerup", up2);
+  cv.addEventListener("pointercancel", up2);
+  cv.addEventListener("wheel", (e) => { e.preventDefault(); lastInteract = clock.elapsedTime; orbit.r = clamp(orbit.r * Math.exp(e.deltaY * 0.001), orbit.minR, orbit.maxR); }, { passive: false });
+
+  function resize() {
+    const w = innerWidth, h = innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.fov = w < h ? 55 : 42;
+    orbit.r = clamp(orbit.r, orbit.minR, orbit.maxR);
+    camera.updateProjectionMatrix();
+  }
+  addEventListener("resize", resize);
+  resize();
+  if (innerWidth < innerHeight) orbit.r = 10.5;
+
+  // ---------- opening state ----------
+  let ready = false;
+  knight.visible = false;
+  goblins.forEach((gb) => { gb.root.visible = false; });
+  log("モデルを よみこんでいます…");
+  function begin() {
+    ready = true;
+    knightHolder.visible = true;
+    goblins.forEach((gb) => { gb.root.visible = true; });
+    logEl.innerHTML = "";
+    log("ゴブリンが 4ひき あらわれた！");
+    log(`ゆうしゃは ${hl("Lv99")}だ。`);
+    log("ゆうしゃは じっと たっている。");
+    updateTally();
+  }
+  loadUserModels().then(() => {
+    if (!modelStatus.knight.endsWith(".glb")) knight.visible = true;   // fall back to the built-in knight
+    begin();
+  });
+
+  // ---------- main loop ----------
+  const clock = new T.Clock();
+  function frame() {
+    let dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.elapsedTime;
+    timeU.value = t;
+    if (hitStop > 0) { hitStop -= dt; dt *= 0.08; }
+
+    if (ready) {
+      for (const gb of goblins) updateGoblin(gb, dt, t);
+      updateProjectiles(dt);
+    }
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const f = fx[i];
+      f.t += dt;
+      const k = Math.min(1, f.t / f.dur);
+      f.update(k, dt);
+      if (k >= 1) { scene.remove(f.obj); fx.splice(i, 1); }
+    }
+    barrierMat.uniforms.uOp.value = Math.max(0, barrierMat.uniforms.uOp.value - dt * 2.2);
+    barrier.visible = barrierMat.uniforms.uOp.value > 0.01;
+
+    // knight idle: breathing, bored glances (procedural knight also waves cape and plume)
+    const breathe = Math.sin(t * 1.4);
+    knightHolder.scale.set(1 + breathe * 0.004, 1 + breathe * 0.006, 1 + breathe * 0.004);
+    lookTimer -= dt;
+    if (lookTimer <= 0) {
+      headYawTarget = Math.random() < 0.5 ? 0 : rand(-0.6, 0.6);
+      headPitchTarget = Math.random() < 0.3 ? rand(-0.15, 0.1) : 0;
+      lookTimer = rand(2, 5);
+    }
+    headYaw = lerp(headYaw, headYawTarget, 1 - Math.exp(-dt * 3));
+    if (knight.visible) {
+      torso.scale.set(1 + breathe * 0.008, 1 + breathe * 0.012, 1 + breathe * 0.01);
+      head.rotation.y = headYaw;
+      head.rotation.x = lerp(head.rotation.x, headPitchTarget, 1 - Math.exp(-dt * 3));
+      plume.rotation.x = Math.sin(t * 2.1) * 0.06;
+      plume.rotation.z = Math.sin(t * 1.7) * 0.05;
+      const pa = capeGeo.attributes.position;
+      for (let i = 0; i < pa.count; i++) {
+        const bx = capeBase[i * 3], by = capeBase[i * 3 + 1];
+        const hang = (0.725 - by) / 1.45;
+        const wave = Math.sin(t * 2.2 + hang * 4 + bx * 3) * 0.06 + Math.sin(t * 3.7 + bx * 6) * 0.02;
+        pa.setXYZ(i, bx * (1 + hang * 0.25), by, -(hang * hang) * 0.28 - wave * hang - 0.02);
+      }
+      pa.needsUpdate = true;
+      capeGeo.computeVertexNormals();
+    } else if (userKnight) {
+      // a loaded statue-like model: only a slight sway of the whole body toward whoever is poking it
+      userKnight.rotation.y = lerp(userKnight.rotation.y, headYaw * 0.15, 1 - Math.exp(-dt * 2));
+    }
+    if (knightMixer) knightMixer.update(dt);
+    idleTimer -= dt;
+    if (ready && idleTimer <= 0) { say(pick(IDLE_LINES)); idleTimer = rand(7, 13); }
+    aura.material.opacity = 0.45 + Math.sin(t * 2) * 0.15;
+    if (Math.random() < dt * 6) {
+      const a = Math.random() * Math.PI * 2, r = rand(0.3, 0.9);
+      emit(V(Math.cos(a) * r, rand(0, 0.5), Math.sin(a) * r), V(0, rand(0.4, 0.9), 0), rand(1.2, 2.2), 0xffd77a);
+    }
+
+    // particles
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const q = parts[i];
+      q.life -= dt;
+      if (q.life <= 0) { parts.splice(i, 1); continue; }
+      q.v.y -= q.max < 1 ? 9 * dt : 0;
+      q.p.addScaledVector(q.v, dt);
+    }
+    for (let i = 0; i < PMAX; i++) {
+      const q = parts[i];
+      if (q) {
+        pPos[i * 3] = q.p.x; pPos[i * 3 + 1] = q.p.y; pPos[i * 3 + 2] = q.p.z;
+        const f = q.life / q.max;
+        pCol[i * 3] = q.c.r * f; pCol[i * 3 + 1] = q.c.g * f; pCol[i * 3 + 2] = q.c.b * f;
+      } else {
+        pPos[i * 3 + 1] = -100;
+      }
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    pGeo.attributes.color.needsUpdate = true;
+
+    for (const g of islands) g.position.y = g.userData.y0 + Math.sin(t * 0.4 + g.userData.ph) * 0.8;
+
+    // camera
+    if (!reduceMotion && t - lastInteract > 5) orbit.theta += dt * 0.05;
+    const sp = Math.sin(orbit.phi);
+    camera.position.set(target.x + orbit.r * sp * Math.sin(orbit.theta), target.y + orbit.r * Math.cos(orbit.phi), target.z + orbit.r * sp * Math.cos(orbit.theta));
+    if (camera.position.y < 0.3) camera.position.y = 0.3;
+    camera.lookAt(target);
+    if (shake > 0) {
+      shake = Math.max(0, shake - dt);
+      const k = reduceMotion ? 0 : shake * 0.25;
+      camera.position.x += rand(-k, k); camera.position.y += rand(-k, k);
+    }
+
+    renderer.render(scene, camera);
+
+    for (let i = pops.length - 1; i >= 0; i--) {
+      const o = pops[i];
+      o.t += dt;
+      const sc = toScreen(o.at);
+      const rise = Math.min(o.t, 0.25) * 140 + o.t * 18;
+      const op = o.t < 0.7 ? 1 : Math.max(0, 1 - (o.t - 0.7) / 0.4);
+      o.el.style.transform = `translate(${sc.x + o.dx}px, ${sc.y - rise}px) translate(-50%, -50%)`;
+      o.el.style.opacity = sc.behind ? 0 : op;
+      if (o.t > 1.1) { o.el.remove(); pops.splice(i, 1); }
+    }
+    if (bubbleT > 0) {
+      bubbleT -= dt;
+      const sc = toScreen(tmpV.set(0, 2.45, 0));
+      bubble.style.left = sc.x + "px";
+      bubble.style.top = sc.y + "px";
+      if (bubbleT <= 0) bubble.classList.remove("on");
+    }
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
