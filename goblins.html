@@ -893,6 +893,7 @@
     r.rot("RightArm", o.armR || 0, 0, 1.0 + (o.armRz || 0));
     r.rot("LeftArm", o.armL || 0, 0, -1.0 - (o.armLz || 0));
     r.rot("RightForeArm", o.foreR ?? -0.5, 0, 0);
+    r.rot("RightHand", o.wristR ?? -1.3, 0, 0);        // grip: turns the blade from hanging down to pointing forward
     r.rot("LeftForeArm", o.foreL ?? -0.3, 0, 0);
     const aL = -0.2 + (o.legL || 0) - knee * 0.5, bL = 0.35 + knee;
     const aR = -0.2 + (o.legR || 0) - knee * 0.5, bR = 0.35 + knee;
@@ -1499,18 +1500,27 @@
       pa.needsUpdate = true;
       capeGeo.computeVertexNormals();
     } else if (knightRig) {
-      // rigged knight: stands still and only breathes (chest rises, shoulders lift a little)
+      // rigged knight: MMO-style AFK idle (feet apart, soft knees, arms hanging loose); only breathing moves
       const r = knightRig;
       r.reset();
-      r.rot("Spine", breathe * 0.015, 0, 0);
-      r.rot("Spine2", -breathe * 0.025, 0, 0);
-      r.rot("LeftShoulder", 0, 0, breathe * 0.02);
-      r.rot("RightShoulder", 0, 0, -breathe * 0.02);
-      r.rot("Head", breathe * 0.008, 0, 0);
-      r.rot("LeftArm", 0, 0, -1.25 - breathe * 0.01);
-      r.rot("LeftForeArm", -0.12, 0, 0);
-      r.rot("RightArm", 0, 0, 1.25 + breathe * 0.01);
-      r.rot("RightForeArm", -0.12, 0, 0);
+      r.rot("Spine", 0.05 + breathe * 0.015, 0, 0);
+      r.rot("Spine2", 0.02 - breathe * 0.025, 0, 0);
+      r.rot("LeftShoulder", 0, 0, -0.04 + breathe * 0.025);
+      r.rot("RightShoulder", 0, 0, 0.04 - breathe * 0.025);
+      r.rot("Neck", 0.04, 0, 0);
+      r.rot("Head", 0.08 + breathe * 0.01, 0, 0);
+      r.rot("LeftArm", 0.06, 0, -1.13 - breathe * 0.015);
+      r.rot("LeftForeArm", -0.3, 0, 0);
+      r.rot("LeftHand", 0, 0, 0.15);
+      r.rot("RightArm", 0.06, 0, 1.13 + breathe * 0.015);
+      r.rot("RightForeArm", -0.3, 0, 0);
+      r.rot("RightHand", 0, 0, -0.15);
+      r.rot("LeftUpLeg", -0.06, 0, 0.07);
+      r.rot("LeftLeg", 0.12, 0, 0);
+      r.rot("LeftFoot", 0, -0.15, -0.07);
+      r.rot("RightUpLeg", -0.06, 0, -0.07);
+      r.rot("RightLeg", 0.12, 0, 0);
+      r.rot("RightFoot", 0, 0.15, 0.07);
     } else if (userKnight) {
       userKnight.rotation.y = lerp(userKnight.rotation.y, headYaw * 0.15, 1 - Math.exp(-dt * 2));
     }
@@ -1547,7 +1557,6 @@
     for (const g of islands) g.position.y = g.userData.y0 + Math.sin(t * 0.4 + g.userData.ph) * 0.8;
 
     // camera
-    if (!reduceMotion && t - lastInteract > 5) orbit.theta += dt * 0.05;
     const sp = Math.sin(orbit.phi);
     camera.position.set(target.x + orbit.r * sp * Math.sin(orbit.theta), target.y + orbit.r * Math.cos(orbit.phi), target.z + orbit.r * sp * Math.cos(orbit.theta));
     if (camera.position.y < 0.3) camera.position.y = 0.3;

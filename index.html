@@ -1286,7 +1286,6 @@
     for (const g of islands) g.position.y = g.userData.y0 + Math.sin(t * 0.4 + g.userData.ph) * 0.8;
 
     // camera
-    if (!reduceMotion && t - lastInteract > 5) orbit.theta += dt * 0.05;
     const sp = Math.sin(orbit.phi);
     camera.position.set(target.x + orbit.r * sp * Math.sin(orbit.theta), target.y + orbit.r * Math.cos(orbit.phi), target.z + orbit.r * sp * Math.cos(orbit.theta));
     if (camera.position.y < 0.3) camera.position.y = 0.3;
