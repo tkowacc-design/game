@@ -163,6 +163,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script>
 (() => {
   "use strict";
@@ -709,7 +710,7 @@
         float d = distance(vP, uHit);
         float ripple = smoothstep(0.5, 0.0, abs(d - (1.0 - uOp) * 1.6)) * uOp;
         float hex = 0.5 + 0.5 * sin(vP.x * 28.0 + uTime) * sin(vP.y * 28.0) * sin(vP.z * 28.0);
-        float a = (f * 0.8 + ripple * 0.9 + smoothstep(0.6, 0.0, d) * 0.6) * uOp * (0.75 + hex * 0.25);
+        float a = (f * 0.5 + ripple * 0.6 + smoothstep(0.45, 0.0, d) * 0.45) * uOp * (0.7 + hex * 0.3);
         gl_FragColor = vec4(uCol * a, a); }`,
   });
   const barrier = new T.Mesh(new T.SphereGeometry(1, 40, 24), barrierMat);
@@ -719,9 +720,9 @@
   scene.add(barrier);
   function hitFx(at, power = 1, color = 0xfff2b0) {
     spriteFx(starTex, at, 0.45 * power, 0.18, color);
-    spriteFx(ringTex, at, 0.5 * power, 0.32, 0xffe39a, 2.2);
+    spriteFx(ringTex, at, 0.42 * power, 0.3, 0xffe39a, 1.9);
     sparks(at, (10 * power) | 0, color);
-    barrierMat.uniforms.uOp.value = Math.min(1, 0.55 + power * 0.3);
+    barrierMat.uniforms.uOp.value = Math.min(0.9, 0.35 + power * 0.25);
     barrierMat.uniforms.uHit.value.copy(at);
   }
   function shardsFx(at) {
@@ -853,7 +854,63 @@
     d = Math.atan2(Math.sin(d), Math.cos(d));
     gb.root.rotation.y += d * k;
   }
+  // Bone posing in model space: each bone turns about axes of the character (x = its left, y = up, z = forward).
+  function makeRig(root) {
+    root.updateMatrixWorld(true);
+    const bones = {};
+    root.traverse((o) => {
+      if (!o.isBone) return;
+      const key = o.name.replace(/^mixamorig[:_]?/, "").replace(/[^A-Za-z0-9]/g, "");
+      o.userData.restQ = o.quaternion.clone();
+      o.userData.restWQ = o.getWorldQuaternion(new T.Quaternion());
+      o.userData.restWQi = o.userData.restWQ.clone().invert();
+      bones[key] = o;
+    });
+    const e = new T.Euler(), d = new T.Quaternion();
+    return {
+      bones,
+      reset() { for (const k in bones) bones[k].quaternion.copy(bones[k].userData.restQ); },
+      rot(name, x, y, z) {
+        const b = bones[name];
+        if (!b) return;
+        d.setFromEuler(e.set(x || 0, y || 0, z || 0, "XYZ"));
+        d.premultiply(b.userData.restWQi).multiply(b.userData.restWQ);   // restWQ^-1 * D * restWQ
+        b.quaternion.copy(b.userData.restQ).multiply(d);
+      },
+    };
+  }
+
+  // Rigged goblin: the same pose vocabulary as the built-in one, mapped onto Mixamo bones.
+  const LEG = 0.19;                     // thigh / shin length as a share of model height
+  function setRigPose(gb, o) {
+    const r = gb.rig;
+    r.reset();
+    const lean = o.lean || 0, knee = o.knee || 0;
+    r.rot("Spine", lean * 0.5, 0, 0);
+    r.rot("Spine1", lean * 0.3, 0, 0);
+    r.rot("Spine2", lean * 0.2, 0, 0);
+    r.rot("Head", (o.headX || 0) - lean * 0.4, 0, o.headZ || 0);
+    r.rot("RightArm", o.armR || 0, 0, 1.0 + (o.armRz || 0));
+    r.rot("LeftArm", o.armL || 0, 0, -1.0 - (o.armLz || 0));
+    r.rot("RightForeArm", o.foreR ?? -0.5, 0, 0);
+    r.rot("LeftForeArm", o.foreL ?? -0.3, 0, 0);
+    const aL = -0.2 + (o.legL || 0) - knee * 0.5, bL = 0.35 + knee;
+    const aR = -0.2 + (o.legR || 0) - knee * 0.5, bR = 0.35 + knee;
+    r.rot("LeftUpLeg", aL, 0, 0); r.rot("LeftLeg", bL, 0, 0);
+    r.rot("RightUpLeg", aR, 0, 0); r.rot("RightLeg", bR, 0, 0);
+    // bent knees shorten the legs: lower the body so the standing foot stays on the ground
+    const drop = (a, b) => LEG * (2 - Math.cos(a) - Math.cos(a + b));
+    const sink = Math.min(drop(aL, bL), drop(aR, bR)) - drop(-0.2, 0.35);
+    gb.pose.rotation.x = o.poseX || 0;
+    gb.pose.rotation.z = 0;
+    gb.pose.position.y = gb.poseBaseY + (o.hop || 0) - sink * GOBLIN_H;
+    gb.pose.position.z = o.poseZ || 0;
+    const sq = o.squash || 0;
+    gb.squashG.scale.set(1 + sq * 0.5, 1 - sq, 1 + sq * 0.5);
+  }
+
   function setPose(gb, o) {
+    if (gb.rig) return setRigPose(gb, o);
     const P = gb.parts;
     if (P.armR) P.armR.rotation.set(o.armR || 0, 0, o.armRz || 0);
     if (P.armL) P.armL.rotation.set(o.armL || 0, 0, o.armLz || 0);
@@ -888,7 +945,7 @@
   const LINES = {
     smash: (g) => pick([g.weapon === "club" && !g.loaded ? `${g.name}は こんぼうで なぐりかかった！` : `${g.name}は きりかかった！`, `${g.name}の ちからいっぱいの いちげき！`]),
     stab:  (g) => pick([`${g.name}の れんぞくづき！`, `${g.name}は たんけんで つきさした！`]),
-    jump:  (g) => pick([`${g.name}の とびげり！`, `${g.name}は おどりかかってきた！`]),
+    jump:  (g) => pick([g.loaded ? `${g.name}の ジャンプぎり！` : `${g.name}の とびげり！`, `${g.name}は おどりかかってきた！`]),
     throw: (g) => pick([`${g.name}は いしを なげつけた！`, `${g.name}の とうてき！`]),
   };
 
@@ -994,7 +1051,7 @@
         } else if (k < IN + N * each) {
           const i = Math.floor((k - IN) / each), e = ((k - IN) % each) / each;
           const thrust = Math.sin(e * Math.PI);
-          setPose(gb, { armR: -1.0 - thrust * 0.55, lean: 0.3 + thrust * 0.15, poseZ: thrust * 0.1, armL: 0.5 });
+          setPose(gb, { armR: -1.0 - thrust * 0.55, foreR: -0.4 * (1 - thrust), lean: 0.3 + thrust * 0.15, poseZ: thrust * 0.1, armL: 0.5, legL: -0.4, legR: 0.3 });
           if (gb.didHit <= i && e > 0.5) {
             gb.didHit = i + 1;
             const at = contactPoint(gb, rand(0.45, 0.7));
@@ -1015,25 +1072,25 @@
         const CR = 0.32, UP = 0.36, BACK = 0.6;
         const dir = tmpV2.set(-p.x, 0, -p.z).normalize();
         const hitPos = V(-dir.x * 0.55, 0.62, -dir.z * 0.55);
-        if (k < CR) { const e = k / CR; setPose(gb, { squash: 0.25 * ease(e), legL: -0.4 * e, legR: -0.4 * e, armR: 0.6 * e, armL: 0.6 * e, lean: 0.3 * e }); }
+        if (k < CR) { const e = k / CR; setPose(gb, gb.rig ? { knee: 0.9 * ease(e), armR: -1.2 * e, armL: 0.5 * e, lean: 0.35 * e } : { squash: 0.25 * ease(e), legL: -0.4 * e, legR: -0.4 * e, armR: 0.6 * e, armL: 0.6 * e, lean: 0.3 * e }); }
         else if (k < CR + UP) {
           const e = (k - CR) / UP;
           p.lerpVectors(gb.from, hitPos, ease(e));
           p.y += Math.sin(e * Math.PI) * 0.5;
-          setPose(gb, { squash: -0.1, legR: -1.4 * e, legL: 0.6 * e, armR: 0.8, armL: 0.8, poseX: -0.4 * e, lean: -0.2 });
+          setPose(gb, gb.rig ? { knee: 0.9 * (1 - e) + Math.sin(e * Math.PI) * 0.6, armR: lerp(-1.2, -3.0, e), foreR: -0.2, armL: 0.6, lean: -0.25 * e, hop: 0.1 * e } : { squash: -0.1, legR: -1.4 * e, legL: 0.6 * e, armR: 0.8, armL: 0.8, poseX: -0.4 * e, lean: -0.2 });
           if (!gb.whoosh) { gb.whoosh = true; sfx.swing(); }
         } else {
           if (!gb.didHit) {
             gb.didHit = 1; gb.whoosh = false;
             const at = contactPoint(gb, 0.95);
-            slashFx(at, faceAngle(gb), false, 0xffe9a8, 0.3);
+            slashFx(at, faceAngle(gb), !!gb.rig, 0xffe9a8, gb.rig ? 0.4 : 0.3);
             registerHit(gb, at, { power: 1.1, sound: "thump" });
             gb.bounceFrom = p.clone();
           }
           const e = clamp((k - CR - UP) / BACK, 0, 1);
           p.lerpVectors(gb.bounceFrom, gb.from, e);
           p.y = Math.max(0, lerp(gb.bounceFrom.y, 0, e) + Math.sin(e * Math.PI) * 0.6);
-          setPose(gb, { poseX: -0.4 - e * Math.PI * 2, squash: e > 0.9 ? 0.15 : 0, armR: 1, armL: 1 });
+          setPose(gb, gb.rig ? { poseX: -e * Math.PI * 2, armR: lerp(0.4, -0.3, e), armL: 0.6, knee: e > 0.85 ? 0.6 : 0.3, lean: 0.3 * (1 - e) } : { poseX: -0.4 - e * Math.PI * 2, squash: e > 0.9 ? 0.15 : 0, armR: 1, armL: 1 });
           if (e >= 1) { gb.pose.rotation.x = 0; backToIdle(gb); }
         }
         break;
@@ -1041,15 +1098,17 @@
       case "throw": {
         turnToKnight(gb, 0.3);
         const W = 0.45, REL = 0.15, F = 0.5;
-        if (k < W) { const e = ease(k / W); setPose(gb, { armR: -2.6 * e, armL: 0.6 * e, lean: -0.3 * e, legL: 0.4 * e }); }
+        const TA = gb.rig ? "armL" : "armR", TB = gb.rig ? "armR" : "armL";
+        if (k < W) { const e = ease(k / W); setPose(gb, { [TA]: -2.6 * e, [TB]: 0.6 * e, lean: -0.3 * e, legL: 0.4 * e }); }
         else if (k < W + REL) {
           const e = (k - W) / REL;
-          setPose(gb, { armR: lerp(-2.6, -0.6, e), armL: 0.6, lean: lerp(-0.3, 0.35, e), legL: 0.4 });
+          setPose(gb, { [TA]: lerp(-2.6, -0.6, e), [TB]: 0.6, lean: lerp(-0.3, 0.35, e), legL: 0.4 });
           if (!gb.thrown) {
             gb.thrown = true;
             if (gb.parts.rock) gb.parts.rock.visible = false;
             const start = new T.Vector3();
-            if (gb.parts.hand) gb.parts.hand.getWorldPosition(start);
+            if (gb.rig && gb.rig.bones.LeftHand) gb.rig.bones.LeftHand.getWorldPosition(start);
+            else if (gb.parts.hand) gb.parts.hand.getWorldPosition(start);
             else start.copy(p).add(V(0, GOBLIN_H * 0.8, 0));
             const rock = new T.Mesh(new T.DodecahedronGeometry(0.06), rockM);
             rock.castShadow = true;
@@ -1063,7 +1122,7 @@
           }
         } else {
           const e = clamp((k - W - REL) / F, 0, 1);
-          setPose(gb, { armR: lerp(-0.6, -0.3, e), lean: lerp(0.35, 0.12, e) });
+          setPose(gb, { [TA]: lerp(-0.6, -0.3, e), lean: lerp(0.35, 0.12, e) });
           if (e >= 1) { gb.thrown = false; if (gb.parts.rock) gb.parts.rock.visible = true; backToIdle(gb, rand(1.2, 2.8)); }
         }
         break;
@@ -1123,12 +1182,14 @@
     });
   }
   const modelStatus = { knight: "仮モデル", goblin: "仮モデル" };
-  let knightMixer = null, userKnight = null;
+  let knightMixer = null, userKnight = null, knightRig = null;
   async function loadUserModels() {
     const [kg, gg] = await Promise.all([loadGLB("models/knight.json"), loadGLB("models/goblin.json")]);
     if (kg) {
       const m = kg.scene;
-      m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; } });
+      knightRig = makeRig(m);
+      if (!Object.keys(knightRig.bones).length) knightRig = null;
       fitHeight(m, 2.1);
       knight.visible = false;
       knightHolder.add(m);
@@ -1147,11 +1208,14 @@
         m.traverse((o) => {
           if (!o.isMesh) return;
           o.castShadow = true;
+          o.frustumCulled = false;
           o.material = o.material.clone();
           o.material.color.multiply(C(tints[gi]));
         });
         gb.loaded = true;
         gb.poseBaseY = GOBLIN_H / 2;
+        const rig = makeRig(m);
+        gb.rig = Object.keys(rig.bones).length ? rig : null;
         gb.pose.remove(gb.visual);
         gb.root.scale.setScalar(1);
         const holder = new T.Group();
@@ -1162,6 +1226,14 @@
         gb.pose.add(holder);
         gb.visual = holder;
         gb.parts = {};                // procedural limb posing no longer applies
+        if (gb.rig && gb.style === "throw" && gb.rig.bones.LeftHand) {
+          const hand = gb.rig.bones.LeftHand, ws = hand.getWorldScale(new T.Vector3()).x;
+          const rock = new T.Mesh(new T.DodecahedronGeometry(0.06), rockM);
+          rock.scale.setScalar(1 / ws);
+          rock.position.set(0, 0.05 / ws, 0);
+          hand.add(rock);
+          gb.parts.rock = rock;
+        }
         if (gg.animations && gg.animations.length) {
           gb.mixer = new T.AnimationMixer(m);
           gb.clips = clips;
@@ -1397,7 +1469,7 @@
 
     // knight idle: breathing, bored glances (procedural knight also waves cape and plume)
     const breathe = Math.sin(t * 1.4);
-    knightHolder.scale.set(1 + breathe * 0.004, 1 + breathe * 0.006, 1 + breathe * 0.004);
+    if (!knightRig) knightHolder.scale.set(1 + breathe * 0.004, 1 + breathe * 0.006, 1 + breathe * 0.004);
     lookTimer -= dt;
     if (lookTimer <= 0) {
       headYawTarget = Math.random() < 0.5 ? 0 : rand(-0.6, 0.6);
@@ -1420,8 +1492,20 @@
       }
       pa.needsUpdate = true;
       capeGeo.computeVertexNormals();
+    } else if (knightRig) {
+      // rigged knight: stands still and only breathes (chest rises, shoulders lift a little)
+      const r = knightRig;
+      r.reset();
+      r.rot("Spine", breathe * 0.015, 0, 0);
+      r.rot("Spine2", -breathe * 0.025, 0, 0);
+      r.rot("LeftShoulder", 0, 0, breathe * 0.02);
+      r.rot("RightShoulder", 0, 0, -breathe * 0.02);
+      r.rot("Head", breathe * 0.008, 0, 0);
+      r.rot("LeftArm", 0, 0, -1.25 - breathe * 0.01);
+      r.rot("LeftForeArm", -0.12, 0, 0);
+      r.rot("RightArm", 0, 0, 1.25 + breathe * 0.01);
+      r.rot("RightForeArm", -0.12, 0, 0);
     } else if (userKnight) {
-      // a loaded statue-like model: only a slight sway of the whole body toward whoever is poking it
       userKnight.rotation.y = lerp(userKnight.rotation.y, headYaw * 0.15, 1 - Math.exp(-dt * 2));
     }
     if (knightMixer) knightMixer.update(dt);
