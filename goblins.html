@@ -1096,7 +1096,7 @@
     }
   }
 
-  // ---------- optional: user-supplied models (models/knight.glb, models/goblin.glb) ----------
+  // ---------- optional: user-supplied models (models/knight.json, models/goblin.json) ----------
   function fitHeight(obj, h) {
     obj.updateMatrixWorld(true);
     const box = new T.Box3().setFromObject(obj);
@@ -1125,7 +1125,7 @@
   const modelStatus = { knight: "仮モデル", goblin: "仮モデル" };
   let knightMixer = null, userKnight = null;
   async function loadUserModels() {
-    const [kg, gg] = await Promise.all([loadGLB("models/knight.glb"), loadGLB("models/goblin.glb")]);
+    const [kg, gg] = await Promise.all([loadGLB("models/knight.json"), loadGLB("models/goblin.json")]);
     if (kg) {
       const m = kg.scene;
       m.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
@@ -1137,7 +1137,7 @@
         knightMixer = new T.AnimationMixer(m);
         knightMixer.clipAction(findClips(kg.animations).idle).play();
       }
-      modelStatus.knight = "models/knight.glb";
+      modelStatus.knight = "models/knight.json";
     }
     if (gg) {
       const clips = findClips(gg.animations || []);
@@ -1168,7 +1168,7 @@
           playClip(gb, "idle");
         }
       });
-      modelStatus.goblin = "models/goblin.glb";
+      modelStatus.goblin = "models/goblin.json";
     }
   }
   // ---------- HUD ----------
@@ -1315,7 +1315,7 @@
   });
   // ---------- camera orbit (drag / wheel / pinch) ----------
   const target = V(0, 1.15, 0);
-  const orbit = { theta: 0.55, phi: 1.33, r: 8.5, minR: 3.2, maxR: 22 };
+  const orbit = { theta: 0.55, phi: 1.36, r: 6.5, minR: 2.6, maxR: 22 };
   let lastInteract = -10;
   const pointers = new Map();
   let pinch0 = 0, r0 = 0;
@@ -1351,7 +1351,7 @@
   }
   addEventListener("resize", resize);
   resize();
-  if (innerWidth < innerHeight) orbit.r = 10.5;
+  if (innerWidth < innerHeight) orbit.r = 8.5;
 
   // ---------- opening state ----------
   let ready = false;
@@ -1369,7 +1369,7 @@
     updateTally();
   }
   loadUserModels().then(() => {
-    if (!modelStatus.knight.endsWith(".glb")) knight.visible = true;   // fall back to the built-in knight
+    if (!modelStatus.knight.endsWith(".json")) knight.visible = true;   // fall back to the built-in knight
     begin();
   });
 
