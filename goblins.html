@@ -90,16 +90,6 @@
   }
   .dmg.miss { color: var(--muted); font-size: 17px; }
   .dmg.crit { color: var(--gold); font-size: 28px; }
-  .bubble {
-    position: absolute; left: 0; top: 0; transform: translate(-50%, -100%);
-    background: var(--window); border: 2px solid var(--ink); border-radius: 8px;
-    padding: 4px 10px; font-size: 14px; white-space: nowrap; opacity: 0; transition: opacity .2s;
-  }
-  .bubble.on { opacity: 1; }
-  .bubble::after {
-    content: ""; position: absolute; left: 50%; bottom: -8px; width: 10px; height: 10px; margin-left: -5px;
-    background: var(--window); border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg);
-  }
   .flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
   .hint { position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 14px); transform: translateX(-50%); font-size: 12px; color: var(--muted); pointer-events: none; text-shadow: 0 1px 2px #000; white-space: nowrap; }
 
@@ -129,7 +119,7 @@
 </style>
 
 <div id="stage"></div>
-<div class="pops" id="pops"><div class="bubble" id="bubble"></div></div>
+<div class="pops" id="pops"></div>
 <div class="flash" id="flash"></div>
 <div class="hint">ドラッグで視点をまわす ・ ホイール / ピンチでズーム</div>
 
@@ -1279,14 +1269,6 @@
     if (pops.length > 40) { const o = pops.shift(); o.el.remove(); }
   }
 
-  const bubble = document.getElementById("bubble");
-  let bubbleT = 0;
-  function say(text, secs = 2.6) {
-    bubble.textContent = text;
-    bubble.classList.add("on");
-    bubbleT = secs;
-  }
-
   const flashEl = document.getElementById("flash");
   function flash(op = 0.5) {
     flashEl.animate([{ opacity: op }, { opacity: 0 }], { duration: 220, easing: "ease-out" });
@@ -1326,12 +1308,7 @@
   };
 
   // ---------- knight idle ----------
-  const IDLE_LINES = [
-    "……", "ふぁ〜あ", "（きょうの ばんごはん なにかな）", "くすぐったい", "（そろそろ かえりたい）",
-    "Lv99 だからな…", "（あ、ちょうちょ）", "かゆい", "……まだ やるのか", "（よろいの なかが むれる）",
-    "ひまだな", "（こいつら げんきだな）", "（その たんけん さびてるぞ）",
-  ];
-  let headYaw = 0, headYawTarget = 0, headPitchTarget = 0, lookTimer = 2, idleTimer = 5;
+  let headYaw = 0, headYawTarget = 0, headPitchTarget = 0, lookTimer = 2;
   let shake = 0;
   function lookAt(gb) {
     const p = gb.root.position;
@@ -1347,22 +1324,18 @@
   cmd("cFight", () => {
     log("ゆうしゃは けんを ぬこうとした！");
     log(pick(["しかし めんどうに なって やめた。", "しかし ゴブリンが かわいそうに なった。", "しかし ぬくまでも ないと おもった。"]));
-    say("……やめておこう");
   });
   cmd("cGuard", () => {
     log("ゆうしゃは みを まもっている。");
     log("…もともと ダメージは 0だ。");
-    say("（いみ ないな）");
   });
   cmd("cItem", () => {
     log("ゆうしゃは やくそうを とりだした！");
     log("しかし HPは まんたんだった。");
-    say("（もったいない）");
   });
   cmd("cRun", () => {
     log("ゆうしゃは にげだした！");
     log("…しかし ゴブリンに かこまれていて うごくのが めんどうだ。");
-    say("（まあ いいか）");
   });
   cmd("cCall", () => {
     if (!ready) return;
@@ -1509,11 +1482,11 @@
       r.rot("RightShoulder", 0, 0, 0.04 - breathe * 0.025);
       r.rot("Neck", 0.04, 0, 0);
       r.rot("Head", 0.08 + breathe * 0.01, 0, 0);
-      r.rot("LeftArm", 0.06, 0, -1.13 - breathe * 0.015);
-      r.rot("LeftForeArm", -0.3, 0, 0);
+      r.rot("LeftArm", 0.1, 0, -1.4 - breathe * 0.012);
+      r.rot("LeftForeArm", -0.24, 0, 0);
       r.rot("LeftHand", 0, 0, 0.15);
-      r.rot("RightArm", 0.06, 0, 1.13 + breathe * 0.015);
-      r.rot("RightForeArm", -0.3, 0, 0);
+      r.rot("RightArm", 0.1, 0, 1.4 + breathe * 0.012);
+      r.rot("RightForeArm", -0.24, 0, 0);
       r.rot("RightHand", 0, 0, -0.15);
       r.rot("LeftUpLeg", -0.06, 0, 0.07);
       r.rot("LeftLeg", 0.12, 0, 0);
@@ -1525,8 +1498,6 @@
       userKnight.rotation.y = lerp(userKnight.rotation.y, headYaw * 0.15, 1 - Math.exp(-dt * 2));
     }
     if (knightMixer) knightMixer.update(dt);
-    idleTimer -= dt;
-    if (ready && idleTimer <= 0) { say(pick(IDLE_LINES)); idleTimer = rand(7, 13); }
     aura.material.opacity = 0.45 + Math.sin(t * 2) * 0.15;
     if (Math.random() < dt * 6) {
       const a = Math.random() * Math.PI * 2, r = rand(0.3, 0.9);
@@ -1578,13 +1549,6 @@
       o.el.style.transform = `translate(${sc.x + o.dx}px, ${sc.y - rise}px) translate(-50%, -50%)`;
       o.el.style.opacity = sc.behind ? 0 : op;
       if (o.t > 1.1) { o.el.remove(); pops.splice(i, 1); }
-    }
-    if (bubbleT > 0) {
-      bubbleT -= dt;
-      const sc = toScreen(tmpV.set(0, 2.45, 0));
-      bubble.style.left = sc.x + "px";
-      bubble.style.top = sc.y + "px";
-      if (bubbleT <= 0) bubble.classList.remove("on");
     }
 
     requestAnimationFrame(frame);
