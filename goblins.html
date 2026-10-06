@@ -1175,10 +1175,12 @@
       attack: f(/attack|slash|swing|hit|punch|strike|stab|throw/i),
     };
   }
+  const loadErrors = [];
   function loadGLB(url) {
     return new Promise((res) => {
-      if (!T.GLTFLoader) return res(null);
-      try { new T.GLTFLoader().load(url, res, undefined, () => res(null)); } catch (e) { res(null); }
+      if (!T.GLTFLoader) { loadErrors.push("GLTFLoader が よみこめない"); return res(null); }
+      const fail = (e) => { loadErrors.push(url + ": " + ((e && (e.message || e.type)) || e)); res(null); };
+      try { new T.GLTFLoader().load(url, res, undefined, fail); } catch (e) { fail(e); }
     });
   }
   const modelStatus = { knight: "仮モデル", goblin: "仮モデル" };
@@ -1440,9 +1442,13 @@
     log("ゆうしゃは じっと たっている。");
     updateTally();
   }
-  loadUserModels().then(() => {
+  loadUserModels().catch((e) => { loadErrors.push("モデルの せっちで エラー: " + (e && e.message)); }).then(() => {
     if (!modelStatus.knight.endsWith(".json")) knight.visible = true;   // fall back to the built-in knight
     begin();
+    if (loadErrors.length) {
+      log("モデルを よみこめなかったので かりの モデルで うごいています。");
+      log(loadErrors.join(" / ").replace(/[<>&]/g, ""));
+    }
   });
 
   // ---------- main loop ----------
