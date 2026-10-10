@@ -176,6 +176,10 @@
   select { font: inherit; font-size: 12px; padding: 2px 4px; border: 1.5px solid var(--ink); border-radius: 3px; background: var(--paper-2); color: var(--ink); color-scheme: light; }
 
 
+  .budgetbar { position: relative; padding-bottom: 6px; }
+  .budgetbar .marks { position: relative; height: 14px; margin: 0 8px; }
+  .budgetbar .marks span { position: absolute; top: 0; transform: translateX(-50%); font-size: 10.5px; color: var(--ink-soft); white-space: nowrap; }
+  .budgetbar .marks i { display: block; width: 1px; height: 6px; background: var(--ink-soft); margin: 0 auto 1px; }
   /* grand schedule (Gantt) */
   .gantt-wrap { overflow-x: auto; border: 1px solid var(--paper-line); border-radius: 3px; background: var(--paper-2); }
   table.gantt { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
@@ -464,14 +468,21 @@ const Engine = (() => {
   const planAir = (s, n) => s.pre + n;      // 予定どおりなら第n話は第(pre+n)週に放送
 
   // 費目ごとの倍率（ランク）
-  function grades(s) {
+  function grades(s, over) {
     const T = TIERS[s.tier], st = s.staff;
-    return { studio: T.grade, dir: st.dir?.grade || 1, wri: st.wri?.grade || 1, va: st.va?.grade || 1, desk: st.desk?.grade || 1,
+    const g = { studio: T.grade, dir: st.dir?.grade || 1, wri: st.wri?.grade || 1, va: st.va?.grade || 1, desk: st.desk?.grade || 1,
              gensaku: SOURCES[s.src?.type || "original"].gensaku, rateUp: s.policy && s.policy.rate === "up" ? 1.3 : 1 };
+    return over ? { ...g, ...over } : g;
+  }
+  // 座組の目安（資金集めの時点ではまだ座組が決まっていない）
+  const GUIDE = { min: { dir: 1, wri: 1, va: 1, desk: 1 }, std: { dir: 2, wri: 2, va: 1.6, desk: 1.1 }, max: { dir: 3, wri: 3, va: 3, desk: 1.4, rateUp: 1.3 } };
+  function budgetGuide(s) {
+    const f = (k) => round(estimatePerEp(s, GUIDE[k]).total * EPISODES + 2500, 500);
+    return { min: f("min"), std: f("std"), max: f("max") };
   }
   // 社内の班で作る1話あたりの見積もり
-  function estimatePerEp(s) {
-    const g = grades(s), T = TIERS[s.tier];
+  function estimatePerEp(s, over) {
+    const g = grades(s, over), T = TIERS[s.tier];
     const animRate = skillGrade((T.animSkill[0] + T.animSkill[1]) / 2);
     const sakRate = avg(s.teams.map((t) => t.sakkan.grade));
     const mul = {
@@ -578,7 +589,7 @@ const Engine = (() => {
   // 資金集め
   function makeOffers(s) {
     const T = TIERS[s.tier], m = T.investMul, type = s.src.type;
-    const H0 = initialHype(s);
+    const H0 = SOURCES[type].pop + T.brand + 15;   // 座組が決まる前の見込み
     const o = [];
     const amt = (base) => round(base * m * rr(s, 0.9, 1.1), 100);
     if (type === "manga" || type === "novel")
@@ -595,19 +606,36 @@ const Engine = (() => {
     ];
     s.sel = {}; s.rsel = {};
     o.forEach((x) => { if (x.id !== "ad") s.sel[x.id] = true; });
-    const others = o.filter((x) => s.sel[x.id]).reduce((a, x) => a + x.amt, 0);
-    s.own = clamp(round(estimate(s) - others, 500), 0, T.cash);
+    const lim = budgetRange(s);
+    s.budget = clamp(budgetGuide(s).std, lim.min, lim.max);
+  }
+  // 総予算は、委員会の出資＋自社が出せる上限まで
+  function budgetRange(s) {
+    const others = s.offers.filter((x) => s.sel[x.id]).reduce((a, x) => a + x.amt, 0);
+    return { min: Math.max(5000, Math.ceil(others / 500) * 500), max: Math.floor((others + TIERS[s.tier].cash) / 500) * 500, others };
   }
   function committee(s) {
     const others = s.offers.filter((x) => s.sel[x.id]).reduce((a, x) => a + x.amt, 0);
-    const B = others + s.own;
-    return { others, B, share: B > 0 ? s.own / B : 0 };
+    const B = s.budget;
+    const own = B - others;
+    const ok = own >= 0 && own <= TIERS[s.tier].cash;
+    return { others, B, own, ok, share: B > 0 ? Math.max(0, own) / B : 0, members: s.offers.filter((x) => s.sel[x.id]).length };
+  }
+  // 委員会の組み方ごとの損益の目安（予算ぴったりで作れたとして、ヒット・普通・コケた）
+  function scenarios(s) {
+    const c = committee(s);
+    const goods = s.offers.some((x) => x.id === "goods" && s.sel[x.id]) ? 1.4 : 1;
+    const opts = { mg: s.rsel.mg ? s.rights.find((r) => r.id === "mg").fixed : null, os: s.rsel.os ? s.rights.find((r) => r.id === "os").fixed : null, goods, collab: 0, trust: 60 };
+    return [["ヒット", 80], ["普通", 60], ["コケた", 40]].map(([label, P]) => {
+      const rev = revenueAt(s, P, opts);
+      return { label, P, rev: rev.total, profit: Math.round(rev.total * c.share - Math.max(0, c.own)) };
+    });
   }
 
   function startProduction(s) {
     const T = TIERS[s.tier];
     const c = committee(s);
-    s.B = c.B; s.share = c.share; s.othersInvest = c.others;
+    s.B = c.B; s.share = c.share; s.othersInvest = c.others; s.own = Math.max(0, c.own);
     s.flags = { kanshu: SOURCES[s.src.type].kanshu, meddle: 0.04, goods: 1, hype: 0, mg: null, os: null, collab: 0, extraUsed: 0 };
     s.spent = 0; s.spentBy = {};
     s.policy = { douga: "inhouse", rate: "keep", mode: "stock", ot: false };
@@ -1246,19 +1274,20 @@ const Engine = (() => {
 
   // ---------- settlement ----------
   function popularity(s) { return clamp(0.65 * s.R + 0.35 * Math.min(s.H, 120) * 0.8, 0, 100); }
-  function revenue(s) {
-    const T = TIERS[s.tier], P = popularity(s), m = T.revMul;
+  function revenue(s) { return revenueAt(s, popularity(s), { mg: s.flags.mg, os: s.flags.os, goods: s.flags.goods, collab: s.flags.collab, trust: s.trust }); }
+  function revenueAt(s, P, o) {
+    const T = TIERS[s.tier], m = T.revMul;
     const orig = s.src.type === "original" && P >= 65 ? 1.25 : 1;
     const streamVar = (1500 + 4 * P * P) * m * orig;
     const bd = Math.pow(Math.max(0, P - 35), 2.3) * 8 * m * orig;
-    const goods = Math.pow(P, 1.5) * 12 * m * s.flags.goods * (1 + s.flags.collab) * orig;
+    const goods = Math.pow(P, 1.5) * 12 * m * o.goods * (1 + o.collab) * orig;
     const osVar = (1000 + 2.5 * P * P) * m * orig;
-    const season2 = P >= 72 && s.trust >= 40 ? 20000 * m : 0;
+    const season2 = P >= 72 && o.trust >= 40 ? 20000 * m : 0;
     const lines = [
-      { k: "配信", v: s.flags.mg ?? streamVar, fixed: s.flags.mg != null, alt: streamVar },
+      { k: "配信", v: o.mg ?? streamVar, fixed: o.mg != null, alt: streamVar },
       { k: "円盤（Blu-ray）", v: bd },
       { k: "グッズ", v: goods },
-      { k: "海外", v: s.flags.os ?? osVar, fixed: s.flags.os != null, alt: osVar },
+      { k: "海外", v: o.os ?? osVar, fixed: o.os != null, alt: osVar },
       { k: "二期決定（IPの価値）", v: season2 },
     ].map((l) => ({ ...l, v: Math.round(l.v), alt: l.alt != null ? Math.round(l.alt) : null }));
     return { P, lines, total: lines.reduce((a, l) => a + l.v, 0) };
@@ -1279,6 +1308,7 @@ const Engine = (() => {
   }
 
   return { TIERS, SOURCES, ROLE_DEFS, COST_LINES, KANRI, CUT_BASE, EPISODES, STAGES, STAGE_LABEL, ACTIONS, MIN_DUR, ART_WEEKS, BASE_ANIMS, DILUTION, ROUGH_W, GENGA_W,
+           budgetGuide, budgetRange, scenarios, revenueAt,
            newGame, chooseSource, chooseStaff, staffReady, synergy, initialHype, grades, estimatePerEp, estimateTotal, estimate, grossFee, ownLinesPerEp,
            conteWeek, autoPlan, planIssues, setPlan, recommendAnims, planAir, isGross, grossOf, grossBy, teamBy, teamOfShinko,
            makeOffers, committee, startProduction, progress, done, stageOf, epTotals, airWeekOf, weeksLeft, unaired, epBy, shinkoBy, epEff, teamBusy,
@@ -1644,7 +1674,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const roles = Object.keys(E.ROLE_DEFS);
     const syn = E.synergy(s), ready = E.staffReady(s);
     app.innerHTML = `
-      <p class="step">${esc(E.TIERS[s.tier].studio)} ／「${esc(s.src.title)}」／ 2. 座組</p>
+      <p class="step">${esc(E.TIERS[s.tier].studio)} ／「${esc(s.src.title)}」／ 3. 座組</p>
       <h2>座組を揃える</h2>
       <div class="roles">
         ${roles.map((role) => `
@@ -1665,9 +1695,10 @@ if (typeof module !== "undefined") module.exports = Engine;
         <div class="sheet row" style="justify-content:space-between">
           <div class="summary">
             ${s.staff.dir && s.staff.wri ? `<span>監督×構成の相性 <b class="${syn > 0 ? "pos" : syn < 0 ? "neg" : ""}">${syn > 0 ? "◎ 品質+4" : syn < 0 ? "△ 品質−3" : "○"}</b></span>` : ""}
-            ${ready ? `<span>社内の班で作る1話の見積もり <b>${fmt(E.estimatePerEp(s).total)}</b></span><span>放送前の期待値 <b>${E.initialHype(s)}</b></span>` : `<span class="sub">4つの役職をすべて選んでください</span>`}
+            <span>総予算 <b>${fmt(s.budget)}</b></span>
+            ${ready ? `<span>社内の班で作る1話の見積もり <b>${fmt(E.estimatePerEp(s).total)}</b>（全話社内なら ${fmt(E.estimatePerEp(s).total * 12 + 2500)}）</span><span>放送前の期待値 <b>${E.initialHype(s)}</b></span>` : `<span class="sub">4つの役職をすべて選んでください</span>`}
           </div>
-          <button class="btn primary" data-act="toSchedule" ${ready ? "" : "disabled"}>グランドスケジュールへ</button>
+          <div class="row"><button class="btn ghost" data-act="toShikinBack">資金集めに戻る</button><button class="btn primary" data-act="toSchedule" ${ready ? "" : "disabled"}>グランドスケジュールへ</button></div>
         </div>
       </div>`;
     app.querySelectorAll("[data-face]").forEach((el) => el.appendChild(faceCanvas(+el.dataset.face)));
@@ -1730,7 +1761,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const est = E.estimateTotal(s);
     const hard = E.planIssues(s).filter((i) => !i.soft).length;
     app.innerHTML = `
-      <p class="step">${esc(E.TIERS[s.tier].studio)} ／「${esc(s.src.title)}」／ 3. グランドスケジュール</p>
+      <p class="step">${esc(E.TIERS[s.tier].studio)} ／「${esc(s.src.title)}」／ 4. グランドスケジュール</p>
       <h2>グランドスケジュールを引く</h2>
       <div class="grid">
         <section class="sheet">
@@ -1750,10 +1781,12 @@ if (typeof module !== "undefined") module.exports = Engine;
             <p class="sub" style="margin:6px 0 0">グロスの回も、脚本・監督・音響・原作料・設定はこちら持ち（1話 ${fmt(E.ownLinesPerEp(s))}）。</p></section>
         </div>
       </div>
+      ${s.budget - est.total < 0 ? `<p class="sheet sub" style="margin:14px 0 0;color:var(--red)">見積もりが総予算を ${fmt(est.total - s.budget)} 上回っています。グロスを増やす、座組を見直す、のどちらかで収めるか、超過を自社でかぶる覚悟で進めます。</p>` : ""}
       <div class="footerbar">
         <div class="sheet row" style="justify-content:space-between">
-          <div class="summary"><span>社内 <b>${est.inhouse}話</b></span><span>グロス <b>${est.gross}話</b></span><span>見積もり総額 <b>${fmt(est.total)}</b></span></div>
-          <div class="row"><button class="btn ghost" data-act="backZagumi">座組に戻る</button><button class="btn primary" data-act="toShikin" ${hard ? "disabled" : ""}>${hard ? "問題を直してください" : "資金集めへ"}</button></div>
+          <div class="summary"><span>社内 <b>${est.inhouse}話</b></span><span>グロス <b>${est.gross}話</b></span><span>見積もり総額 <b>${fmt(est.total)}</b></span>
+            <span>総予算 <b>${fmt(s.budget)}</b></span><span>差 <b class="${s.budget - est.total < 0 ? "neg" : "pos"}">${s.budget - est.total >= 0 ? "+" : ""}${fmt(s.budget - est.total)}</b></span></div>
+          <div class="row"><button class="btn ghost" data-act="backZagumi">座組に戻る</button><button class="btn primary" data-act="start" ${hard ? "disabled" : ""}>${hard ? "問題を直してください" : "制作開始"}</button></div>
         </div>
       </div>`;
   }
@@ -1770,37 +1803,33 @@ if (typeof module !== "undefined") module.exports = Engine;
   }
   function renderShikin() {
     const T = E.TIERS[s.tier];
-    const per = E.estimatePerEp(s), tot = E.estimateTotal(s), est = tot.total;
+    const guide = E.budgetGuide(s), lim = E.budgetRange(s);
     const c = E.committee(s);
-    const gap = c.B - est;
-    const grossRows = s.gross.map((g) => ({ g, n: s.eps.filter((e) => e.plan.team === "g" + g.id).length })).filter((x) => x.n);
+    const sc = E.scenarios(s);
+    const pctOf = (v) => `${((v - lim.min) / Math.max(1, lim.max - lim.min)) * 100}%`;
+    const marks = [["最低ライン", guide.min], ["標準的な座組", guide.std], ["豪華な座組", guide.max]].filter(([, v]) => v >= lim.min && v <= lim.max);
     app.innerHTML = `
-      <p class="step">${esc(T.studio)} ／「${esc(s.src.title)}」／ 4. 資金集め</p>
-      <h2>製作委員会を組む</h2>
+      <p class="step">${esc(T.studio)} ／「${esc(s.src.title)}」／ 2. 資金集め</p>
+      <h2>総予算と製作委員会を決める</h2>
       <div class="split">
-        <section class="sheet">
-          <h3>社内の班で作る1話あたりの予算（見積もり）</h3>
-          <p class="sub">業界の一般的なサンプル（1話 約1,282万円）を最低ラインに、スタジオと座組の単価ランクを掛けています。</p>
-          ${budgetTable(per)}
-          <h3 style="margin-top:12px">総額</h3>
-          <table class="pl">
-            <tr><td>社内 ${tot.inhouse}話 × ${fmt(per.total)}</td><td class="r">${fmt(per.total * tot.inhouse)}</td></tr>
-            ${grossRows.map(({ g, n }) => `<tr><td>グロス（${esc(g.name)}）${n}話 ×（${fmt(E.grossFee(g))}＋こちら持ち ${fmt(E.ownLinesPerEp(s))}）</td><td class="r">${fmt(n * (E.grossFee(g) + E.ownLinesPerEp(s)))}</td></tr>`).join("")}
-            <tr><td>宣伝費の目安</td><td class="r">${fmt(2500)}</td></tr>
-            <tr class="total"><td>見積もり総額</td><td class="r">${fmt(est)}</td></tr>
-          </table>
-        </section>
         <div class="grid">
           <section class="sheet">
-            <h3>出資の申し出</h3>
-            <p class="sub">出資してもらうほど予算は増えますが、売上は出資額の比率で分けるので、自社の取り分は減ります。</p>
-            ${s.offers.map((o) => `
-              <label class="offer">
-                <input type="checkbox" data-act="offer" data-v="${o.id}" ${s.sel[o.id] ? "checked" : ""}>
-                <span><b>${esc(o.name)}</b><br><span class="cond">条件：${esc(o.cond)}</span></span>
-                <span class="money">${fmt(o.amt)}</span>
-              </label>`).join("")}
-            <h3 style="margin-top:12px">権利の先売り</h3>
+            <h3>総予算</h3>
+            <p class="sub" style="margin:0 0 8px">この作品にかけるお金の総額です。座組とグランドスケジュールは、この予算に収まるように組みます。超えたぶんは自社がかぶり、余れば自社の利益です。</p>
+            <div class="budgetbar">
+              <input type="range" id="budget" min="${lim.min}" max="${lim.max}" step="500" value="${s.budget}" data-act="budget" aria-label="総予算">
+              <div class="marks">${marks.map(([t, v]) => `<span style="left:${pctOf(v)}" title="${esc(t)} ${fmt(v)}"><i></i>${esc(t)}</span>`).join("")}</div>
+            </div>
+            <p class="row" style="justify-content:space-between;margin:20px 0 0"><span class="sub">${fmt(lim.min)}</span><span class="money" id="budgetOut" style="font-size:22px">${fmt(s.budget)}</span><span class="sub">${fmt(lim.max)}</span></p>
+            <table class="pl" style="margin-top:8px">
+              <tr><td>最低ライン（1話 約1,282万円のサンプル×このスタジオ）</td><td class="r">${fmt(guide.min)}</td></tr>
+              <tr><td>標準的な座組で全話社内</td><td class="r">${fmt(guide.std)}</td></tr>
+              <tr><td>豪華な座組で全話社内</td><td class="r">${fmt(guide.max)}</td></tr>
+            </table>
+            <p class="sub" style="margin:6px 0 0">グロスに出す話数が多いほど、総額は安くなります（協力会社しだい）。</p>
+          </section>
+          <section class="sheet">
+            <h3>権利の先売り</h3>
             <p class="sub">売上の一部を固定額にしてリスクを減らします。予算には入らず、決算の売上に入ります。</p>
             ${s.rights.map((r) => `
               <label class="offer">
@@ -1809,26 +1838,39 @@ if (typeof module !== "undefined") module.exports = Engine;
                 <span class="money">${fmt(r.fixed)}</span>
               </label>`).join("")}
           </section>
+        </div>
+        <div class="grid">
           <section class="sheet">
-            <h3>自社の出資額</h3>
-            <input type="range" id="own" min="0" max="${T.cash}" step="500" value="${s.own}" data-act="own" aria-label="自社の出資額">
-            <p class="row" style="justify-content:space-between;margin:4px 0"><span class="sub">0</span><span class="money" id="ownOut" style="font-size:20px">${fmt(s.own)}</span><span class="sub">${fmt(T.cash)}</span></p>
-            <table class="pl">
-              <tr><td>見積もり総額</td><td class="r">${fmt(est)}</td></tr>
-              <tr><td>他社の出資</td><td class="r">${fmt(c.others)}</td></tr>
-              <tr><td>自社の出資</td><td class="r">${fmt(s.own)}</td></tr>
-              <tr class="total"><td>予算</td><td class="r ${gap < 0 ? "neg" : ""}">${fmt(c.B)}</td></tr>
-              <tr><td>見積もりとの差</td><td class="r ${gap < 0 ? "neg" : "pos"}">${gap >= 0 ? "+" : ""}${fmt(gap)}</td></tr>
+            <h3>製作委員会</h3>
+            <p class="sub">委員会に入る会社を増やすほど自社の出資は減り、コケたときの損は小さくなります。そのかわり、売上は出資額の比率で分けるので、当たったときの取り分も減ります。</p>
+            ${s.offers.map((o) => `
+              <label class="offer">
+                <input type="checkbox" data-act="offer" data-v="${o.id}" ${s.sel[o.id] ? "checked" : ""}>
+                <span><b>${esc(o.name)}</b><br><span class="cond">条件：${esc(o.cond)}</span></span>
+                <span class="money">${fmt(o.amt)}</span>
+              </label>`).join("")}
+            <table class="pl" style="margin-top:8px">
+              <tr><td>総予算</td><td class="r">${fmt(c.B)}</td></tr>
+              <tr><td>委員会各社の出資（${c.members}社）</td><td class="r">${fmt(c.others)}</td></tr>
+              <tr class="total"><td>自社の出資</td><td class="r ${c.ok ? "" : "neg"}">${fmt(c.own)}</td></tr>
               <tr><td>自社の取り分</td><td class="r">${(c.share * 100).toFixed(1)}%</td></tr>
+              <tr><td>自社で出せる上限</td><td class="r">${fmt(T.cash)}</td></tr>
             </table>
-            <p class="sub" style="margin-top:8px">予算を超えた制作費は自社がかぶり、余った予算は自社の利益です。スコア＝（予算−実際の制作費）＋（売上×取り分−自社の出資）。未完成のまま放送した回は制作費が減額され、作画崩壊した回は円盤用の修正費がかかります。</p>
+            ${c.ok ? "" : `<p class="sub" style="color:var(--red);margin:6px 0 0">${c.own < 0 ? "委員会の出資が総予算を超えています。総予算を上げるか、委員会を減らしてください。" : "自社の出資が上限を超えています。総予算を下げるか、委員会を増やしてください。"}</p>`}
+          </section>
+          <section class="sheet">
+            <h3>この組み方での自社の損益（目安）</h3>
+            <p class="sub" style="margin:0 0 6px">予算ぴったりで作れた場合。実際は制作費の増減と、作品の出来しだいです。</p>
+            <table class="pl"><thead><tr><th>作品の当たり方</th><th class="r">委員会の売上</th><th class="r">自社の損益</th></tr></thead><tbody>
+              ${sc.map((x) => `<tr><td>${x.label}（人気${x.P}）</td><td class="r">${fmt(x.rev)}</td><td class="r ${x.profit >= 0 ? "pos" : "neg"}">${x.profit >= 0 ? "+" : ""}${fmt(x.profit)}</td></tr>`).join("")}
+            </tbody></table>
           </section>
         </div>
       </div>
       <div class="footerbar">
         <div class="sheet row" style="justify-content:space-between">
-          <span class="sub">${gap < 0 ? "予算が見積もりに届いていません。このまま進むと赤字の可能性が高いです。" : "予算は見積もりを満たしています。"}</span>
-          <div class="row"><button class="btn ghost" data-act="toSchedule">スケジュールに戻る</button><button class="btn primary" data-act="start">制作開始</button></div>
+          <span class="sub">次に、この総予算に収まるように座組とスケジュールを組みます。</span>
+          <div class="row"><button class="btn ghost" data-act="backKikaku">企画に戻る</button><button class="btn primary" data-act="toZagumi" ${c.ok ? "" : "disabled"}>座組へ</button></div>
         </div>
       </div>`;
   }
@@ -2281,15 +2323,17 @@ if (typeof module !== "undefined") module.exports = Engine;
       case "tier": s = E.newGame(v, (Math.random() * 2 ** 31) | 0); render(); window.scrollTo(0, 0); break;
       case "title": s = null; clearSave(); render(); break;
       case "again": { const t = s.tier; s = E.newGame(t, (Math.random() * 2 ** 31) | 0); render(); window.scrollTo(0, 0); break; }
-      case "source": E.chooseSource(s, +v); s.phase = "zagumi"; render(); window.scrollTo(0, 0); break;
+      case "source": E.chooseSource(s, +v); E.makeOffers(s); s.phase = "shikin"; render(); window.scrollTo(0, 0); break;
+      case "backKikaku": s.phase = "kikaku"; render(); break;
+      case "toZagumi": if (E.committee(s).ok) { s.phase = "zagumi"; render(); window.scrollTo(0, 0); } break;
+      case "toShikinBack": s.phase = "shikin"; render(); window.scrollTo(0, 0); break;
       case "staff": E.chooseStaff(s, b.dataset.role, +v); render(); break;
       case "toSchedule": if (E.staffReady(s)) { if (!s.eps[0].plan) E.autoPlan(s); s.phase = "schedule"; render(); window.scrollTo(0, 0); } break;
       case "autoPlan": E.autoPlan(s); render(); break;
       case "planStart": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { start: ep.plan.start + +b.dataset.d }); rerender(); break; }
       case "planDur": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { dur: ep.plan.dur + +b.dataset.d }); rerender(); break; }
-      case "toShikin": if (!E.planIssues(s).some((i) => !i.soft)) { E.makeOffers(s); s.phase = "shikin"; render(); window.scrollTo(0, 0); } break;
       case "backZagumi": s.phase = "zagumi"; render(); break;
-      case "start": E.startProduction(s); panel = "desk"; save(); render(); window.scrollTo(0, 0); showModal({ kind: "help" }); break;
+      case "start": if (E.planIssues(s).some((i) => !i.soft) || !E.committee(s).ok) break; E.startProduction(s); panel = "desk"; save(); render(); window.scrollTo(0, 0); showModal({ kind: "help" }); break;
       case "howto": showModal({ kind: "help" }); break;
       case "closeModal": closeModal(); break;
       case "panel": panel = v; render(); if (matchMedia("(max-width: 980px)").matches) document.getElementById("panel")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); break;
@@ -2318,13 +2362,13 @@ if (typeof module !== "undefined") module.exports = Engine;
   document.addEventListener("change", (ev) => {
     const b = ev.target.closest("[data-act]");
     if (!b || !s) return;
-    if (b.dataset.act === "offer") { s.sel[b.dataset.v] = b.checked; render(); }
+    if (b.dataset.act === "offer") { s.sel[b.dataset.v] = b.checked; const lim = E.budgetRange(s); s.budget = Math.min(lim.max, Math.max(lim.min, s.budget)); render(); }
     if (b.dataset.act === "right") { s.rsel[b.dataset.v] = b.checked; render(); }
-    if (b.dataset.act === "own") { s.own = +b.value; render(); document.getElementById("own")?.focus(); }
+    if (b.dataset.act === "budget") { s.budget = +b.value; render(); document.getElementById("budget")?.focus(); }
     if (b.dataset.act === "planTeam") { E.setPlan(s, +b.dataset.v, { team: b.value }); rerender(); }
   });
   document.addEventListener("input", (ev) => {
-    if (ev.target.id === "own" && s) { s.own = +ev.target.value; const out = document.getElementById("ownOut"); if (out) out.textContent = fmt(s.own); }
+    if (ev.target.id === "budget" && s) { s.budget = +ev.target.value; const out = document.getElementById("budgetOut"); if (out) out.textContent = fmt(s.budget); }
   });
 
   // ---------- save / resume ----------
