@@ -308,6 +308,7 @@ const Engine = (() => {
   const DILUTION = 0.6;                   // 1人増えるごとの品質低下
   const MIN_DUR = 6;                      // 1話の最短の制作期間（週）
   const DEF_DUR = 8;                      // グランドスケジュールの標準（週）
+  const LINE = 50;                        // 局・製作委員会の納品基準（これを下回る品質は受け取ってもらえない）
   const ART_WEEKS = 2;                    // 美術・CGはラフ原が上がってから2週間
   const EPISODES = 12;
   const TEAM_KEYS = ["A", "B", "C", "D", "E", "F"];
@@ -334,7 +335,7 @@ const Engine = (() => {
   const GROSS_DEFS = [
     { name: "スタジオ灯台", q: [68, 76], slip: 0.03, cap: 1, note: "丁寧で確実。同時に1話まで。" },
     { name: "有限会社 青梅動画", q: [56, 64], slip: 0.08, cap: 2, note: "標準的。たまに遅れる。" },
-    { name: "アニメ工房さざなみ", q: [44, 52], slip: 0.15, cap: 2, note: "品質も納期も怪しい。" },
+    { name: "アニメ工房さざなみ", q: [47, 55], slip: 0.15, cap: 2, note: "品質も納期も怪しい。局の基準ぎりぎり。" },
   ];
   const SOURCES = {
     manga: { label: "人気漫画原作", kanshu: 0.24, titles: ["放課後ラグナロク", "ねこ侍は眠らない", "鉄骨のアリア", "となりの席の魔王さま"] },
@@ -366,11 +367,11 @@ const Engine = (() => {
 
   function newGame(tier, seed) {
     const T = TIERS[tier];
-    const s = { v: 5, phase: "schedule", tier, rs: seed | 0, week: 0, log: [], sns: [], kv: [], usedNames: [], uid: 0 };
+    const s = { v: 6, phase: "schedule", tier, rs: seed | 0, week: 0, log: [], sns: [], kv: [], usedNames: [], uid: 0 };
     s.pre = T.pre;
     s.src = { type: T.source, title: pick(s, SOURCES[T.source].titles) };
     const mk = (d) => ({ name: makeName(s), seed: ri(s, 1, 1e9), ...d });
-    s.staff = { dir: mk(T.dir), wri: mk(T.wri), va: mk(T.va) };
+    s.staff = { dir: mk(T.dir), wri: mk(T.wri), va: mk(T.va), kp: mk({}) };
     s.shinkos = [];
     s.teams = TEAM_KEYS.slice(0, T.teams).map((key, i) => {
       const sh = makeShinko(s, T.shinkoSkill[i]);
@@ -475,7 +476,7 @@ const Engine = (() => {
     s.ap = 3; s.dirMood = 0;
     s.mods = []; s.incidents = []; s.queue = [];
     s.week = 1; s.nextAir = s.pre + 1; s.aired = 0; s.recaps = 0; s.delays = 0;
-    s.lastAirQ = 0; s.helpCount = 0; s.added = 0; s.hiddenFound = 0; s.lateReports = 0;
+    s.lastAirQ = 0; s.helpCount = 0; s.added = 0; s.hiddenFound = 0; s.lateReports = 0; s.rejects = 0;
     s.phase = "prod"; s.event = null; s.pendingAir = null;
     startEpisodes(s);
     s.stat = forecast(s);
@@ -654,6 +655,8 @@ const Engine = (() => {
       if (!ep.started) return `第${ep.n}話の着手が遅れそう。グランドスケジュールを見直すか、グロスに出すか。`;
       return `第${ep.n}話、このままだと完パケが第${epForecast(s, ep)}週。放送に間に合わない。原画マンを足すか、巻くか。`;
     }
+    const weak = unaired(s).find((e) => e.started && !e.delivered && Math.round(epQuality(s, e)) < LINE);
+    if (weak) return `第${weak.n}話の品質見込みが${Math.round(epQuality(s, weak))}。局の基準${LINE}を下回ると納品拒否される。`;
     const ratios = [
       [f.douga / Math.max(1, f.need.douga), "動画が追いついていない。海外に出すか、残業か。"],
       [f.shiage / Math.max(1, f.need.shiage), "仕上げが詰まりそうだ。"],
@@ -664,6 +667,36 @@ const Engine = (() => {
     const tired = s.shinkos.filter((x) => !x.gone && x.stamina < 30);
     if (tired.length) return `${teamOfShinko(s, tired[0].id)?.label}の${tired[0].name}がかなり疲れている。そろそろ飛ぶかもしれない。`;
     return "進行の報告では、全話グランドスケジュールどおり。";
+  }
+
+  // ---------- 納品チェック ----------
+  // 局・製作委員会が品質を見る。基準を下回ると納品拒否（交渉で通ったものは除く）
+  function tryDeliver(s, ep, msg) {
+    const q = Math.round(epQuality(s, ep));   // 画面に出る数字と同じ丸めで判定する
+    if (q < LINE && !ep.waived) {
+      ep.rejectPending = true; ep.rejects = (ep.rejects || 0) + 1; s.rejects++;
+      log(s, `第${ep.n}話、局から納品拒否（品質${Math.round(q)}／基準${LINE}）。`);
+      s.queue.push({ id: "kyohi", p: { n: ep.n, q: Math.round(q) }, start: s.week, team: null, reporter: { kind: "kyoku" }, revealed: true, reportWeek: s.week });
+      return false;
+    }
+    ep.delivered = true; ep.deliveredWeek = s.week;
+    log(s, msg);
+    return true;
+  }
+  const kyohiCuts = (ep, q) => clamp(Math.round(ep.cuts * (0.12 + (LINE - q) * 0.025)), 20, Math.round(ep.cuts * 0.6));
+  const kyohiGain = (q) => LINE + 3 - q;
+  function clearReject(s, ep, gain) { ep.rejectPending = false; ep.bonus += gain; ep.rush = null; ep.short = false; }
+  // 放送日に「このまま放送」したときの品質。基準を下回るなら局が流さない
+  function airAsIsQ(s) {
+    const ep = unaired(s)[0];
+    if (!ep) return 0;
+    const prog = Math.min(1, done(ep));
+    return epQuality(s, ep) * (prog >= 1 ? 1 : 0.35 + 0.65 * Math.pow(prog, 1.5));
+  }
+  function canAirAsIs(s) {
+    const ep = unaired(s)[0];
+    if (!ep || ep.rejectPending) return false;
+    return ep.waived || Math.round(airAsIsQ(s)) >= LINE;
   }
 
   // ---------- one week of production ----------
@@ -677,6 +710,8 @@ const Engine = (() => {
     // ラフ原 → 原画 (each animator works through their own cuts)
     for (const ep of inh) {
       const eff = epEff(s, ep);
+      // 誰の手元にもないカットがあれば配る
+      if (ep.anims.reduce((x, a) => x + a.cuts, 0) < ep.cuts - 0.5) redistribute(ep, s);
       for (const a of ep.anims) {
         // what the 進行 would report if this animator were fine
         const fakeW = a.speed * otMul(s) * (p.mode === "quality" ? 0.88 : 1) * modMul(s, "ga") * eff;
@@ -730,18 +765,17 @@ const Engine = (() => {
         ready = avail(ep.shiage, sn.shiage) - ep.satsuei;
         if (artReady && ready > 0 && sa > 0) { const t = Math.min(ready, sa * eff); sa -= t / eff; ep.satsuei += t; }
       }
-      if (!ep.delivered && ep.satsuei >= ep.cuts - 0.5) {
+      if (!ep.delivered && !ep.rejectPending && ep.satsuei >= ep.cuts - 0.5) {
         ep.satsuei = ep.douga = ep.shiage = ep.cuts;
-        ep.delivered = true; ep.deliveredWeek = s.week;
-        log(s, `第${ep.n}話、完パケ。音響も上がって納品済み。`);
+        tryDeliver(s, ep, `第${ep.n}話、完パケ。音響も上がって納品済み。`);
       }
     }
     // グロス
-    for (const ep of eps.filter((e) => e.started && isGross(e.plan) && !e.delivered)) {
+    for (const ep of eps.filter((e) => e.started && isGross(e.plan) && !e.delivered && !e.rejectPending)) {
       const c = grossOf(s, ep.plan);
       if (rnd(s) < c.slip) { ep.gslip++; log(s, `${c.name}から連絡。第${ep.n}話が1週遅れる。`); }
       else ep.gprog = Math.min(1, ep.gprog + 1 / ep.plan.dur);
-      if (ep.gprog >= 0.999) { ep.gprog = 1; ep.delivered = true; ep.deliveredWeek = s.week; log(s, `第${ep.n}話、${c.name}から納品。`); }
+      if (ep.gprog >= 0.999) { ep.gprog = 1; tryDeliver(s, ep, `第${ep.n}話、${c.name}から納品。`); }
     }
     // コンテ and 脚本
     let conte = conteRate(s) * (p.mode === "quality" ? 0.9 : 1) * modMul(s, "conte") * modMul(s, "pre");
@@ -1130,11 +1164,30 @@ const Engine = (() => {
         { label: "保管場所まで取りに行く（行動−1）", ap: 1, run: () => "反則金を払って取り戻した。" },
         { label: "今週は電車で回る（その班の進み−25%）", run: (s, p) => { addMod(s, "car", 1, 0.75, "tm:" + epBy(s, p.n).plan.team); return "電車とタクシーで回収する。"; } },
       ] },
+    kyohi: { title: "納品拒否", when: () => false, weight: () => 0,
+      text: (s, p) => `「第${p.n}話、この品質（${p.q}）では受け取れません。うちの基準は${LINE}です。直してから納品してください」`,
+      choices: (s, p) => {
+        const ep = epBy(s, p.n), K = kyohiCuts(ep, p.q), gain = kyohiGain(p.q), out = [];
+        const nego = { label: "局Pに頭を下げて通してもらう（行動−1・五分五分。だめなら原画からリテイク）", ap: 1, run: (s2) => {
+          const e = epBy(s2, p.n);
+          if (rnd(s2) < 0.5) { e.rejectPending = false; e.waived = true; e.delivered = true; e.deliveredWeek = s2.week; return "今回だけ、ということで受け取ってもらえた。"; }
+          if (isGross(e.plan)) e.gprog = 1 - 2 / e.plan.dur; else retake(s2, e, K, "genga");
+          clearReject(s2, e, gain); return "通らなかった。リテイクを出す。"; } };
+        if (isGross(ep.plan)) {
+          out.push({ label: `協力会社にリテイクを出す（あと2週・品質 ${p.q}→${p.q + gain}）`, run: (s2) => { const e = epBy(s2, p.n); e.gprog = 1 - 2 / e.plan.dur; clearReject(s2, e, gain); return `${grossOf(s2, e.plan).name}にリテイクを出した。`; } });
+          out.push({ label: `社内で引き取って直す（行動−2・あと1週・品質 ${p.q}→${p.q + gain}）`, ap: 2, run: (s2) => { const e = epBy(s2, p.n); e.gprog = 1 - 1 / e.plan.dur; clearReject(s2, e, gain); return "社内の作監陣で引き取って直す。"; } });
+        } else {
+          out.push({ label: `原画からリテイクする（${K}カット描き直し・品質 ${p.q}→${p.q + gain}）`, run: (s2) => { const e = epBy(s2, p.n); retake(s2, e, K, "genga"); clearReject(s2, e, gain); return `第${p.n}話、${K}カットを原画から描き直す。`; } });
+          out.push({ label: `総作監に修正を入れてもらう（行動−2・撮影から${Math.round(K / 2)}カット撮り直し・品質 ${p.q}→${p.q + gain}）`, ap: 2, run: (s2) => { const e = epBy(s2, p.n); e.satsuei = e.cuts - Math.round(K / 2); e.delivered = false; clearReject(s2, e, gain); return "総作監が修正を入れて、撮影をやり直す。"; } });
+        }
+        out.push(nego);
+        return out;
+      } },
     lateGross: { title: "グロス回が間に合わない", when: () => false, weight: () => 0,
       text: (s, p) => { const ep = epBy(s, p.n); return `「第${p.n}話、いまの進み${Math.round(ep.gprog * 100)}%で、このままだと納品が第${epForecast(s, ep)}週になりそうです……」（放送は第${airWeekOf(s, ep)}週）`; },
       choices: (s, p) => {
         const ep = epBy(s, p.n), out = [], q0 = Math.round(epQuality(s, ep));
-        const fcq = (r) => `納品予測 W${r.fc}・品質 ${q0}→${r.q}`;
+        const fcq = (r) => `納品予測 W${r.fc}・品質 ${q0}→${r.q}${r.q < LINE ? "・局の基準割れ" : ""}`;
         if (canAct(s, "grossPush", p.n)) { const r = preview(s, p.n, (c) => doAction(c, "grossPush", p.n)); out.push({ label: `社長に頼み込む（行動−1・${fcq(r)}）`, ap: 1, ok: (s2) => canAct(s2, "grossPush", p.n), run: (s2) => { s2.ap += 1; doAction(s2, "grossPush", p.n); return "社長に頭を下げた。"; } }); }
         for (const m of ["24h", "12h", "2gen"]) {
           if (!canRush(s, ep, m)) continue;
@@ -1151,7 +1204,7 @@ const Engine = (() => {
       choices: (s, p) => {
         const ep = epBy(s, p.n), out = [];
         const q0 = Math.round(epQuality(s, ep));
-        const fcq = (r) => `完パケ予測 W${r.fc}・品質 ${q0}→${r.q}`;
+        const fcq = (r) => `完パケ予測 W${r.fc}・品質 ${q0}→${r.q}${r.q < LINE ? "・局の基準割れ" : ""}`;
         if (withView(s, ep, () => canAddAnim(s, ep))) { const r = preview(s, p.n, (c) => addAnimators(c, p.n, 3, true)); out.push({ label: `原画マンを3人足す（${fcq(r)}）`, run: (s2) => { addAnimators(s2, p.n, 3); return "原画マンを3人足した。"; } }); }
         for (const m of ["24h", "12h", "2gen", "short"]) {
           if (!canRush(s, ep, m)) continue;
@@ -1179,6 +1232,9 @@ const Engine = (() => {
     for (const k of ["douga", "shiage", "satsuei"]) ep[k] = Math.min(ep[k], g1);
     if (stage === "rough" && sumA(ep, "rough") < ep.cuts - 0.5) ep.art = null;
     ep.delivered = false;
+    // 抜けた人に戻ってきたカットは、残っている人に配り直す
+    for (const a of ep.anims) if (a.out && a.cuts > a.genga) { a.cuts = a.genga; a.rough = Math.min(a.rough, a.genga); }
+    redistribute(ep, s);
   }
 
   // Trouble gets more frequent as the series goes on.
@@ -1267,6 +1323,7 @@ const Engine = (() => {
   function resolveAir(s, choice) {
     if (!s.pendingAir) return null;
     if (choice === "recap" && s.recaps >= 2) return null;
+    if (choice === "air" && !canAirAsIs(s)) return null;
     s.lastAir = airEpisode(s, choice);
     s.pendingAir = null;
     return nextWeek(s);
@@ -1321,7 +1378,7 @@ const Engine = (() => {
            startProduction, progress, done, stageOf, epTotals, airWeekOf, weeksLeft, unaired, epBy, shinkoBy, epEff, teamBusy,
            forecast, epForecast, epForecastRaw, deskNote, epQuality, dilution, canAct, doAction, setPolicy, addAnimators, canAddAnim, animWork, viewAnim, hiddenOn,
            eventView, resolveEvent, pumpEvents, endWeek, resolveAir, troubleRate, clamp,
-           DEF_DUR, RUSH, canRush, setRush, previewRush, rushPenalty, preview, rushRank };
+           DEF_DUR, LINE, canAirAsIs, airAsIsQ, RUSH, canRush, setRush, previewRush, rushPenalty, preview, rushRank };
 })();
 if (typeof module !== "undefined") module.exports = Engine;
 </script>
@@ -1772,8 +1829,9 @@ if (typeof module !== "undefined") module.exports = Engine;
           <section class="sheet"><h3>チェック</h3>${issuesHtml()}</section>
           <section class="sheet"><h3>協力会社（グロス先）</h3>
             <table class="pl"><thead><tr><th>会社</th><th class="r">品質</th><th class="r">同時</th><th>メモ</th></tr></thead><tbody>
-            ${s.gross.map((c) => `<tr><td>${esc(c.name)}</td><td class="r">${c.quality}</td><td class="r">${c.cap}話</td><td class="sub">${esc(c.note)}</td></tr>`).join("")}
-            </tbody></table></section>
+            ${s.gross.map((c) => `<tr><td>${esc(c.name)}</td><td class="r ${c.quality < E.LINE + 3 ? "neg" : ""}">${c.quality}</td><td class="r">${c.cap}話</td><td class="sub">${esc(c.note)}</td></tr>`).join("")}
+            </tbody></table>
+            <p class="sub" style="margin:6px 0 0">局の納品基準は品質${E.LINE}。下回ると納品拒否されてリテイクになります（グロスなら約2週）。巻くと品質が下がるので、基準ぎりぎりの会社は早めに着手させると安全です。</p></section>
         </div>
         <section class="sheet"><h3>座組</h3>
           <dl class="kv">
@@ -1862,7 +1920,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const late = !ep.aired && !ep.delivered && E.epForecast(s, ep) > E.airWeekOf(s, ep);
     const modes = ["24h", "12h", "2gen", "short"].filter((m) => E.canRush(s, ep, m));
     if (!late || !modes.length) return "";
-    return `<span class="xls-sep">巻き</span>` + modes.map((m) => { const x = E.previewRush(s, ep.n, m); return `<button class="${cls}" data-act="rush" data-v="${ep.n}" data-k="${m}">${m === "short" ? "撮影スケジュール短縮" : E.RUSH[m].label}<span class="pv">W${x.fc}・品質${x.q0}→${x.q}</span></button>`; }).join("");
+    return `<span class="xls-sep">巻き</span>` + modes.map((m) => { const x = E.previewRush(s, ep.n, m); return `<button class="${cls}" data-act="rush" data-v="${ep.n}" data-k="${m}">${m === "short" ? "撮影スケジュール短縮" : E.RUSH[m].label}<span class="pv">W${x.fc}・品質${x.q0}→${x.q}${x.q < E.LINE ? "（基準割れ）" : ""}</span></button>`; }).join("");
   }
   function deskPanel() {
     const f = s.stat || E.forecast(s);
@@ -1873,7 +1931,7 @@ if (typeof module !== "undefined") module.exports = Engine;
         <td><span class="tm" style="--tc:${TEAM_COL[t.key]}">${t.label}</span></td>
         <td>${esc(sh.name)}${sh.gone ? ' <span class="tagx t-bad">不在</span>' : ""}<br><span class="sub">段取り${stars(sh.skill)}</span> ${stamBar(sh.stamina)}</td>
         <td>${ep ? `第${ep.n}話 ${E.STAGE_LABEL[E.stageOf(ep)]}` : "手が空いている"}</td>
-        <td class="num">${ep ? `W${E.epForecast(s, ep)}${danger(ep) ? ' <span class="tagx t-bad">遅れ</span>' : ""}` : next ? `次 #${next.n}` : "—"}</td></tr>`;
+        <td class="num">${ep ? `W${E.epForecast(s, ep)}${danger(ep) ? ' <span class="tagx t-bad">遅れ</span>' : ""}${Math.round(E.epQuality(s, ep)) < E.LINE ? ' <span class="tagx t-bad">基準割れ</span>' : ""}` : next ? `次 #${next.n}` : "—"}</td></tr>`;
     }).join("");
     return `
       <section class="sheet">
@@ -1918,7 +1976,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     return s.gross.map((c) => {
       const eps = s.eps.filter((e) => e.plan.team === "g" + c.id);
       return `<section class="sheet">
-        <div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(c.name)}</h3><span class="sub">品質 ${c.quality} ／ 同時${c.cap}話</span></div>
+        <div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(c.name)}</h3><span class="sub ${c.quality < E.LINE + 3 ? "neg" : ""}">品質 ${c.quality}（基準${E.LINE}） ／ 同時${c.cap}話</span></div>
         <p class="sub" style="margin:4px 0 6px">${esc(c.note)}</p>
         ${eps.length ? `<table class="pl"><thead><tr><th>話</th><th>予定</th><th>進み</th><th>完パケ予測</th><th></th></tr></thead><tbody>
           ${eps.map((e) => `<tr><td>#${e.n}</td><td>W${e.plan.start}–W${e.plan.start + e.plan.dur - 1}</td>
@@ -1987,7 +2045,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       row("完パケ", ep.aired ? "—" : ep.delivered ? `W${ep.deliveredWeek} 納品済` : `予測 W${fc}${late ? "　※放送に間に合いません" : ""}`, late ? "bad" : "");
       if (ep.rush || ep.short) row("巻き", [ep.rush ? E.RUSH[ep.rush].label : "", ep.short ? "撮影短縮" : ""].filter(Boolean).join("＋") + (E.isGross(p) ? `（品質 −${ep.penFix}）` : `（品質 −${((ep.pen || 0) / ep.cuts + (ep.penFix || 0)).toFixed(1)}。巻いたカットが増えるほど下がる）`), "bad");
       if (E.isGross(p)) {
-        row("進み", `${Math.round(ep.gprog * 100)}%${ep.gslip ? `（遅れ ${ep.gslip}週）` : ""}／品質見込み ${Math.round(E.epQuality(s, ep))}`);
+        row("進み", `${Math.round(ep.gprog * 100)}%${ep.gslip ? `（遅れ ${ep.gslip}週）` : ""}／品質見込み ${Math.round(E.epQuality(s, ep))}（局の基準 ${E.LINE}）`, Math.round(E.epQuality(s, ep)) < E.LINE ? "bad" : "");
         rows.push(`<td colspan="7" class="blank"></td>`);
         row("グロス", "1話まるごと協力会社に発注しています。原画マンの内訳は先方の管理です。");
         tools = ep.started && !ep.delivered && !ep.aired ? `<button class="btn small" data-act="do" data-v="grossPush" data-arg="${ep.n}" ${E.canAct(s, "grossPush", ep.n) ? "" : "disabled"}>協力会社を催促（行動1）</button>` + rushBtns(ep) : "";
@@ -1998,7 +2056,7 @@ if (typeof module !== "undefined") module.exports = Engine;
         const view = ep.anims.map((a) => E.viewAnim(s, a));
         const live = view.filter((a) => !a.out);
         const q = Math.round(E.epQuality(s, ep));
-        row("原画マン", `${live.length}人${E.dilution(ep) > 0 ? `（${E.BASE_ANIMS}人を超えたぶん品質 −${E.dilution(ep).toFixed(1)}）` : ""}／品質見込み ${q}`);
+        row("原画マン", `${live.length}人${E.dilution(ep) > 0 ? `（${E.BASE_ANIMS}人を超えたぶん品質 −${E.dilution(ep).toFixed(1)}）` : ""}／品質見込み ${q}（局の基準 ${E.LINE}）${q < E.LINE ? "　※このままだと納品拒否" : ""}`, q < E.LINE ? "bad" : "");
         rows.push(`<td colspan="7" class="blank"></td>`);
         rows.push(`<td class="hd">No.</td><td class="hd">原画マン</td><td class="hd n">実力</td><td class="hd n">持ち</td><td class="hd n">ラフ原</td><td class="hd n">原画</td><td class="hd">状態</td>`);
         view.forEach((a, i) => {
@@ -2064,6 +2122,7 @@ if (typeof module !== "undefined") module.exports = Engine;
             <dt>進行が抱え込んでいたトラブル</dt><dd>${s.lateReports}件（ぎりぎりで報告）／ ヘルプで見つけた ${s.hiddenFound}件</dd>
             <dt>ヘルプに入った回数</dt><dd>${s.helpCount}回</dd>
             <dt>途中で足した原画マン</dt><dd>${s.added}人</dd>
+            <dt>納品拒否</dt><dd>${s.rejects}回</dd>
             <dt>グロスに出した話数</dt><dd>${s.eps.filter((e) => E.isGross(e.plan)).length}話</dd>
           </dl></section>
         <section class="sheet"><h3>結果をシェア</h3>
@@ -2089,6 +2148,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (rep.kind === "dir") return who(s.staff.dir.seed, "監督", s.staff.dir.name);
     if (rep.kind === "gross") { const c = E.grossBy(s, rep.id); return who(7000 + rep.id, "協力会社", c.name); }
     if (rep.kind === "post") return who(5150, "仕上げ担当", "海外窓口");
+    if (rep.kind === "kyoku") return who(s.staff.kp.seed, "製作委員会・局プロデューサー", s.staff.kp.name);
     return who(424242, "制作デスク", "あなた（気づいたこと）");
   }
   function renderModal() {
@@ -2114,7 +2174,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       body = `<h2>第${pa.n}話が間に合わない</h2>
         <p>放送日なのに、第${pa.n}話は撮影まで終わったカットが${pct}%しかありません。</p>
         <div class="choices">
-          <button class="btn" data-act="airChoice" data-v="air">このまま放送する（${pct < 85 ? "作画崩壊は確実" : "品質が落ちる"}）</button>
+          <button class="btn" data-act="airChoice" data-v="air" ${E.canAirAsIs(s) ? "" : "disabled"}>${E.canAirAsIs(s) ? `このまま放送する（${pct < 85 ? "作画崩壊は確実" : "品質が落ちる"}・出来 ${Math.round(E.airAsIsQ(s))}）` : `このまま放送する（局が受け取らない：${E.epBy(s, pa.n).rejectPending ? "納品拒否中" : `出来 ${Math.round(E.airAsIsQ(s))}／基準${E.LINE}`}）`}</button>
           <button class="btn" data-act="airChoice" data-v="recap" ${s.recaps >= 2 ? "disabled" : ""}>総集編を挟む（残り${2 - s.recaps}回）</button>
           <button class="btn" data-act="airChoice" data-v="delay">万策尽きた。放送を2週延期</button>
         </div>`;
@@ -2140,6 +2200,7 @@ if (typeof module !== "undefined") module.exports = Engine;
           <li>トラブルはシリーズの後半ほど増えます。</li>
           <li><b>ホワイトボード</b>はグランドスケジュール。着手前の話数は組み替えたり、グロスに切り替えたりできます。<b>電話</b>は協力会社（グロス）です。</li>
           <li>放送に間に合わない話数が出ると、進行が報告してきます。原画中なら<b>24時間動仕・12時間動仕・2原動仕</b>（下ほど速く上がるが、カットの仕上がりが悪くなる）、撮影に入ってからなら<b>撮影スケジュールの短縮</b>（品質が大きく落ちる）で巻けます。進行表からも指示できます。</li>
+          <li>局・製作委員会の<b>納品基準は品質${E.LINE}</b>。完パケの品質がこれを下回ると<b>納品拒否</b>され、リテイクになります。基準を下回る話数は、放送日に「このまま放送」もできません（総集編か延期）。</li>
           <li>行動は週3回。最後に「今週を締める」。放送日までに撮影が終わらないと、作画崩壊か総集編です。</li>
         </ul>
         <div class="choices"><button class="btn primary" data-act="closeModal">閉じる</button></div>`;
@@ -2218,7 +2279,7 @@ if (typeof module !== "undefined") module.exports = Engine;
   function clearSave() { try { localStorage.removeItem("animep.save"); } catch (e) { /* storage unavailable */ } }
   function start(hotData) {
     const saved = hotData && hotData.s ? hotData.s : store.get("animep.save");
-    if (saved && saved.v === 5 && saved.phase) s = saved;
+    if (saved && saved.v === 6 && saved.phase) s = saved;
     if (hotData && hotData.panel) panel = hotData.panel;
     render();
     if (s && s.phase === "prod") { if (s.pendingAir) showModal({ kind: "air" }); else if (s.event) showModal({ kind: "event" }); }
