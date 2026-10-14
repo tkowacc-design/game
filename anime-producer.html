@@ -22,9 +22,9 @@
     --marker: #ffe14a;      /* the one main action, "now", the selection */
     --marker-d: #b89e1e;
     --red: #c8323a;  --red-d: #e5484d;  --red-l: #ff9a9d;
-    --green: #1a8a57; --green-d: #1f9d63; --green-l: #8fe0b5;
+    --green: #167a4d; --green-d: #1f9d63; --green-l: #8fe0b5;
     --amber: #e0b400;
-    --teal: #2ba3a3;
+    --teal: #1f7f7f;
     --pink: #ff5fa2;
     --gross: #8a93ab;
     --font-pixel: "DotGothic16", "IPAGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
@@ -302,13 +302,13 @@
   .xls-who { font-size: 12px; opacity: .95; }
   .xls-x { margin-left: auto; width: 44px; height: 44px; background: transparent; border: 0; color: #fff; font-size: 22px; line-height: 1; }
   .xls-fx { display: flex; gap: 10px; align-items: center; padding: 6px 16px; border-bottom: 1px solid #d5dbe5; font-size: 12px; font-family: ui-monospace, "IPAGothic", monospace; color: #33394a; }
-  .xls-fx .fxl { font-style: italic; color: #8a93ab; border-right: 1px solid #d5dbe5; padding-right: 10px; }
+  .xls-fx .fxl { font-style: italic; color: #5f6879; border-right: 1px solid #d5dbe5; padding-right: 10px; }
   .xls-fx b { color: #a3262b; }
   .xls-grid { overflow: auto; }
   .xls-grid table { border-collapse: collapse; font-size: 12.5px; min-width: 100%; }
   .xls-grid th, .xls-grid td { border: 1px solid #e1e5ec; padding: 3px 8px; white-space: nowrap; height: 26px; }
   .xls-grid thead th { background: #e9f3ee; color: #1f6b45; font-weight: 700; text-align: left; position: sticky; top: 0; z-index: 1; }
-  .xls-grid th.rn { background: #f3f5f8; color: #8a93ab; font-weight: 400; font-size: 11px; text-align: right; width: 2.4em; }
+  .xls-grid th.rn { background: #f3f5f8; color: #5f6879; font-weight: 400; font-size: 11px; text-align: right; width: 2.4em; }
   .xls-grid td.n { text-align: right; font-variant-numeric: tabular-nums; }
   .xls-grid td.db { min-width: 150px; }
   .xls-grid .dbar { display: flex; align-items: center; gap: 8px; }
@@ -366,6 +366,11 @@
     .xls-post { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .bars, .bars-x { gap: 4px; }
     .bars button span { font-size: 10px; }
+    .btn-sys, .sec-h .btn-sys, .seg button, .row, .xls-tabs button { min-height: 44px; }
+    .field select { height: 44px; }
+    .tl-row, .tl-track, .step { height: 44px; }
+    .tl-track .plan, .tl-track .act2, .tl-track .fc { top: 14px; }
+    .tl-track .air { top: 11px; }
   }
   @media (prefers-reduced-motion: no-preference) {
     .flashin { animation: flashin .25s ease-out; }
@@ -2066,7 +2071,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     body += `<div class="tiles">${tile("放送済み", `${s.aired}/12`)}${tile("評判", s.aired ? Math.round(s.R) : "—")}${tile("今週の行動", `${s.ap}/3`)}</div>`;
     body += mutHtml(m, "あなたの見立て（全体）");
     body += `<section class="psec"><h3>処理能力と必要なペース（週あたり）</h3>${capHtml(true)}</section>`;
-    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ faceSeed: s.staff.dir.seed, t: esc(s.staff.dir.name), sub: "監督", attrs: selAttrs("dir", "") })}${rel({ ico: "部", c: "var(--teal)", t: "動画・仕上げ・撮影", sub: "部署", attrs: selAttrs("post", "") })}${rel({ ico: "TV", c: "var(--pink)", t: "放送・SNS", sub: `次の放送 W${s.nextAir}`, attrs: selAttrs("tv", "") })}</div></section>`;
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ faceSeed: s.staff.dir.seed, t: esc(s.staff.dir.name), sub: "監督", attrs: selAttrs("dir", "") })}${rel({ ico: "部", c: "var(--teal)", t: "動画・仕上げ・撮影", sub: "部署", attrs: selAttrs("post", "") })}${rel({ ico: "TV", c: "#b8336f", t: "放送・SNS", sub: `次の放送 W${s.nextAir}`, attrs: selAttrs("tv", "") })}</div></section>`;
     const foot = `<div class="pane-f"><span class="lbl">スタジオ にできること（現場の方針・行動なし）</span>
       ${seg("発注先", "douga", [["inhouse", "社内のみ"], ["overseas", "海外も可"]])}${seg("進め方", "mode", [["stock", "作り置き優先"], ["quality", "品質優先"]])}${seg("残業", "ot", [[false, "させない"], [true, "させる"]])}
       <p class="note" style="color:var(--ink-soft)">品質優先は丁寧なぶん遅い。残業は2割速いが、人が倒れ、進行が飛びやすくなる。</p></div>`;
@@ -2404,6 +2409,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const pick = opts.find((o) => o.m === modal.pick) || opts[0];
     const W0 = s.week, W1 = Math.max(air, ...opts.map((o) => o.fc)), cols = W1 - W0 + 1;
     const toneC = { good: "var(--green)", ok: "var(--teal)", worry: "var(--amber)", bad: "var(--red)", mute: "var(--gross)" };
+    const toneT = { good: "var(--green)", ok: "var(--teal)", worry: "#8a6d00", bad: "var(--red)", mute: "var(--ink-soft)" };
     let body = oh("話数", `第${ep.n}話を巻く`, `${esc(whoShort(ep.plan.team))} ・ いま${esc(E.STAGE_LABEL[stageV(ep)])} ・ 放送 W${air}`, fc0 > air ? tagHtml(`遅れ ${fc0 - air}週`, "bad") : "", null, "", "dlgT");
     body += `<div class="tiles">${tile("完パケ予測", `W${fc0} → W${pick.fc}`, pick.fc > air ? "bad" : "good")}${tile("放送", `W${air}`)}</div>`;
     body += mutHtml(pick.j);
@@ -2411,7 +2417,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       <div role="radiogroup" aria-label="巻き方" style="display:flex;flex-direction:column;gap:4px">${opts.map((o) => `<button class="opt ${o === pick ? "on" : ""}" role="radio" aria-checked="${o === pick}" data-act="rushPick" data-v="${o.m}">
         <span><span class="t">${esc(o.label)}</span><span class="s">${esc(o.desc)}</span></span>
         <span class="trk"><span class="airc" style="left:${((air - W0) / cols) * 100}%;width:${100 / cols}%"></span><i style="width:${(Math.max(1, o.fc - W0 + 1) / cols) * 100}%;background:${toneC[o.j.tone]}"></i></span>
-        <span class="word tone-${o.j.tone}" style="color:${toneC[o.j.tone]}">${esc(o.j.short)}</span></button>`).join("")}</div>
+        <span class="word tone-${o.j.tone}" style="color:${toneT[o.j.tone]}">${esc(o.j.short)}</span></button>`).join("")}</div>
       <p class="verdict ${pick.fc > air || pick.q < E.LINE ? "bad" : "good"}">${pick.fc > air ? "放送に間に合わない。放送日に「総集編」か「延期」を選ぶことになる。" : pick.q < E.LINE ? "間に合うが、局の基準を割りそう。納品拒否されたらリテイクになる。" : `W${pick.fc}に完パケ。放送には間に合う。`}</p></section>`;
     const foot = `<div class="pane-f"><span class="lbl">第${ep.n}話 にできること</span><div class="acts">${act({ label: pick.m === "stay" ? "このまま粘る" : `「${pick.label}」で指示する`, cost: "行動なし", attrs: `data-act="rushGo" data-v="${ep.n}" data-k="${pick.m}"`, pri: true })}${act({ label: "やめる", attrs: `data-act="closeModal"` })}</div></div>`;
     return dlg(body, foot);

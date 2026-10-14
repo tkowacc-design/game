@@ -1,0 +1,12 @@
+{
+  "name": "animep-qa",
+  "private": true,
+  "description": "深夜アニメP の画面テスト（ランダム操作・ルート確認）",
+  "scripts": {
+    "fuzz": "node fuzz.js",
+    "fuzz:mobile": "node fuzz.js --width 390 --height 844"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.0"
+  }
+}
