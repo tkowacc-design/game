@@ -104,6 +104,7 @@
   .hot.on { box-shadow: inset 0 0 0 2px var(--marker); background: rgba(255, 225, 74, .08); }
   .ochip { position: absolute; font-family: var(--font-pixel); font-size: 11px; line-height: 18px; padding: 0 6px 0 8px; border-radius: 2px; white-space: nowrap; background: var(--night); color: var(--on); box-shadow: inset 3px 0 0 var(--c, var(--on-soft)); pointer-events: none; }
   .ochip.on { background: var(--marker); color: var(--night); box-shadow: none; }
+  .office-list { display: none; }
 
   /* ---------- the 12 episodes ---------- */
   .eps { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
@@ -367,6 +368,8 @@
     .bars, .bars-x { gap: 4px; }
     .bars button span { font-size: 10px; }
     .btn-sys, .sec-h .btn-sys, .seg button, .row, .xls-tabs button { min-height: 44px; }
+    .office-list { display: grid; }
+    .office .hot { display: none; }
     .field select { height: 44px; }
     .tl-row, .tl-track, .step { height: 44px; }
     .tl-track .plan, .tl-track .act2, .tl-track .fc { top: 14px; }
@@ -1999,6 +2002,18 @@ if (typeof module !== "undefined") module.exports = Engine;
       ${hotspots().map((h) => `<button class="hot ${h.on ? "on" : ""}" style="left:${pct(h.x, OW)};top:${pct(h.y, OH)};width:${pct(h.w, OW)};height:${pct(h.h, OH)}" ${h.attrs} aria-label="${esc(h.label)}" title="${esc(h.label)}"></button>`).join("")}</div>`;
   }
 
+  // the same people as the office map, as list items (phones: the map's spots are too small to tap)
+  function officeList() {
+    const items = [li({ c: "var(--on)", t: "あなた", sub: "スタジオ・現場の方針", on: isSel("studio", ""), attrs: selAttrs("studio", "") })];
+    s.teams.forEach((tm) => { const sh = E.shinkoBy(s, tm.shinko), ep = activeEpOf(tm.key); items.push(li({ c: TEAM_COL[tm.key], t: `${tm.label} ${esc(sh.name)}`, sub: sh.gone ? "連絡が取れない" : ep ? `第${ep.n}話 ${esc(E.STAGE_LABEL[stageV(ep)])}` : "手が空いている", on: isSel("shinko", sh.id) || isSel("team", tm.key), attrs: selAttrs("shinko", sh.id) })); });
+    items.push(li({ c: "var(--red-d)", t: `監督 ${esc(s.staff.dir.name)}`, sub: "コンテ・機嫌", on: isSel("dir", ""), attrs: selAttrs("dir", "") }));
+    items.push(li({ c: "var(--teal)", t: "動画・仕上げ・撮影", sub: "部署", on: isSel("post", ""), attrs: selAttrs("post", "") }));
+    s.gross.forEach((c) => items.push(li({ c: "var(--gross)", t: esc(c.name), sub: "協力会社", on: isSel("gross", c.id), attrs: selAttrs("gross", c.id) })));
+    items.push(li({ c: "var(--gross)", t: "作画部屋", sub: `原画マン ${activeAnims()}人 ・ 一覧を開く`, attrs: `data-act="xls" data-v="all"` }));
+    items.push(li({ c: "var(--pink)", t: "放送・SNS", sub: `次の放送 W${s.nextAir}`, on: isSel("tv", ""), attrs: selAttrs("tv", "") }));
+    return items.join("");
+  }
+
   // ---------- the 12 episodes ----------
   function epsHtml() {
     return `<div class="eps">${s.eps.map((ep) => {
@@ -2101,7 +2116,7 @@ if (typeof module !== "undefined") module.exports = Engine;
         if (E.canAddAnim(s, ep)) [3, 1].forEach((k) => { const x = previewAdd(ep, k); acts.push(act({ label: `原画マンを足す ＋${k}`, sub: `予測 W${x.fc} ・ 作画：${judge({ q: x.q, fc: x.fc, air }).short}`, cost: "行動なし", attrs: `data-act="addAnim" data-v="${ep.n}" data-k="${k}"`, pri: !late && k === 3 && !acts.length })); });
         if (s.job && camp && E.canAddAnim(s, ep)) for (const c of camp.contacts) {
           const used = s.job.used.includes(c.id);
-          acts.push(act({ label: `${c.name}を呼ぶ`, sub: used ? "この現場ではもう呼んだ" : `人脈 ・ 実力${c.skill} ・ 1現場に1回`, cost: "行動1", attrs: `data-act="callContact" data-v="${ep.n}" data-k="${esc(c.id)}"`, disabled: !E.canCallContact(s, ep.n, c) }));
+          acts.push(act({ label: `${c.name}を呼ぶ`, sub: used ? "この現場ではもう呼んだ" : s.ap < 1 ? "今週の行動が足りない" : `人脈 ・ 実力${c.skill} ・ 1現場に1回`, cost: "行動1", attrs: `data-act="callContact" data-v="${ep.n}" data-k="${esc(c.id)}"`, disabled: !E.canCallContact(s, ep.n, c) }));
         }
         if (ctx === "xls") { const sh = E.shinkoOfTeam(s, p.team); if (sh) acts.push(sh.gone ? actFor("hireShinko", sh.id) : actFor("help", sh.id, { label: `${sh.name}のヘルプに入る`, sub: "現場の本当の状況が分かる" })); }
         else acts.push(act({ label: "進行表を開く", sub: "原画マンごとの進み", attrs: `data-act="xls" data-v="${p.team}" data-n="${ep.n}"` }));
@@ -2163,6 +2178,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     let body = oh("スタジオ", T.studio, `あなたの会社 ・ 社内${s.teams.length}班 ・「${esc(s.src.title)}」`, "", YOU);
     body += `<div class="tiles">${tile("放送済み", `${s.aired}/12`)}${tile("評判", s.aired ? Math.round(s.R) : "—")}${tile("今週の行動", `${s.ap}/3`)}</div>`;
     body += mutHtml(m, "あなたの見立て（全体）");
+    if (s.job && s.job.mines.length) body += `<section class="psec"><h3>引き継いだ問題（第${s.job.joinWeek}週）</h3><div class="rows">${s.job.mines.map((m) => `<div class="row"><span>${esc(m)}</span><span class="v mute">引き継ぎ</span></div>`).join("")}</div></section>`;
     body += `<section class="psec"><h3>処理能力と必要なペース（週あたり）</h3>${capHtml(true)}</section>`;
     body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ faceSeed: s.staff.dir.seed, t: esc(s.staff.dir.name), sub: "監督", attrs: selAttrs("dir", "") })}${rel({ ico: "部", c: "var(--teal)", t: "動画・仕上げ・撮影", sub: "部署", attrs: selAttrs("post", "") })}${rel({ ico: "TV", c: "#b8336f", t: "放送・SNS", sub: `次の放送 W${s.nextAir}`, attrs: selAttrs("tv", "") })}</div></section>`;
     const foot = `<div class="pane-f"><span class="lbl">スタジオ にできること（現場の方針・行動なし）</span>
@@ -2286,7 +2302,13 @@ if (typeof module !== "undefined") module.exports = Engine;
   const saveCamp = () => { if (camp) store.set("animep.camp", camp); };
   function makeOffers() {
     const ch = CHAPTERS[camp.chapter];
-    camp.offers = ch ? ch.offers.map((o, i) => { const seed = (Math.random() * 2 ** 31) | 0; return { ...o, i, seed, sum: E.jobSummary(E.newJob({ ...o, seed, chapter: camp.chapter })) }; }) : [];
+    const seen = new Set(camp.history.map((h) => h.title));
+    camp.offers = ch ? ch.offers.map((o, i) => {
+      let seed, sum;
+      for (let t = 0; t < 12; t++) { seed = (Math.random() * 2 ** 31) | 0; sum = E.jobSummary(E.newJob({ ...o, seed, chapter: camp.chapter })); if (!seen.has(sum.title)) break; }
+      seen.add(sum.title);
+      return { ...o, i, seed, sum };
+    }) : [];
   }
   function newCamp() { camp = { v: 1, active: true, chapter: 0, rep: 0, contacts: [], history: [], offers: [], seen: {} }; makeOffers(); saveCamp(); }
   // show the story that belongs here and has not been seen yet, then the job board
@@ -2298,6 +2320,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       camp.seen[k] = true; lines.push(...STORY[k]);
       if (k === "before2" && !camp.contacts.some((c) => c.id === ASAHINA.id)) camp.contacts.unshift({ ...ASAHINA });
     }
+    if (lines.length) camp.story = { lines, i: 0 };
     saveCamp(); render(); window.scrollTo(0, 0);
     if (lines.length) showModal({ kind: "story", lines, i: 0 });
   }
@@ -2402,7 +2425,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       ${T.shinkoSkill.map((r, i) => { const v = (r[0] + r[1]) / 2; return `<div class="row"><span>${"ABCDEF"[i]}班 進行の段取り${v < 45 ? "（新人）" : ""}</span><span class="v ${v < 45 ? "bad" : ""}">${stars(v)}</span></div>`; }).join("")}</div></section>`;
     const foot = paneFoot(T.studio, act({ label: "このスタジオで始める", sub: "グランドスケジュールを引くところから", attrs: `data-act="tier" data-v="${T.key}"`, pri: true, cost: "→" }), "", true);
     const campRow = `<button class="st-row ${pickTier === "camp" ? "on" : ""}" style="--c:var(--pink)" data-act="pickTier" data-v="camp" aria-pressed="${pickTier === "camp"}">
-        <i></i><span><span style="display:block;font-weight:700">流しのデスク</span><span style="display:block;font-size:12px;color:var(--on-soft)">物語 ・ 現場を渡り歩く</span></span>
+        <i></i><span><span style="display:block;font-weight:700">流しのデスク</span><span style="display:block;font-size:12px;color:var(--on-soft)">${camp ? `${chapterOf(Math.min(camp.chapter, CHAPTERS.length - 1)).name}まで ・ 評判 ${camp.rep} ・ 人脈 ${camp.contacts.length}人` : "物語 ・ 現場を渡り歩く"}</span></span>
         <span class="tag dark" style="justify-self:start">試作版</span><span class="big r hide-n">${camp ? `${Math.min(camp.chapter + 1, CHAPTERS.length)}<small>章</small>` : `<small>未開始</small>`}</span><span class="hide-n"></span><span class="hide-n" style="font-size:13px">${camp ? `評判 ${camp.rep}` : "はじめから"}</span><span class="hide-n"></span><span style="color:var(--on-soft)" aria-hidden="true">›</span></button>`;
     app.innerHTML = hdr("制作デスク篇", `<div class="wk"><span class="wk-n mute">放送前</span><span class="wk-t">スタジオを選ぶと、グランドスケジュールに進みます</span></div>`, `<button class="btn-sys" data-act="howto">遊び方</button>`)
       + `<div class="main"><div class="col">
@@ -2434,7 +2457,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const list = concerns();
     app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">第${s.week}週</span><span class="wk-t">${phaseLabel()}</span>${apHtml()}<button class="btn-main" data-act="endWeek">今週を締める</button></div>`, `<button class="btn-sys" data-act="howto">遊び方</button><button class="btn-sys" data-act="quit">やめる</button>`)
       + `<div class="main"><div class="col">
-          <section class="sec"><div class="sec-h"><h2>スタジオ　人・班・協力会社</h2></div>${officeHtml()}</section>
+          <section class="sec"><div class="sec-h"><h2>スタジオ　人・班・協力会社</h2></div>${officeHtml()}<div class="office-list grid2">${officeList()}</div></section>
           <section class="sec"><div class="sec-h"><h2>話数 12 ・ 放送済み ${s.aired}</h2><button class="btn-sys" data-act="ganttBig">グランドスケジュール</button></div>${epsHtml()}</section>
           <section class="sec"><div class="sec-h"><h2>気になること${list.length ? ` ${list.length}` : ""}</h2></div><div class="grid2">${concernsHtml(list)}</div></section>
         </div>${paneFor()}</div>`;
@@ -2585,7 +2608,8 @@ if (typeof module !== "undefined") module.exports = Engine;
       const a = part.match(/^行動−(\d)/);
       if (a) { cost = `行動${a[1]}`; const tail = part.slice(a[0].length).trim(); if (tail) rest.push(tail); } else rest.push(part);
     }
-    const sub = rest.join(" ・ ").replace(/品質\s*(\d+)\s*→\s*(\d+)/g, (_, a, b) => `作画：${qWord(+b)}`);
+    let sub = rest.join(" ・ ").replace(/品質\s*(\d+)\s*→\s*(\d+)/g, (_, a, b) => `作画：${qWord(+b)}`);
+    if (disabled) { const need = +(cost.match(/^行動(\d)/) || [0, 0])[1]; sub = (need > s.ap ? "今週の行動が足りない" : "いまは選べない") + (sub ? ` ・ ${sub}` : ""); }
     return act({ label: main, sub, cost, attrs, pri, disabled });
   }
   const dlg = (body, foot, label = "") => `<div class="modal-bg"><div class="pane dlg flashin" role="dialog" aria-modal="true" ${label ? `aria-label="${esc(label)}"` : `aria-labelledby="dlgT"`}><div class="pane-b">${body}</div>${foot}</div></div>`;
@@ -2700,7 +2724,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const res = step();
     if (res == null) return;
     if (res === "air") { save(); render(); return showModal({ kind: "air" }); }
-    if (s.aired > before) { save(); render(); return showModal({ kind: "aired", next: res }); }
+    if (s.aired > before) { s.uiAired = res; save(); render(); return showModal({ kind: "aired", next: res }); }
     afterTurn(res);
   }
   // after an action, a newly surfaced trouble takes over the screen
@@ -2722,15 +2746,18 @@ if (typeof module !== "undefined") module.exports = Engine;
         break;
       }
       case "pickTier": pickTier = v; render(); if (narrow()) app.querySelector(".pane")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); break;
-      case "tier": if (camp) { camp.active = false; saveCamp(); } s = E.newGame(v, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break;
+      case "tier": if (camp) { camp.active = false; saveCamp(); } clearSave(); s = E.newGame(v, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break;
       case "title": if (camp) { camp.active = false; saveCamp(); } s = null; sel = null; closeModal(); clearSave(); render(); break;
       case "campNew": newCamp(); enterBoard(["before1"]); break;
       case "campCont": camp.active = true; enterBoard([`before${camp.chapter + 1}`]); break;
       case "takeJob": { const o = camp.offers[+v]; if (!o) break; s = E.newJob({ ...o, chapter: camp.chapter }); sel = { k: "studio" }; save(); render(); window.scrollTo(0, 0); if (s.event) showModal({ kind: "event" }); break; }
       case "nextJob": nextJob(); break;
       case "callContact": { const c = camp && camp.contacts.find((x) => x.id === b.dataset.k); if (c) E.callContact(s, +v, c); rerender(); break; }
-      case "storyNext": if (modal.i < modal.lines.length - 1) { modal.i++; renderModal(); } else closeModal(); break;
-      case "again": { const t = s.tier; s = E.newGame(t, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break; }
+      case "storyNext":
+        if (modal.i < modal.lines.length - 1) { modal.i++; if (camp && camp.story) { camp.story.i = modal.i; saveCamp(); } renderModal(); }
+        else { if (camp) { delete camp.story; saveCamp(); } closeModal(); }
+        break;
+      case "again": { const t = s.tier; clearSave(); s = E.newGame(t, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break; }
       case "autoPlan": E.autoPlan(s); render(); break;
       case "planStart": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { start: ep.plan.start + +b.dataset.d }); rerender(); break; }
       case "planDur": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { dur: ep.plan.dur + +b.dataset.d }); rerender(); break; }
@@ -2748,7 +2775,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       case "do": { const arg = b.dataset.arg != null ? +b.dataset.arg : undefined; const keep = modal && modal.kind === "xls" ? { ...xls } : null; E.doAction(s, v, arg); if (s.event) { modal = null; xls = null; } else if (keep) xls = keep; rerender(); break; }
       case "endWeek": closeModal(); runTurn(() => E.endWeek(s)); break;
       case "airChoice": runTurn(() => E.resolveAir(s, v)); break;
-      case "airedOk": { const next = modal.next; closeModal(); afterTurn(next); break; }
+      case "airedOk": { const next = modal.next; delete s.uiAired; closeModal(); afterTurn(next); break; }
       case "evChoice": { if (E.resolveEvent(s, +v) != null) { closeModal(); save(); render(); if (s.event) showModal({ kind: "event" }); } break; }
       case "quit": showModal({ kind: "quit" }); break;
       case "quitYes": if (s && s.job && camp) { enterBoard([]); break; } closeModal(); s = null; sel = null; clearSave(); render(); window.scrollTo(0, 0); break;
@@ -2768,7 +2795,7 @@ if (typeof module !== "undefined") module.exports = Engine;
   });
 
   // ---------- save / resume ----------
-  function save() { if (s && (s.phase === "prod" || (s.phase === "end" && s.job))) store.set("animep.save", s); }
+  function save() { if (s && (s.phase === "prod" || s.phase === "end")) store.set("animep.save", s); }
   function clearSave() { try { localStorage.removeItem("animep.save"); } catch (e) { /* storage unavailable */ } }
   function start(hotData) {
     camp = store.get("animep.camp");
@@ -2777,7 +2804,9 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (saved && saved.v === 6 && saved.phase) s = saved;
     if (hotData && hotData.sel) sel = hotData.sel;
     render();
-    if (s && s.phase === "prod") { if (s.pendingAir) showModal({ kind: "air" }); else if (s.event) showModal({ kind: "event" }); }
+    if (s && s.uiAired != null) showModal({ kind: "aired", next: s.uiAired });
+    else if (s && s.phase === "prod") { if (s.pendingAir) showModal({ kind: "air" }); else if (s.event) showModal({ kind: "event" }); }
+    else if (!s && camp && camp.active && camp.story) showModal({ kind: "story", lines: camp.story.lines, i: camp.story.i });
   }
   window.claude?.hot?.snapshot?.(() => ({ s, sel }));
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
