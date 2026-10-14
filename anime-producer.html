@@ -1,0 +1,2511 @@
+<title>深夜アニメP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap">
+<style>
+  /* Layout: every screen is "collections on the left, the selected object's detail on the right".
+     The header carries the current week and its one main action; a detail always ends with what you can do to that object. */
+  :root {
+    --night: #12151f;       /* page ground */
+    --desk: #1c2130;        /* collection items */
+    --desk-2: #262c40;      /* selected item, office floor */
+    --line: #2a3146;
+    --line-2: #323a52;
+    --on: #e8eaf1;
+    --on-soft: #a1a9be;
+    --paper: #f4f2ec;       /* the detail of the selected object */
+    --card: #ffffff;
+    --rule: #dcd8cc;
+    --ink: #1a1c24;
+    --ink-soft: #5a6072;
+    --chip: #e3dfd3;
+    --marker: #ffe14a;      /* the one main action, "now", the selection */
+    --marker-d: #b89e1e;
+    --red: #c8323a;  --red-d: #e5484d;  --red-l: #ff9a9d;
+    --green: #167a4d; --green-d: #1f9d63; --green-l: #8fe0b5;
+    --amber: #e0b400;
+    --teal: #1f7f7f;
+    --pink: #ff5fa2;
+    --gross: #8a93ab;
+    --font-pixel: "DotGothic16", "IPAGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
+    --font-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "IPAPGothic", sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--night); color: var(--on); font-family: var(--font-body); font-size: 14px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
+  #app { max-width: 1440px; margin: 0 auto; }
+  h1, h2, h3, .pix { font-family: var(--font-pixel); font-weight: 400; letter-spacing: .04em; margin: 0; }
+  button, select { font: inherit; color: inherit; cursor: pointer; }
+  table { color: inherit; font-size: inherit; }
+  button:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+  button:disabled { cursor: not-allowed; }
+  .num { font-variant-numeric: tabular-nums; }
+  canvas.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  .face { width: 40px; height: 40px; border-radius: 3px; flex: none; }
+  .face.sm { width: 32px; height: 32px; }
+
+  /* ---------- header: brand | the week and its action | system ---------- */
+  .hdr { min-height: 64px; box-sizing: border-box; padding: 8px 24px; display: flex; align-items: center; gap: 24px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .brand { width: 264px; display: grid; line-height: 1.3; }
+  .brand b { font-family: var(--font-pixel); font-weight: 400; font-size: 18px; }
+  .brand span { font-size: 12px; color: var(--on-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wk { display: flex; align-items: center; gap: 16px; padding-left: 24px; border-left: 1px solid var(--line); min-height: 44px; flex-wrap: wrap; }
+  .wk-n { font-family: var(--font-pixel); font-size: 28px; line-height: 1; color: var(--marker); }
+  .wk-n.mute { color: var(--on-soft); font-size: 20px; }
+  .wk-t b { font-family: var(--font-pixel); font-weight: 400; color: var(--marker); }
+  .ap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--on-soft); }
+  .ap i { width: 16px; height: 10px; border-radius: 2px; box-shadow: inset 0 0 0 1.5px #4a5370; }
+  .ap i.on { background: var(--marker); box-shadow: none; }
+  .hdr-r { margin-left: auto; display: flex; gap: 8px; }
+  .btn-main { height: 44px; padding: 0 20px; font-family: var(--font-pixel); font-size: 16px; background: var(--marker); color: var(--night); border: 0; border-radius: 4px; box-shadow: 0 3px 0 var(--marker-d); white-space: nowrap; }
+  .btn-main:hover:not(:disabled) { background: #ffe97a; }
+  .btn-main:disabled { opacity: .45; box-shadow: none; }
+  .btn-sys { height: 40px; padding: 0 14px; background: transparent; color: var(--on); border: 1px solid var(--line-2); border-radius: 4px; white-space: nowrap; }
+  .btn-sys:hover { border-color: var(--on-soft); }
+
+  /* ---------- body: collections | detail ---------- */
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 488px; gap: 24px; padding: 16px 24px 32px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .sec-h { display: flex; align-items: center; gap: 12px; min-height: 20px; }
+  .sec-h h2 { font-size: 13px; color: var(--on-soft); }
+  .sec-h .btn-sys { margin-left: auto; height: 36px; font-size: 13px; }
+  .note { font-size: 12px; color: var(--on-soft); margin: 0; }
+
+  /* collection item (the same row everywhere) */
+  .li { min-height: 52px; display: grid; grid-template-columns: 4px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; text-align: left; background: var(--desk); color: var(--on); border: 0; border-radius: 4px; padding: 0 12px 0 0; overflow: hidden; }
+  .li:hover { background: #232940; }
+  .li.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  .li > i { align-self: stretch; background: var(--c, var(--gross)); }
+  .li .t { display: block; font-weight: 700; font-size: 13px; }
+  .li .s { display: block; font-size: 12px; color: var(--on-soft); }
+  .li .r { font-family: var(--font-pixel); font-size: 12px; }
+  .li .chev { color: var(--on-soft); }
+  .li.static { cursor: default; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+  /* tags (status) */
+  .tag { font-family: var(--font-pixel); font-size: 12px; padding: 0 8px; border-radius: 2px; white-space: nowrap; background: var(--chip); color: var(--ink); }
+  .tag.bad { background: var(--red); color: #fff; }
+  .tag.warn { background: var(--marker); color: var(--ink); }
+  .tag.ok { background: #d6f2e4; color: #11633c; }
+  .tag.ink { background: var(--ink); color: var(--paper); }
+  .tag.pink { background: var(--pink); color: var(--night); }
+  .tag.dark.bad { background: #3a1c22; color: var(--red-l); }
+  .tag.dark.ok { background: #1c3a2c; color: var(--green-l); }
+  .tag.dark { background: var(--desk-2); color: var(--on-soft); }
+  .tag.dark.warn { background: #3a3418; color: var(--marker); }
+
+  /* ---------- the office (map of people) ---------- */
+  .office { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: var(--desk-2); box-shadow: 0 0 0 1px var(--line-2); }
+  .office canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .hot { position: absolute; background: transparent; border: 0; padding: 0; border-radius: 3px; }
+  .hot:hover, .hot:focus-visible { box-shadow: inset 0 0 0 2px rgba(232, 234, 241, .5); }
+  .hot.on { box-shadow: inset 0 0 0 2px var(--marker); background: rgba(255, 225, 74, .08); }
+  .ochip { position: absolute; font-family: var(--font-pixel); font-size: 11px; line-height: 18px; padding: 0 6px 0 8px; border-radius: 2px; white-space: nowrap; background: var(--night); color: var(--on); box-shadow: inset 3px 0 0 var(--c, var(--on-soft)); pointer-events: none; }
+  .ochip.on { background: var(--marker); color: var(--night); box-shadow: none; }
+
+  /* ---------- the 12 episodes ---------- */
+  .eps { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+  .epc { height: 64px; text-align: left; border: 0; border-radius: 4px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; color: var(--on); background: var(--desk); box-shadow: inset 0 3px 0 var(--c); min-width: 0; }
+  .epc.pre { background: #161a26; }
+  .epc.on { background: var(--desk-2); box-shadow: inset 0 3px 0 var(--c), 0 0 0 2px var(--marker); }
+  .epc .n { display: flex; justify-content: space-between; width: 100%; font-family: var(--font-pixel); font-size: 14px; }
+  .epc .n small { font-size: 11px; color: var(--on-soft); }
+  .epc .s { font-size: 11px; color: var(--on-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .epc .s.bad { color: var(--red-l); }
+  .epc .b { width: 100%; height: 4px; background: var(--line-2); border-radius: 2px; overflow: hidden; margin-top: auto; }
+  .epc .b i { display: block; height: 100%; background: var(--c); }
+
+  /* ---------- the detail of the selected object (paper) ---------- */
+  .pane { background: var(--paper); color: var(--ink); border-radius: 6px; display: flex; flex-direction: column; box-shadow: 0 0 0 2px var(--marker); min-width: 0; }
+  .pane-b { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 16px; }
+  .pane-f { margin-top: 16px; padding: 12px 16px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
+  .pane-f > .lbl { font-size: 11px; color: var(--ink-soft); }
+  .oh { display: flex; flex-direction: column; gap: 4px; }
+  .oh-top { display: flex; align-items: center; gap: 8px; }
+  .oh-top .tag:last-child { margin-left: auto; }
+  .typ { font-family: var(--font-pixel); font-size: 11px; background: var(--ink); color: var(--paper); padding: 0 6px; border-radius: 2px; }
+  .oh-name { display: flex; align-items: center; gap: 10px; }
+  .oh-name h2 { font-size: 24px; line-height: 1.3; }
+  .oh-sub { font-size: 12px; color: var(--ink-soft); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+  .tile { background: var(--card); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+  .tile .l { font-size: 11px; color: var(--ink-soft); }
+  .tile .v { font-family: var(--font-pixel); font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile.bad { box-shadow: inset 0 0 0 1.5px var(--red); }
+  .tile.bad .l, .tile.bad .v { color: var(--red); }
+  .tile.good { box-shadow: inset 0 0 0 1.5px var(--green); }
+  .tile.good .l, .tile.good .v { color: var(--green); }
+
+  /* your own read of the work: never a number */
+  .mut { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .mut-b { background: var(--card); border-radius: 4px; padding: 8px 12px; box-shadow: inset 4px 0 0 var(--tone, var(--gross)); }
+  .mut-b .l { font-size: 11px; color: var(--ink-soft); }
+  .mut-b .t { font-size: 15px; font-weight: 700; }
+  .tone-good { --tone: var(--green); } .tone-ok { --tone: var(--teal); } .tone-worry { --tone: var(--amber); } .tone-bad { --tone: var(--red); } .tone-mute { --tone: var(--gross); }
+  .word { font-size: 12px; font-weight: 700; padding-left: 8px; box-shadow: inset 3px 0 0 var(--tone); white-space: nowrap; }
+
+  .psec { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--rule); padding-top: 16px; }
+  .psec h3 { font-size: 14px; }
+  .psec p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+  .stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; font-size: 11px; text-align: center; color: var(--ink-soft); }
+  .stages span { display: flex; flex-direction: column; gap: 4px; }
+  .stages i { height: 8px; background: var(--rule); }
+  .stages .done i { background: var(--green); }
+  .stages .now { color: var(--ink); font-weight: 700; }
+  .stages .now i { background: var(--amber); }
+  .bar { height: 8px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--gross); }
+  .rows { display: flex; flex-direction: column; }
+  .row { min-height: 36px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; border-bottom: 1px dashed var(--rule); background: transparent; border-left: 0; border-right: 0; border-top: 0; padding: 0 2px; text-align: left; color: var(--ink); }
+  button.row:hover { background: rgba(26, 28, 36, .04); }
+  .row .v { font-family: var(--font-pixel); }
+  .row .v.bad { color: var(--red); }
+  .row .v.mute { color: var(--ink-soft); }
+  .rel { min-height: 48px; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; background: transparent; border: 0; border-radius: 4px; padding: 0 4px; color: var(--ink); }
+  .rel:hover { background: rgba(26, 28, 36, .05); }
+  .rel .ico { width: 32px; height: 32px; border-radius: 3px; display: grid; place-items: center; color: #fff; font-family: var(--font-pixel); font-size: 12px; background: var(--c, var(--ink-soft)); }
+  .rel .t { display: block; font-size: 13px; font-weight: 700; }
+  .rel .s { display: block; font-size: 11.5px; color: var(--ink-soft); }
+  .rel .chev { color: var(--ink-soft); }
+  .speech { background: var(--card); border-radius: 4px; padding: 10px 12px; font-size: 14px; margin: 0; color: var(--ink); }
+  .who { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .who .w { font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+  .who .w b { color: var(--ink); }
+
+  /* what you can do with this object */
+  .acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .acts.one { grid-template-columns: minmax(0, 1fr); }
+  .act { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 4px; text-align: left; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+  .act.pri { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .act:hover:not(:disabled) { box-shadow: 0 2px 0 var(--ink); }
+  .act:disabled { color: #8a8f9e; border: 1.5px dashed #c9c4b6; background: transparent; }
+  .act .m { display: grid; line-height: 1.35; }
+  .act .m small { font-size: 11.5px; opacity: .8; font-weight: 400; }
+  .act .m b { font-weight: 700; }
+  .cost { font-family: var(--font-pixel); font-size: 11px; padding: 0 6px; border-radius: 2px; white-space: nowrap; background: var(--chip); color: var(--ink); }
+  .cost.ap { background: var(--marker); color: var(--night); }
+  .act.pri .cost:not(.ap) { background: #3a4158; color: var(--on); }
+  .act:disabled .cost { opacity: .6; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; min-height: 36px; font-size: 12.5px; color: var(--ink); }
+  .seg button.on { background: var(--ink); color: var(--paper); }
+  .field { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; font-size: 13px; }
+  .field > span:first-child { color: var(--ink-soft); }
+  .field select { height: 40px; padding: 0 10px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--card); color: var(--ink); color-scheme: light; min-width: 0; }
+  .step { display: grid; grid-template-columns: 44px 1fr 44px; height: 40px; border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; background: var(--card); }
+  .step button { border: 0; background: var(--chip); color: var(--ink); font-size: 16px; }
+  .step button:disabled { opacity: .35; }
+  .step span { display: grid; place-items: center; font-family: var(--font-pixel); }
+  .cap { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px 10px; align-items: center; font-size: 12px; }
+  .cap .g { position: relative; height: 10px; background: var(--chip); border-radius: 2px; }
+  .cap .g i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
+  .cap .g b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+  .cap .n { font-family: var(--font-pixel); text-align: right; white-space: nowrap; }
+  .cap .n.bad { color: var(--red); }
+  .kvs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+  .kvbox { display: grid; gap: 2px; justify-items: center; font-size: 11px; color: var(--ink-soft); }
+  .kvbox > span[data-kv] { display: block; width: 100%; aspect-ratio: 1; background: var(--chip); border-radius: 2px; overflow: hidden; }
+  .kvbox canvas { width: 100%; height: 100%; }
+  .post { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 10px; background: var(--card); border-radius: 4px; overflow: hidden; font-size: 13px; }
+  .post > i { background: var(--rule); } .post.good > i { background: var(--green); } .post.bad > i { background: var(--red); }
+  .post > span { padding: 6px 10px 6px 0; }
+  .post small { display: block; font-size: 11px; color: var(--ink-soft); }
+  .log { font-size: 12.5px; display: grid; gap: 3px; max-height: 220px; overflow-y: auto; }
+  .log p { margin: 0; color: var(--ink); } .log .w { font-family: var(--font-pixel); color: var(--ink-soft); margin-right: 6px; }
+
+  /* ---------- schedule (timeline of episodes) ---------- */
+  .tl-head, .tl-row { display: grid; grid-template-columns: 40px 132px minmax(0, 1fr); gap: 0 12px; align-items: center; padding-left: 12px; }
+  .tl-head { font-size: 11px; color: var(--on-soft); padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .tl-weeks { display: grid; text-align: center; font-family: var(--font-pixel); }
+  .tl-weeks .now { background: var(--marker); color: var(--night); border-radius: 2px; }
+  .tl-row { height: 40px; text-align: left; color: var(--on); border: 0; border-radius: 4px; background: var(--desk); padding-right: 0; }
+  .tl-row:hover { background: #232940; }
+  .tl-row.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  .tl-row.bad { box-shadow: inset 3px 0 0 var(--red-d); }
+  .tl-row.on.bad { box-shadow: 0 0 0 2px var(--marker), inset 3px 0 0 var(--red-d); }
+  .tl-row .n { font-family: var(--font-pixel); font-size: 14px; }
+  .tl-row .w { display: flex; align-items: center; gap: 6px; font-size: 12.5px; white-space: nowrap; overflow: hidden; }
+  .tl-row .w i { width: 8px; height: 8px; border-radius: 1px; flex: none; background: var(--c); }
+  .tl-track { position: relative; height: 40px; }
+  .tl-track .grid { position: absolute; inset: 0; background-image: linear-gradient(90deg, var(--line) 1px, transparent 1px); }
+  .tl-track .nowc { position: absolute; top: 0; bottom: 0; background: rgba(255, 225, 74, .10); }
+  .tl-track .plan { position: absolute; top: 12px; height: 16px; border-radius: 3px; background: color-mix(in srgb, var(--c) 45%, transparent); }
+  .tl-track .act2 { position: absolute; top: 12px; height: 16px; border-radius: 3px 0 0 3px; background: var(--c); }
+  .tl-track .fc { position: absolute; top: 12px; height: 16px; background-image: repeating-linear-gradient(135deg, var(--c) 0 3px, transparent 3px 6px); }
+  .tl-track .air { position: absolute; top: 9px; text-align: center; font-family: var(--font-pixel); font-size: 13px; }
+  .tl-track .air.late { color: var(--red-l); }
+  .tl-track .air.done { color: var(--on-soft); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11px; color: var(--on-soft); padding-left: 12px; }
+
+  /* ---------- title ---------- */
+  .logo { padding: 24px 0 8px; display: flex; flex-direction: column; gap: 12px; }
+  .logo-t { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .logo h1 { font-size: 64px; line-height: 1; }
+  .stamp { font-family: var(--font-pixel); font-size: 15px; color: var(--pink); border: 2px solid var(--pink); padding: 2px 10px; border-radius: 3px; transform: rotate(-4deg); }
+  .logo p { margin: 0; max-width: 600px; font-size: 15px; color: #c9cedc; }
+  .logo p b { color: var(--on); }
+  .st-head, .st-row { display: grid; grid-template-columns: 4px minmax(0, 1fr) 96px 64px 64px 120px 56px 12px; gap: 16px; align-items: center; padding-right: 16px; }
+  .st-head { font-size: 11px; color: var(--on-soft); }
+  .st-head .r, .st-row .r { text-align: right; }
+  .st-row { min-height: 64px; text-align: left; color: var(--on); border: 0; border-radius: 4px; background: var(--desk); overflow: hidden; }
+  .st-row:hover { background: #232940; }
+  .st-row.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  .st-row > i { align-self: stretch; background: var(--c); }
+  .st-row .big { font-family: var(--font-pixel); font-size: 18px; }
+  .st-row .big small { font-size: 12px; }
+
+  /* ---------- result ---------- */
+  .chart { background: var(--desk); border-radius: 6px; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 8px; }
+  .bars { position: relative; height: 240px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; align-items: end; border-bottom: 1px solid #4a5370; }
+  .bars .line { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--on-soft); }
+  .bars .line span { position: absolute; right: 0; bottom: 2px; font-size: 11px; color: var(--on-soft); }
+  .bars button { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; height: 100%; background: transparent; border: 0; padding: 0; color: var(--on); }
+  .bars button span { font-family: var(--font-pixel); font-size: 13px; text-align: center; }
+  .bars button i { display: block; border-radius: 3px 3px 0 0; }
+  .bars-x { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; text-align: center; font-size: 11px; }
+  .bars-x b { display: block; font-family: var(--font-pixel); font-weight: 400; font-size: 13px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+  .stat { background: var(--desk); border-radius: 4px; padding: 10px 12px; }
+  .stat .l { font-size: 11px; color: var(--on-soft); }
+  .stat .v { font-family: var(--font-pixel); font-size: 22px; }
+  .stat .v small { font-size: 12px; }
+  .rank { height: 120px; display: grid; place-items: center; background: var(--card); border-radius: 4px; font-family: var(--font-pixel); font-size: 88px; line-height: 1; }
+  .share { background: var(--card); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
+  .share .sq { display: flex; gap: 3px; flex-wrap: wrap; }
+  .share .sq i { width: 20px; height: 20px; border-radius: 2px; }
+
+  /* ---------- dialogs: the same detail, on top ---------- */
+  .modal-bg { position: fixed; inset: 0; background: rgba(8, 10, 18, .78); display: grid; place-items: center; padding: 16px; z-index: 20; overflow-y: auto; }
+  .dlg { width: 100%; max-width: 600px; max-height: calc(100vh - 32px); overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, .6); }
+  .dlg ul { margin: 0; padding-left: 1.2em; font-size: 13px; display: grid; gap: 6px; }
+  .opt-head, .opt { display: grid; grid-template-columns: 160px minmax(0, 1fr) 104px; gap: 12px; align-items: center; padding: 0 12px; }
+  .opt-head { font-size: 11px; color: var(--ink-soft); }
+  .opt-head .wks { display: grid; text-align: center; font-family: var(--font-pixel); }
+  .opt-head .wks .air { color: var(--red); }
+  .opt { min-height: 48px; text-align: left; border: 0; border-radius: 4px; background: var(--card); box-shadow: inset 0 0 0 1px var(--chip); color: var(--ink); }
+  .opt.on { box-shadow: 0 0 0 2px var(--ink); }
+  .opt .t { display: block; font-size: 13px; font-weight: 700; }
+  .opt .s { display: block; font-size: 11px; color: var(--ink-soft); }
+  .opt .trk { position: relative; height: 24px; }
+  .opt .trk .airc { position: absolute; top: 0; bottom: 0; background: rgba(200, 50, 58, .12); }
+  .opt .trk i { position: absolute; left: 0; top: 8px; height: 8px; border-radius: 0 3px 3px 0; }
+  .verdict { margin: 4px 0 0; font-size: 13px; font-weight: 700; }
+  .verdict.bad { color: var(--red); } .verdict.good { color: var(--green); }
+
+  /* the 進行表 keeps its spreadsheet look */
+  .xls-wrap { width: 100%; max-width: 1392px; display: grid; grid-template-columns: minmax(0, 1fr) 488px; gap: 24px; align-items: start; }
+  .xls { background: #ffffff; color: #1a1e29; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; max-height: calc(100vh - 32px); box-shadow: 0 10px 40px rgba(0, 0, 0, .5); }
+  .xls-top { display: flex; align-items: center; gap: 12px; padding: 0 4px 0 16px; min-height: 48px; background: #1f6b45; color: #fff; flex-wrap: wrap; }
+  .xls-file { font-weight: 700; font-size: 14px; }
+  .xls-who { font-size: 12px; opacity: .95; }
+  .xls-x { margin-left: auto; width: 44px; height: 44px; background: transparent; border: 0; color: #fff; font-size: 22px; line-height: 1; }
+  .xls-fx { display: flex; gap: 10px; align-items: center; padding: 6px 16px; border-bottom: 1px solid #d5dbe5; font-size: 12px; font-family: ui-monospace, "IPAGothic", monospace; color: #33394a; }
+  .xls-fx .fxl { font-style: italic; color: #5f6879; border-right: 1px solid #d5dbe5; padding-right: 10px; }
+  .xls-fx b { color: #a3262b; }
+  .xls-grid { overflow: auto; }
+  .xls-grid table { border-collapse: collapse; font-size: 12.5px; min-width: 100%; }
+  .xls-grid th, .xls-grid td { border: 1px solid #e1e5ec; padding: 3px 8px; white-space: nowrap; height: 26px; }
+  .xls-grid thead th { background: #e9f3ee; color: #1f6b45; font-weight: 700; text-align: left; position: sticky; top: 0; z-index: 1; }
+  .xls-grid th.rn { background: #f3f5f8; color: #5f6879; font-weight: 400; font-size: 11px; text-align: right; width: 2.4em; }
+  .xls-grid td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .xls-grid td.db { min-width: 150px; }
+  .xls-grid .dbar { display: flex; align-items: center; gap: 8px; }
+  .xls-grid .dbar span { flex: 1; height: 10px; background: #eef1f5; }
+  .xls-grid .dbar i { display: block; height: 100%; background: #5bbf8a; }
+  .xls-grid .dbar.r i { background: #9fd7b9; }
+  .xls-grid .dbar.bad i { background: #f0a3a6; }
+  .xls-grid .dbar em { font-style: normal; width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+  .xls-grid tr.held td { background: #fde4e4; }
+  .xls-grid tr.held td.st { color: #a3262b; font-weight: 700; }
+  .xls-grid tr.out td { color: #9aa3ba; }
+  .xls-grid tr.tot td { font-weight: 700; border-top: 2px solid #1f6b45; }
+  .xls-grid td.st { color: #5a6072; }
+  .xls-post { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid #d5dbe5; background: #fafbfd; }
+  .xls-post div { padding: 8px 16px; border-right: 1px solid #e1e5ec; font-size: 12px; }
+  .xls-post div:last-child { border-right: 0; }
+  .xls-post .l { font-size: 11px; color: #5a6072; }
+  .xls-post .v { font-family: var(--font-pixel); font-size: 14px; }
+  .xls-post .ok { background: #d6f2e4; } .xls-post .wip { background: #fff3b0; }
+  .xls-msg { padding: 16px; font-size: 13px; color: #33394a; }
+  .xls-tabs { display: flex; gap: 2px; padding: 0 8px; background: #f3f5f8; border-top: 1px solid #d5dbe5; overflow-x: auto; }
+  .xls-tabs button { border: 0; background: transparent; min-height: 40px; padding: 0 16px; font-size: 12px; color: #33394a; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .xls-tabs button.on { background: #ffffff; color: #1f6b45; border-bottom-color: #1f6b45; font-weight: 700; }
+  .gantt-dlg { width: 100%; max-width: 1392px; display: grid; grid-template-columns: minmax(0, 1fr) 488px; gap: 24px; align-items: start; }
+  .gantt-dlg .col { background: var(--night); border-radius: 6px; padding: 16px; box-shadow: 0 0 0 1px var(--line); }
+
+  /* ---------- narrower screens: one column, the week bar at the bottom ---------- */
+  @media (max-width: 1180px) {
+    .main, .xls-wrap, .gantt-dlg { grid-template-columns: minmax(0, 1fr) 400px; }
+  }
+  @media (max-width: 920px) {
+    .main, .xls-wrap, .gantt-dlg { grid-template-columns: minmax(0, 1fr); }
+    .brand { width: auto; }
+    .wk { border-left: 0; padding-left: 0; }
+    .eps { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .st-head { display: none; }
+    .st-row { grid-template-columns: 4px minmax(0, 1fr) auto 12px; padding-top: 8px; padding-bottom: 8px; }
+    .st-row .hide-n { display: none; }
+    .tl-head, .tl-row { grid-template-columns: 32px 84px minmax(0, 1fr); gap: 0 8px; }
+    .tl-weeks { font-size: 9px; }
+  }
+  @media (max-width: 640px) {
+    #app { padding-bottom: 96px; }
+    .hdr { padding: 8px 16px; gap: 8px; }
+    .main { padding: 12px 16px 24px; }
+    .hdr .wk.wk-fix { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--night); border-top: 1px solid var(--line); padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px); gap: 10px; justify-content: space-between; }
+    .hdr .wk.wk-fix .wk-n { font-size: 20px; }
+    .hdr .wk.wk-fix .ap, .hdr .wk.wk-fix .wk-t { font-size: 11px; }
+    .hdr .wk.wk-fix .btn-main { height: 52px; margin-left: auto; }
+    .eps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid2, .acts { grid-template-columns: minmax(0, 1fr); }
+    .logo h1 { font-size: 44px; }
+    .opt-head, .opt { grid-template-columns: 112px minmax(0, 1fr) 84px; gap: 8px; padding: 0 8px; }
+    .kvs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .xls-post { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .bars, .bars-x { gap: 4px; }
+    .bars button span { font-size: 10px; }
+    .btn-sys, .sec-h .btn-sys, .seg button, .row, .xls-tabs button { min-height: 44px; }
+    .field select { height: 44px; }
+    .tl-row, .tl-track, .step { height: 44px; }
+    .tl-track .plan, .tl-track .act2, .tl-track .fc { top: 14px; }
+    .tl-track .air { top: 11px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .flashin { animation: flashin .25s ease-out; }
+    @keyframes flashin { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+
+<div id="app" aria-live="polite"></div>
+<div id="modal-root"></div>
+<script id="engine">
+/* ===================== ゲームの計算（UIなし） ===================== */
+const Engine = (() => {
+  "use strict";
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // Seeded RNG kept inside the state so a saved game replays the same.
+  function rnd(s) {
+    s.rs = (s.rs + 0x6D2B79F5) | 0;
+    let t = s.rs;
+    t = Math.imul(t ^ (t >>> 15), 1 | t);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  const rr = (s, a, b) => a + rnd(s) * (b - a);
+  const ri = (s, a, b) => Math.floor(rr(s, a, b + 1));
+  const pick = (s, arr) => arr[Math.floor(rnd(s) * arr.length)];
+  function shuffle(s, arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd(s) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+
+  const ROUGH_W = 0.4, GENGA_W = 0.6;     // ラフ原と原画にかかる手間の割合（1カット=1）
+  const BASE_ANIMS = 10;                  // これを超えて人を足すと絵がばらつく
+  const DILUTION = 0.6;                   // 1人増えるごとの品質低下
+  const MIN_DUR = 6;                      // 1話の最短の制作期間（週）
+  const DEF_DUR = 8;                      // グランドスケジュールの標準（週）
+  const LINE = 50;                        // 局・製作委員会の納品基準（これを下回る品質は受け取ってもらえない）
+  const ART_WEEKS = 2;                    // 美術・CGはラフ原が上がってから2週間
+  const EPISODES = 12;
+  const TEAM_KEYS = ["A", "B", "C", "D", "E", "F"];
+  const FLOW = 0.8;                       // 上がったカットの8割はその週のうちに次の工程へ
+
+  // スタジオ＝難易度。作品と座組もスタジオで決まる
+  const TIERS = {
+    top: { key: "top", name: "有名スタジオ", studio: "スタジオ極光", pre: 10, teams: 5, animSkill: [58, 86], sakkanSkill: [72, 86], shinkoSkill: [[64, 86], [60, 82], [58, 80], [55, 75], [50, 72]],
+           dougaCap: 420, shiageCap: 480, satsueiCap: 560, dougaSkill: 66, artSkill: 72, scripts: 7, contes: 5, exp: 71, eventMul: 0.8,
+           source: "manga", dir: { skill: 84, speed: 50, quirk: 0.3, tag: "作家" }, wri: { skill: 80, speed: 52, tag: "作家" }, va: { act: 82 }, rank: 4,
+           blurb: "社内に5班。進行も粒ぞろい。腕利きの原画マンが集まるが、監督のこだわりが強く、ファンの目も厳しい。" },
+    mid: { key: "mid", name: "中堅スタジオ", studio: "アニメーション工房ひばり", pre: 8, teams: 4, animSkill: [48, 78], sakkanSkill: [60, 74], shinkoSkill: [[60, 80], [52, 72], [45, 65], [32, 46]],
+           dougaCap: 320, shiageCap: 360, satsueiCap: 440, dougaSkill: 58, artSkill: 62, scripts: 6, contes: 4, exp: 58, eventMul: 1,
+           source: "novel", dir: { skill: 72, speed: 60, quirk: 0.15, tag: "職人" }, wri: { skill: 72, speed: 62, tag: "職人" }, va: { act: 70 }, rank: 0,
+           blurb: "社内に4班。全話は回しきれないので、何話かはグロスに出す。新人の進行がひとりいる。標準の難易度。" },
+    low: { key: "low", name: "弱小スタジオ", studio: "有限会社 夜明け動画", pre: 7, teams: 3, animSkill: [40, 70], sakkanSkill: [55, 66], shinkoSkill: [[50, 70], [34, 48], [28, 42]],
+           dougaCap: 220, shiageCap: 260, satsueiCap: 320, dougaSkill: 50, artSkill: 54, scripts: 5, contes: 3, exp: 50, eventMul: 1.25,
+           source: "original", dir: { skill: 58, speed: 84, quirk: 0.05, tag: "量産" }, wri: { skill: 58, speed: 86, tag: "量産" }, va: { act: 62 }, rank: -6,
+           blurb: "社内に3班だけ。半分近くはグロス頼み。進行は新人ばかりで、トラブルを抱え込みがち。" },
+  };
+  const STAGES = [
+    { k: "rough", label: "ラフ原" }, { k: "genga", label: "原画" }, { k: "douga", label: "動画" }, { k: "shiage", label: "仕上げ" }, { k: "satsuei", label: "撮影" },
+  ];
+  const GROSS_DEFS = [
+    { name: "スタジオ灯台", q: [68, 76], slip: 0.03, cap: 1, note: "丁寧で確実。同時に1話まで。" },
+    { name: "有限会社 青梅動画", q: [56, 64], slip: 0.08, cap: 2, note: "標準的。たまに遅れる。" },
+    { name: "アニメ工房さざなみ", q: [47, 55], slip: 0.15, cap: 2, note: "品質も納期も怪しい。局の基準ぎりぎり。" },
+  ];
+  const SOURCES = {
+    manga: { label: "人気漫画原作", kanshu: 0.24, titles: ["放課後ラグナロク", "ねこ侍は眠らない", "鉄骨のアリア", "となりの席の魔王さま"] },
+    novel: { label: "ライトノベル原作", kanshu: 0.16, titles: ["転生したら制作進行だった件", "追放された錬金術師、辺境でカフェを開く", "俺の妹が魔王軍の経理担当なんだが"] },
+    original: { label: "オリジナル", kanshu: 0, titles: ["夜明けのフィルム", "さよならロケット少女", "機械仕掛けの夏休み", "月面の郵便屋さん"] },
+  };
+  const FAMILY = ["岩城", "真柴", "黒須", "早乙女", "鷹野", "白石", "柳田", "東雲", "葛西", "三輪", "雨宮", "久遠", "椎名", "不破", "氷室", "九条", "皆川", "綾瀬", "桐生", "宗像", "結城", "日向", "朝霧", "篠原",
+                  "小田切", "望月", "千早", "神楽", "伊吹", "相馬", "芹沢", "鳴海", "野々宮", "八雲", "藤堂", "水無瀬", "能登", "桜庭", "長谷部", "榊"];
+  const GIVEN = ["透", "灯", "誠", "遥", "蓮", "朔", "薫", "湊", "静", "渉", "楓", "律", "環", "慧", "茜", "航", "紬", "悠", "澪", "迅", "一花", "健吾", "美雪", "大地", "千尋", "陽向", "瑞穂", "昴", "亜紀", "翔"];
+
+  function makeName(s) {
+    const used = new Set(s.usedNames);
+    for (let i = 0; i < 80; i++) {
+      const n = pick(s, FAMILY) + " " + pick(s, GIVEN);
+      if (!used.has(n)) { s.usedNames.push(n); return n; }
+    }
+    return "名無し " + s.usedNames.length;
+  }
+  const uid = (s) => ++s.uid;
+  function makeAnimator(s, bonus = 0) {
+    const T = TIERS[s.tier];
+    const skill = clamp(ri(s, T.animSkill[0], T.animSkill[1]) + bonus, 30, 95);
+    const speed = Math.round(clamp(rr(s, 6.5, 10) - (skill - 60) / 40, 5, 11) * 10) / 10;
+    return { id: uid(s), name: makeName(s), skill, speed, cuts: 0, rough: 0, genga: 0, hold: 0, slow: 1 };
+  }
+  function makeShinko(s, range) {
+    return { id: uid(s), name: makeName(s), seed: ri(s, 1, 1e9), skill: ri(s, range[0], range[1]), stamina: ri(s, 75, 95), gone: false };
+  }
+
+  function newGame(tier, seed) {
+    const T = TIERS[tier];
+    const s = { v: 6, phase: "schedule", tier, rs: seed | 0, week: 0, log: [], sns: [], kv: [], usedNames: [], uid: 0 };
+    s.pre = T.pre;
+    s.src = { type: T.source, title: pick(s, SOURCES[T.source].titles) };
+    const mk = (d) => ({ name: makeName(s), seed: ri(s, 1, 1e9), ...d });
+    s.staff = { dir: mk(T.dir), wri: mk(T.wri), va: mk(T.va), kp: mk({}) };
+    s.shinkos = [];
+    s.teams = TEAM_KEYS.slice(0, T.teams).map((key, i) => {
+      const sh = makeShinko(s, T.shinkoSkill[i]);
+      sh.team = key; s.shinkos.push(sh);
+      return { key, label: `${key}班`, shinko: sh.id, sakkan: { name: makeName(s), seed: ri(s, 1, 1e9), skill: ri(s, T.sakkanSkill[0], T.sakkanSkill[1]) } };
+    });
+    s.gross = GROSS_DEFS.map((d, i) => ({ id: i + 1, name: d.name, quality: ri(s, d.q[0], d.q[1]), slip: d.slip, cap: d.cap, note: d.note }));
+    s.eps = Array.from({ length: EPISODES }, (_, i) => ({ n: i + 1, cuts: ri(s, 27, 33) * 10 }));
+    autoPlan(s);
+    return s;
+  }
+  const synergy = (s) => (s.staff.dir.tag === s.staff.wri.tag ? 4 : 0);
+  const teamBy = (s, key) => s.teams.find((t) => t.key === key);
+  const grossBy = (s, id) => s.gross.find((g) => g.id === id);
+  const isGross = (plan) => typeof plan.team === "string" && plan.team.startsWith("g");
+  const grossOf = (s, plan) => (isGross(plan) ? grossBy(s, +plan.team.slice(1)) : null);
+  const planAir = (s, n) => s.pre + n;
+
+  // ---------- グランドスケジュール ----------
+  const conteRate = (s) => 0.45 + s.staff.dir.speed / 250;
+  function conteWeek(s, n) {
+    const K = TIERS[s.tier].contes;
+    if (n <= K) return 1;
+    let need = 0;
+    for (const ep of s.eps) if (ep.n <= n && ep.n > K && !(ep.plan && isGross(ep.plan))) need++;
+    return Math.ceil(need / conteRate(s)) + 1;
+  }
+  function autoPlan(s) { for (const ep of s.eps) ep.plan = null; planPass(s); planPass(s); return s.eps.map((e) => e.plan); }
+  function planPass(s) {
+    const free = Object.fromEntries(s.teams.map((t) => [t.key, 1]));
+    const grossUse = [];
+    const grossFits = (c, a, b) => grossUse.filter(([id, x, y]) => id === c.id && x <= b && a <= y).length < c.cap;
+    for (const ep of s.eps) {
+      const air = planAir(s, ep.n);
+      const teamSlot = (buffer, dur) => {
+        let best = null;
+        for (const t of s.teams) {
+          const start = Math.max(free[t.key], conteWeek(s, ep.n));
+          if (start + dur - 1 <= air - buffer && (!best || start < best.start)) best = { team: t.key, start, dur };
+        }
+        return best;
+      };
+      const grossSlot = (buffer, dur) => {
+        const start = Math.max(1, air - buffer - dur + 1), end = start + dur - 1;
+        if (end > air) return null;
+        const c = s.gross.find((c) => grossFits(c, start, end));
+        return c ? { team: "g" + c.id, start, dur } : null;
+      };
+      let pick2 = null;
+      for (const dur of [DEF_DUR, DEF_DUR - 1, MIN_DUR]) { pick2 = teamSlot(1, dur) || grossSlot(1, dur) || teamSlot(0, dur) || grossSlot(0, dur); if (pick2) break; }
+      if (pick2 && !pick2.team.startsWith("g")) { ep.plan = { team: pick2.team, start: pick2.start, dur: pick2.dur }; free[pick2.team] = pick2.start + pick2.dur; continue; }
+      const g = pick2 || { team: "g" + s.gross[s.gross.length - 1].id, start: Math.max(1, air - MIN_DUR + 1), dur: MIN_DUR };
+      grossUse.push([+g.team.slice(1), g.start, g.start + g.dur - 1]);
+      ep.plan = { team: g.team, start: g.start, dur: g.dur };
+    }
+  }
+  function planIssues(s) {
+    const out = [];
+    for (const ep of s.eps) {
+      const p = ep.plan;
+      if (ep.started || ep.aired) continue;
+      const end = p.start + p.dur - 1;
+      const air = s.phase === "prod" ? airWeekOf(s, ep) : planAir(s, ep.n);
+      if (end > air) out.push({ n: ep.n, kind: "late", msg: `第${ep.n}話：納品予定 第${end}週が放送（第${air}週）に間に合いません` });
+      if (!isGross(p)) {
+        for (const o of s.eps) {
+          if (o.n <= ep.n || o.plan.team !== p.team || o.started) continue;
+          const oe = o.plan.start + o.plan.dur - 1;
+          if (o.plan.start <= end && p.start <= oe) out.push({ n: o.n, kind: "overlap", msg: `${p.team}班：第${ep.n}話と第${o.n}話の期間が重なっています（1班は同時に1話まで）` });
+        }
+        if (s.phase !== "prod" && p.start < conteWeek(s, ep.n)) out.push({ n: ep.n, kind: "conte", msg: `第${ep.n}話：コンテが上がるのは第${conteWeek(s, ep.n)}週ごろの見込み。それまで作業に入れません`, soft: true });
+      } else {
+        const c = grossOf(s, p);
+        for (let w = p.start; w <= end; w++) {
+          const busy = s.eps.filter((o) => !o.aired && o.plan.team === p.team && o.plan.start <= w && w <= o.plan.start + o.plan.dur - 1 + (o.gslip || 0)).length;
+          if (busy > c.cap) { out.push({ n: ep.n, kind: "cap", msg: `${c.name}は同時に${c.cap}話までしか受けられません（第${w}週）` }); break; }
+        }
+      }
+    }
+    return out;
+  }
+  function setPlan(s, n, patch) {
+    const ep = epBy(s, n);
+    if (!ep || ep.started || ep.aired) return false;
+    Object.assign(ep.plan, patch);
+    ep.plan.dur = Math.max(MIN_DUR, ep.plan.dur);
+    ep.plan.start = clamp(ep.plan.start, s.phase === "prod" ? s.week : 1, 60);
+    return true;
+  }
+  const recommendAnims = (s, ep) => clamp(Math.ceil(ep.cuts / ((Math.max(MIN_DUR, ep.plan.dur) - 2.5) * 7.4)), BASE_ANIMS, 60);
+
+  function startProduction(s) {
+    const T = TIERS[s.tier];
+    s.flags = { kanshu: SOURCES[s.src.type].kanshu };
+    s.policy = { douga: "inhouse", mode: "stock", ot: false };
+    s.eps.forEach((ep, i) => Object.assign(ep, {
+      script: i < T.scripts ? 1 : 0, conte: i < T.contes ? 1 : 0, started: false, startWeek: null, anims: [], art: null,
+      qG: 0, qD: 0, douga: 0, shiage: 0, satsuei: 0, bonus: 0, aired: false, airQ: null, collapse: false, delivered: false, deliveredWeek: null, gprog: 0, gslip: 0,
+      rush: null, short: false, pen: 0, penFix: 0, alerted: null, planned: { ...ep.plan },
+    }));
+    s.H = 50 + (T.key === "top" ? 15 : T.key === "mid" ? 5 : 0); s.R = 55;
+    s.ap = 3; s.dirMood = 0;
+    s.mods = []; s.incidents = []; s.queue = [];
+    s.week = 1; s.nextAir = s.pre + 1; s.aired = 0; s.recaps = 0; s.delays = 0;
+    s.lastAirQ = 0; s.helpCount = 0; s.added = 0; s.hiddenFound = 0; s.lateReports = 0; s.rejects = 0;
+    s.phase = "prod"; s.event = null; s.pendingAir = null;
+    startEpisodes(s);
+    s.stat = forecast(s);
+    log(s, `「${s.src.title}」制作開始。放送開始は第${s.nextAir}週。`);
+  }
+
+  function log(s, text) { s.log.push({ w: s.week, text }); if (s.log.length > 140) s.log.shift(); }
+
+  // ---------- helpers ----------
+  const modMul = (s, target) => s.mods.filter((m) => m.target === target).reduce((a, m) => a * m.mul, 1);
+  function addMod(s, id, weeks, mul, target) { s.mods.push({ id, weeks, mul, target }); }
+  const unaired = (s) => s.eps.filter((e) => !e.aired);
+  const epBy = (s, n) => s.eps[n - 1];
+  const shinkoBy = (s, id) => s.shinkos.find((x) => x.id === id);
+  const teamOfShinko = (s, id) => s.teams.find((t) => t.shinko === id);
+  const shinkoOfTeam = (s, key) => { const t = teamBy(s, key); return t ? shinkoBy(s, t.shinko) : null; };
+  const sumA = (ep, k) => ep.anims.reduce((a, x) => a + x[k], 0);
+  const otMul = (s) => (s.policy.ot ? 1.2 : 1);
+  function epTotals(ep) { return { rough: sumA(ep, "rough"), genga: sumA(ep, "genga"), douga: ep.douga, shiage: ep.shiage, satsuei: ep.satsuei }; }
+  function done(ep) { return isGross(ep.plan) ? ep.gprog : ep.satsuei / ep.cuts; }
+  function progress(ep) {
+    if (isGross(ep.plan)) return ep.gprog;
+    if (!ep.started) return 0;
+    const t = epTotals(ep), c = ep.cuts;
+    return clamp(0.15 * t.rough / c + 0.30 * t.genga / c + 0.20 * t.douga / c + 0.15 * t.shiage / c + 0.20 * t.satsuei / c, 0, 1);
+  }
+  function stageOf(ep) {
+    if (ep.aired) return "aired";
+    if (ep.delivered) return "done";
+    if (isGross(ep.plan)) return ep.started ? "gross" : "wait";
+    if (!ep.started) return ep.conte < 1 ? "conte" : "wait";
+    const t = epTotals(ep), c = ep.cuts - 0.5;
+    if (t.rough < c) return "rough";
+    if (t.genga < c) return "genga";
+    if (t.douga < c) return "douga";
+    if (t.shiage < c) return "shiage";
+    return "satsuei";
+  }
+  const STAGE_LABEL = { conte: "コンテ待ち", wait: "着手前", rough: "ラフ原", genga: "原画", douga: "動画", shiage: "仕上げ", satsuei: "撮影", gross: "グロス制作中", done: "納品済", aired: "放送済" };
+  function airWeekOf(s, ep) { const i = unaired(s).indexOf(ep); return i < 0 ? null : s.nextAir + i; }
+  const weeksLeft = (s, ep) => airWeekOf(s, ep) - s.week + 1;
+  function teamEff(s, key) {
+    const sh = shinkoOfTeam(s, key);
+    if (!sh || sh.gone) return 0.6;
+    return (0.85 + sh.skill / 500) * (sh.stamina < 30 ? 0.85 : 1) * (sh.helped ? 1.12 : 1);
+  }
+  const epEff = (s, ep) => teamEff(s, ep.plan.team) * modMul(s, "tm:" + ep.plan.team);
+  const epGa = (s, ep) => modMul(s, "ga:" + ep.n);
+  // 巻き。下ほど速いが、そのあと上がるカットの仕上がりが落ちる（pen はカット1本あたりの品質低下）
+  const RUSH = {
+    "24h":  { rank: 1, label: "24時間動仕", pen: 4, fix: 2, gfix: 4, desc: "上がった原画をその日のうちに外の動仕に回す。動画・仕上げの待ちがなくなる" },
+    "12h":  { rank: 2, label: "12時間動仕", pen: 7, fix: 4, gfix: 8, desc: "動画・仕上げ・撮影まで上がった端から流す" },
+    "2gen": { rank: 3, label: "2原動仕",   pen: 7, gpen: 10, fix: 6, gfix: 14, desc: "原画から仕上げまでを飛ばして、ラフ原をそのまま動仕に回す" },
+  };
+  // 巻くと演出・作監のチェックも飛ぶので、その話数全体に fix ぶん響く
+  const SHORT_PEN = 12, SHORT_FIX = 6;
+  const gW = (ep) => (ep.rush === "2gen" ? 0.25 : GENGA_W);
+  const rushRank = (ep) => (ep.rush ? RUSH[ep.rush].rank : 0);
+  const teamBusy = (s, key, except) => s.eps.some((e) => e !== except && e.plan.team === key && e.started && !e.delivered && !e.aired && sumA(e, "genga") < e.cuts - 0.5);
+  const animWork = (s, a) => a.speed * a.slow * otMul(s) * (s.policy.mode === "quality" ? 0.88 : 1) * modMul(s, "ga");
+
+  // ---------- starting episodes ----------
+  function startEpisodes(s) {
+    for (const ep of unaired(s)) {
+      if (ep.started) continue;
+      const p = ep.plan;
+      if (s.week < p.start) continue;
+      if (isGross(p)) { ep.started = true; ep.startWeek = s.week; log(s, `第${ep.n}話を${grossOf(s, p).name}にグロス発注。`); continue; }
+      if (ep.conte < 1) { if (!ep.waitNote) { ep.waitNote = true; log(s, `第${ep.n}話はコンテ待ちで着手できない。`); } continue; }
+      if (teamBusy(s, p.team, ep)) { if (!ep.busyNote) { ep.busyNote = true; log(s, `${p.team}班は前の話数の原画が終わっていない。第${ep.n}話は着手待ち。`); } continue; }
+      ep.started = true; ep.startWeek = s.week;
+      const n = recommendAnims(s, ep);
+      addAnimators(s, ep.n, n, true);
+      log(s, `第${ep.n}話、${p.team}班で作業開始（原画マン${n}人、${ep.cuts}カット）。`);
+    }
+  }
+  function addAnimators(s, n, k, silent) {
+    const ep = epBy(s, n);
+    if (!ep || !ep.started || ep.delivered || ep.aired || isGross(ep.plan)) return false;
+    for (let i = 0; i < k; i++) ep.anims.push(makeAnimator(s));
+    redistribute(ep, s);
+    if (!silent) { s.added += k; log(s, `第${n}話に原画マンを${k}人追加（計${ep.anims.filter((a) => !a.out).length}人）。`); s.stat = forecast(s); }
+    return true;
+  }
+  // 原画に入っていないカットを全員で配り直す（ラフ原済みのカットも、原画が未着手なら渡せる）
+  // 進行が隠しているトラブルの人のカットは、その進行も配り直さない
+  function redistribute(ep, s) {
+    const active = ep.anims.filter((a) => a.hold <= 0 && !a.out && !(s && hiddenOn(s, a)));
+    if (!active.length) return;
+    let R = 0, U = ep.cuts - ep.anims.reduce((x, a) => x + a.cuts, 0);
+    for (const a of active) { R += a.rough - a.genga; U += a.cuts - a.rough; }
+    for (const a of active) { a.rough = a.genga + R / active.length; a.cuts = a.rough + U / active.length; }
+  }
+  const canAddAnim = (s, ep) => ep && ep.started && !ep.delivered && !ep.aired && !isGross(ep.plan) && sumA(ep, "genga") < ep.cuts - 5;
+  // 外れた人のカットを他の人に配り直す
+  function dropAnimator(s, ep, a) {
+    const back = { r: a.rough - a.genga, u: a.cuts - a.rough };
+    a.cuts = a.genga; a.rough = a.genga; a.hold = 0; a.out = true; a.slow = 1;
+    const active = ep.anims.filter((x) => !x.out && x.hold <= 0);
+    if (!active.length) return;
+    active[0].rough += back.r; active[0].cuts += back.r + back.u;
+    redistribute(ep, s);
+  }
+
+  // ---------- hidden trouble: what the 進行 reports vs. what is really happening ----------
+  // While an incident is hidden, the sheet shows the animator as if he were working normally.
+  const hiddenOn = (s, a) => s.incidents && s.incidents.some((i) => !i.revealed && (i.aid === a.id || (i.aids && i.aids.includes(a.id))));
+  function viewAnim(s, a) {
+    if (!hiddenOn(s, a)) return a;
+    return { ...a, rough: Math.min(a.cuts, a.fakeRough ?? a.rough), genga: Math.min(a.cuts, a.fakeGenga ?? a.genga), hold: 0, slow: 1, masked: true };
+  }
+  function withView(s, ep, fn) {
+    const real = ep.anims;
+    ep.anims = real.map((a) => viewAnim(s, a));
+    try { return fn(); } finally { ep.anims = real; }
+  }
+
+  // ---------- forecast ----------
+  function epForecastRaw(s, ep) {
+    if (ep.delivered) return ep.deliveredWeek;
+    const p = ep.plan;
+    if (isGross(p)) return ep.started ? s.week + Math.max(0, Math.ceil((1 - ep.gprog) * p.dur - 0.01) - 1) : Math.max(s.week, p.start + p.dur - 1);
+    if (!ep.started) {
+      let start = Math.max(p.start, s.week, ep.conte < 1 ? s.week + Math.ceil((1 - ep.conte) / conteRate(s)) : 0);
+      for (const o of s.eps) if (o !== ep && o.plan.team === p.team && o.started && !o.delivered && !o.aired) start = Math.max(start, epForecastRaw(s, o) - 1);
+      return start + p.dur - 1;
+    }
+    const eff = epEff(s, ep);
+    let gw = 0, rw = 0, stuck = false;
+    for (const a of ep.anims) {
+      if (a.out) continue;
+      if (a.hold > 0) { stuck = stuck || a.cuts - a.genga > 0.5; continue; }
+      const w = animWork(s, a) * eff * epGa(s, ep);
+      rw = Math.max(rw, ((a.cuts - a.rough) * ROUGH_W) / w);
+      gw = Math.max(gw, ((a.cuts - a.rough) * ROUGH_W + (a.cuts - a.genga) * gW(ep)) / w);
+    }
+    if (stuck) gw = Math.max(gw, 2);
+    const gengaDone = s.week + Math.ceil(gw - 0.05) - 1;
+    let artDone = ep.art ? ep.art.start + ART_WEEKS - 1 : s.week + Math.ceil(rw - 0.05) - 1 + ART_WEEKS;
+    if (ep.short && ep.art) artDone = Math.min(artDone, Math.max(s.week, ep.art.start));
+    const t = epTotals(ep), full = ep.cuts - 0.5, rk = rushRank(ep);
+    let tail = t.satsuei >= full ? 0 : rk >= 2 ? 0 : rk === 1 ? 1 : t.genga >= full ? (t.douga >= full ? 1 : 2) : 2;
+    if (ep.short) tail = Math.max(0, tail - 1);
+    return Math.max(gengaDone + tail, artDone, s.week);
+  }
+  // what the desk sees (hidden trouble is not in it)
+  const epForecast = (s, ep) => (isGross(ep.plan) || !ep.started ? epForecastRaw(s, ep) : withView(s, ep, () => epForecastRaw(s, ep)));
+  function forecast(s) {
+    const T = TIERS[s.tier], p = s.policy;
+    const os = p.douga === "overseas" ? 300 * modMul(s, "os") : 0;
+    const douga = T.dougaCap * otMul(s) * modMul(s, "ga") + os;
+    const shiage = T.shiageCap * otMul(s) + os;
+    const satsuei = T.satsueiCap * otMul(s);
+    const need = { douga: 0, shiage: 0, satsuei: 0 };
+    const inh = unaired(s).filter((e) => !isGross(e.plan));
+    for (const k of Object.keys(need)) {
+      let acc = 0;
+      for (const ep of inh) {
+        acc += ep.cuts - (ep.started ? ep[k] : 0);
+        const w = Math.max(1, airWeekOf(s, ep) - s.week + 1 - (k === "douga" ? 2 : k === "shiage" ? 1 : 0));
+        need[k] = Math.max(need[k], acc / w);
+      }
+    }
+    let needConte = 0, accC = 0;
+    for (const ep of inh) { accC += 1 - ep.conte; needConte = Math.max(needConte, accC / Math.max(1, ep.plan.start - s.week + 1)); }
+    const late = unaired(s).filter((ep) => epForecast(s, ep) > airWeekOf(s, ep)).map((e) => e.n);
+    return { conte: conteRate(s) * modMul(s, "conte") * modMul(s, "pre"), needConte, douga, shiage, satsuei, need, late };
+  }
+  function deskNote(s) {
+    const f = s.stat || forecast(s);
+    const gone = s.shinkos.filter((x) => x.gone);
+    if (gone.length) return `${teamOfShinko(s, gone[0].id)?.label}の進行・${gone[0].name}と連絡が取れない。担当話数が止まりかけている。`;
+    if (f.late.length) {
+      const ep = epBy(s, f.late[0]);
+      if (isGross(ep.plan)) return `グロスに出した第${ep.n}話、${grossOf(s, ep.plan).name}の進みが遅い。放送に間に合わないかもしれない。`;
+      if (!ep.started) return `第${ep.n}話の着手が遅れそう。グランドスケジュールを見直すか、グロスに出すか。`;
+      return `第${ep.n}話、このままだと完パケが第${epForecast(s, ep)}週。放送に間に合わない。原画マンを足すか、巻くか。`;
+    }
+    const weak = unaired(s).find((e) => e.started && !e.delivered && Math.round(epQuality(s, e)) < LINE);
+    if (weak) return `第${weak.n}話の品質見込みが${Math.round(epQuality(s, weak))}。局の基準${LINE}を下回ると納品拒否される。`;
+    const ratios = [
+      [f.douga / Math.max(1, f.need.douga), "動画が追いついていない。海外に出すか、残業か。"],
+      [f.shiage / Math.max(1, f.need.shiage), "仕上げが詰まりそうだ。"],
+      [f.satsuei / Math.max(1, f.need.satsuei), "撮影がパンクしそうだ。"],
+      [f.conte / Math.max(0.01, f.needConte), "コンテが上がってこない。着手が遅れる話数が出る。"],
+    ].sort((a, b) => a[0] - b[0]);
+    if (ratios[0][0] < 1) return ratios[0][1];
+    const tired = s.shinkos.filter((x) => !x.gone && x.stamina < 30);
+    if (tired.length) return `${teamOfShinko(s, tired[0].id)?.label}の${tired[0].name}がかなり疲れている。そろそろ飛ぶかもしれない。`;
+    return "進行の報告では、全話グランドスケジュールどおり。";
+  }
+
+  // ---------- 納品チェック ----------
+  // 局・製作委員会が品質を見る。基準を下回ると納品拒否（交渉で通ったものは除く）
+  function tryDeliver(s, ep, msg) {
+    const q = Math.round(epQuality(s, ep));   // 画面に出る数字と同じ丸めで判定する
+    if (q < LINE && !ep.waived) {
+      ep.rejectPending = true; ep.rejects = (ep.rejects || 0) + 1; s.rejects++;
+      log(s, `第${ep.n}話、局から納品拒否（品質${Math.round(q)}／基準${LINE}）。`);
+      s.queue.push({ id: "kyohi", p: { n: ep.n, q: Math.round(q) }, start: s.week, team: null, reporter: { kind: "kyoku" }, revealed: true, reportWeek: s.week });
+      return false;
+    }
+    ep.delivered = true; ep.deliveredWeek = s.week;
+    log(s, msg);
+    return true;
+  }
+  const kyohiCuts = (ep, q) => clamp(Math.round(ep.cuts * (0.12 + (LINE - q) * 0.025)), 20, Math.round(ep.cuts * 0.6));
+  const kyohiGain = (q) => LINE + 3 - q;
+  function clearReject(s, ep, gain) { ep.rejectPending = false; ep.bonus += gain; ep.rush = null; ep.short = false; }
+  // 放送日に「このまま放送」したときの品質。基準を下回るなら局が流さない
+  function airAsIsQ(s) {
+    const ep = unaired(s)[0];
+    if (!ep) return 0;
+    const prog = Math.min(1, done(ep));
+    return epQuality(s, ep) * (prog >= 1 ? 1 : 0.35 + 0.65 * Math.pow(prog, 1.5));
+  }
+  function canAirAsIs(s) {
+    const ep = unaired(s)[0];
+    if (!ep || ep.rejectPending) return false;
+    return ep.waived || Math.round(airAsIsQ(s)) >= LINE;
+  }
+
+  // ---------- one week of production ----------
+  function produce(s) {
+    const T = TIERS[s.tier], st = s.staff, p = s.policy;
+    startEpisodes(s);
+    const eps = unaired(s);
+    const inh = eps.filter((e) => e.started && !isGross(e.plan) && !e.delivered);
+    const snap = new Map(inh.map((e) => [e.n, { genga: sumA(e, "genga"), douga: e.douga, shiage: e.shiage }]));
+    const avail = (now, start) => start + FLOW * (now - start);
+    // ラフ原 → 原画 (each animator works through their own cuts)
+    for (const ep of inh) {
+      const eff = epEff(s, ep);
+      // 誰の手元にもないカットがあれば配る
+      if (ep.anims.reduce((x, a) => x + a.cuts, 0) < ep.cuts - 0.5) redistribute(ep, s);
+      for (const a of ep.anims) {
+        // what the 進行 would report if this animator were fine
+        const fakeW = a.speed * otMul(s) * (p.mode === "quality" ? 0.88 : 1) * modMul(s, "ga") * eff;
+        if (hiddenOn(s, a)) {
+          const fr = Math.min(a.cuts - a.fakeRough, fakeW / ROUGH_W); a.fakeRough += fr;
+          a.fakeGenga += Math.max(0, Math.min(a.fakeRough - a.fakeGenga, (fakeW - fr * ROUGH_W) / gW(ep)));
+        }
+        if (a.hold > 0 || a.out) continue;
+        let work = animWork(s, a) * eff * epGa(s, ep);
+        const r = Math.min(a.cuts - a.rough, work / ROUGH_W);
+        a.rough += r; work -= r * ROUGH_W;
+        const gn = Math.max(0, Math.min(a.rough - a.genga, work / gW(ep)));
+        a.genga += gn;
+        ep.qG += gn * (a.skill + (p.mode === "quality" ? 5 : 0) - (p.ot ? 2 : 0));
+        if (ep.rush === "2gen") ep.pen += gn * RUSH["2gen"].gpen;
+      }
+      if (!ep.art && sumA(ep, "rough") >= ep.cuts - 0.5) {
+        ep.art = { start: s.week + 1 + (ep.artDelay || 0) };
+        log(s, `第${ep.n}話のラフ原が全部上がった。美術とCGが作業に入る。`);
+      }
+    }
+    // 動画 → 仕上げ → 撮影 (studio departments, earliest episode first)
+    const os = p.douga === "overseas" ? 300 * modMul(s, "os") : 0;
+    let dIn = T.dougaCap * otMul(s) * modMul(s, "ga"), dOs = os, sh = T.shiageCap * otMul(s) + os, sa = T.satsueiCap * otMul(s);
+    for (const ep of inh) {
+      const eff = epEff(s, ep), sn = snap.get(ep.n), rk = rushRank(ep), dm = modMul(s, "dg:" + ep.n);
+      let ready;
+      if (rk >= 1) {
+        // 動仕を外に回す：社内の動画・仕上げの枠を使わず、上がった原画がその週のうちに仕上げまで抜ける
+        ready = (sumA(ep, "genga") - ep.douga) * dm;
+        if (ready > 0) { ep.douga += ready; ep.qD += ready * 38; ep.pen += ready * RUSH[ep.rush].pen; }
+        if (ep.douga > ep.shiage) ep.shiage = ep.douga;
+      } else {
+        ready = avail(sumA(ep, "genga"), sn.genga) - ep.douga;
+        if (ready > 0) {
+          const t1 = Math.min(ready, dIn * eff * dm), t2 = Math.min(ready - t1, dOs * eff * dm);
+          dIn -= t1 / eff; dOs -= t2 / eff; ep.douga += t1 + t2; ep.qD += t1 * T.dougaSkill + t2 * 40;
+        }
+        ready = avail(ep.douga, sn.douga) - ep.shiage;
+        if (ready > 0 && sh > 0) { const t = Math.min(ready, sh * eff); sh -= t / eff; ep.shiage += t; }
+      }
+      const artReady = ep.art && s.week >= ep.art.start + ART_WEEKS - 1;
+      if (ep.short && ep.art && s.week >= ep.art.start) {
+        // 撮影短縮：背景が揃いきる前から、上がった端から撮って出す
+        ready = ep.shiage - ep.satsuei;
+        if (ready > 0) { ep.satsuei += ready; ep.pen += ready * SHORT_PEN; }
+      } else if (rk >= 2 && artReady) {
+        ready = ep.shiage - ep.satsuei;
+        if (ready > 0) ep.satsuei += ready;
+      } else {
+        ready = avail(ep.shiage, sn.shiage) - ep.satsuei;
+        if (artReady && ready > 0 && sa > 0) { const t = Math.min(ready, sa * eff); sa -= t / eff; ep.satsuei += t; }
+      }
+      if (!ep.delivered && !ep.rejectPending && ep.satsuei >= ep.cuts - 0.5) {
+        ep.satsuei = ep.douga = ep.shiage = ep.cuts;
+        tryDeliver(s, ep, `第${ep.n}話、完パケ。音響も上がって納品済み。`);
+      }
+    }
+    // グロス
+    for (const ep of eps.filter((e) => e.started && isGross(e.plan) && !e.delivered && !e.rejectPending)) {
+      const c = grossOf(s, ep.plan);
+      if (rnd(s) < c.slip) { ep.gslip++; log(s, `${c.name}から連絡。第${ep.n}話が1週遅れる。`); }
+      else ep.gprog = Math.min(1, ep.gprog + 1 / ep.plan.dur);
+      if (ep.gprog >= 0.999) { ep.gprog = 1; tryDeliver(s, ep, `第${ep.n}話、${c.name}から納品。`); }
+    }
+    // コンテ and 脚本
+    let conte = conteRate(s) * (p.mode === "quality" ? 0.9 : 1) * modMul(s, "conte") * modMul(s, "pre");
+    for (const ep of eps) {
+      if (conte <= 0) break;
+      if (ep.conte >= 1 || isGross(ep.plan)) continue;
+      const t = Math.min(1 - ep.conte, ep.script - ep.conte, conte);
+      if (t <= 0) break;
+      ep.conte += t; conte -= t;
+      if (ep.conte >= 0.999) { ep.conte = 1; log(s, `第${ep.n}話のコンテが上がった。`); }
+    }
+    let script = (0.40 + st.wri.speed / 250) * modMul(s, "pre");
+    for (const ep of eps) {
+      if (script <= 0) break;
+      if (ep.script >= 1) continue;
+      const t = Math.min(1 - ep.script, script);
+      ep.script += t; script -= t;
+      if (ep.script >= 0.999) ep.script = 1;
+    }
+    // people
+    for (const shk of s.shinkos) {
+      if (shk.gone) continue;
+      const busy = teamBusy(s, shk.team) || s.eps.some((e) => e.plan.team === shk.team && e.started && !e.delivered && !e.aired);
+      shk.stamina = clamp(shk.stamina - (busy ? 5 : 0) - (p.ot ? 5 : 0) + (!busy && !p.ot ? 8 : 0) + (shk.helped ? 18 : 0) + 1, 0, 100);
+      shk.helped = false;
+    }
+    for (const ep of inh) for (const a of ep.anims) if (a.hold > 0 && a.hold < 90) { a.hold--; if (a.hold === 0) log(s, `原画の${a.name}さんと連絡がついた（第${ep.n}話）。`); }
+    s.mods.forEach((m) => m.weeks--);
+    s.mods = s.mods.filter((m) => m.weeks > 0);
+    for (const ep of s.eps) ep.pushed = false;
+  }
+
+  // ---------- quality ----------
+  const dilution = (ep) => Math.max(0, ep.anims.filter((a) => !a.out || a.genga > 0).length - BASE_ANIMS) * DILUTION;
+  function epQuality(s, ep) {
+    const T = TIERS[s.tier], st = s.staff;
+    const dirS = st.dir.skill + s.dirMood;
+    if (isGross(ep.plan)) return clamp(grossOf(s, ep.plan).quality + 0.15 * (dirS - 65) + synergy(s) / 2 + ep.bonus - (ep.penFix || 0), 0, 100);
+    const g = sumA(ep, "genga");
+    const art = g > 0 ? ep.qG / g : ep.anims.length ? avg(ep.anims.map((a) => a.skill)) : avg(T.animSkill);
+    const qD = ep.douga > 0 ? ep.qD / ep.douga : T.dougaSkill;
+    const sak = teamBy(s, ep.plan.team).sakkan.skill;
+    return clamp(0.40 * art + 0.20 * sak + 0.15 * dirS + 0.10 * st.wri.skill + 0.10 * qD + 0.05 * T.artSkill + synergy(s) + ep.bonus + (st.va.act - 65) * 0.05 - dilution(ep) - (ep.pen || 0) / ep.cuts - (ep.penFix || 0), 0, 100);
+  }
+
+  // ---------- airing ----------
+  const airDue = (s) => s.aired < EPISODES && s.week === s.nextAir;
+  function airEpisode(s, choice) {
+    const ep = unaired(s)[0];
+    const T = TIERS[s.tier];
+    const prog = Math.min(1, done(ep));
+    if (choice === "recap") {
+      s.recaps++; s.nextAir++; ep.recapped = (ep.recapped || 0) + 1;
+      s.R = clamp(s.R - 3, 0, 100);
+      log(s, `第${s.week}週は総集編を放送。第${ep.n}話は翌週へ。`);
+      s.sns.unshift(...snsLines(s, "recap", ep.n));
+      return { recap: true, ep };
+    }
+    if (choice === "delay") {
+      s.delays++; s.nextAir += 2;
+      s.R = clamp(s.R - 6, 0, 100);
+      log(s, `万策尽きた。第${ep.n}話以降の放送を2週延期。`);
+      s.sns.unshift(...snsLines(s, "delay", ep.n));
+      return { delay: true, ep };
+    }
+    const f = prog >= 1 ? 1 : 0.35 + 0.65 * Math.pow(prog, 1.5);
+    const q = epQuality(s, ep) * f;
+    ep.aired = true; ep.airQ = Math.round(q); ep.collapse = prog < 0.85; ep.airProg = prog; ep.airWeek = s.week;
+    s.aired++; s.nextAir++;
+    const rec = q - (T.exp + (s.H - 50) * 0.18);
+    s.R = clamp(s.R * 0.75 + clamp(55 + rec * 1.6, 0, 100) * 0.25, 0, 100);
+    s.H = clamp(s.H + rec * 0.35 - (ep.collapse ? 8 : 0), 0, 150);
+    s.lastAirQ = q;
+    const grade = ep.collapse ? "collapse" : q >= 76 ? "god" : q >= 64 ? "good" : q >= 52 ? "mid" : "bad";
+    ep.grade = grade;
+    log(s, `第${ep.n}話 放送。作画の出来 ${ep.airQ}${ep.collapse ? "（作画崩壊）" : ""}。`);
+    s.sns.unshift(...snsLines(s, grade, ep.n));
+    if (s.sns.length > 40) s.sns.length = 40;
+    s.kv.push({ n: ep.n, q: ep.airQ, collapse: ep.collapse, seed: s.rs });
+    return { ep, q, grade };
+  }
+  const HANDLES = ["@anime_mitai", "@sakuga_kamikaze", "@yoru_no_otaku", "@genkaku_fan", "@kanshi_iinkai", "@nemui_shakaijin", "@cut_bukuro", "@ichiban_kuji", "@rewatch_3kaime", "@sinya_tv"];
+  const SNS = {
+    god: ["今週の作画、劇場版かよ", "この制作会社に何があった（褒め）", "作監の名前覚えた", "3回見返した。全カット止められる", "円盤買います"],
+    good: ["安定して面白い", "今期はこれ追う", "OPの入りが好き", "原作のあのシーンが丁寧で泣いた"],
+    mid: ["まあ普通", "来週に期待", "悪くはないけど地味", "途中でスマホ見てた", "グロス回っぽい"],
+    bad: ["作画どうした", "顔が毎カット違う", "動かないな今週", "ちょっと心配になってきた", "原画マン何人いるのこれ"],
+    collapse: ["作画崩壊してて草", "止め絵の紙芝居", "この回だけ別のアニメ", "原画マンの悲鳴が聞こえる", "円盤で直るって信じてる"],
+    recap: ["もう総集編…？", "察し", "制作さん生きて", "総集編なのに新規カットがない"],
+    delay: ["万策尽きたか", "放送延期って本当？", "スタッフの体調が心配", "制作会社どうなってるの"],
+  };
+  function snsLines(s, kind, n) { return shuffle(s, SNS[kind]).slice(0, 2).map((t) => ({ n, kind, h: pick(s, HANDLES), t })).reverse(); }
+
+  // ---------- the desk's actions ----------
+  const ACTIONS = {
+    help:       { label: "ヘルプに入る", ap: 1, desc: "この班の話数を自分も回す。進みが上がり、進行の疲れも取れる。隠れていたトラブルも見つかる" },
+    hireShinko: { label: "新しい進行を入れる", ap: 1, desc: "連絡が取れない進行の代わりに、新人を入れる" },
+    extConte:   { label: "外部コンテマンに頼む", ap: 1, desc: "3週間コンテが速くなる。監督の色は少し薄れる" },
+    dirTalk:    { label: "監督と打ち合わせ", ap: 1, desc: "監督の機嫌を取る（品質の低下を戻す）" },
+    grossPush:  { label: "協力会社を催促", ap: 1, desc: "グロスの回を1週ぶん巻いてもらう" },
+  };
+  function canAct(s, id, arg) {
+    const a = ACTIONS[id];
+    if (s.phase !== "prod" || s.ap < a.ap) return false;
+    if (id === "help") { const sh = shinkoBy(s, arg); return !!sh && !sh.gone && !sh.helped; }
+    if (id === "hireShinko") { const sh = shinkoBy(s, arg); return !!sh && sh.gone; }
+    if (id === "dirTalk") return s.dirMood < 0;
+    if (id === "extConte") return !s.mods.some((m) => m.id === "extConte") && unaired(s).some((e) => e.conte < 1 && !isGross(e.plan));
+    if (id === "grossPush") { const ep = epBy(s, arg); return !!ep && isGross(ep.plan) && ep.started && !ep.delivered && !ep.aired && !ep.pushed; }
+    return true;
+  }
+  function doAction(s, id, arg) {
+    if (!canAct(s, id, arg)) return null;
+    s.ap -= ACTIONS[id].ap;
+    let msg = "";
+    if (id === "help") {
+      const sh = shinkoBy(s, arg); sh.helped = true; s.helpCount++;
+      const t = teamOfShinko(s, sh.id);
+      msg = `${t.label}の${sh.name}と一緒に回った。カット袋の回収、原画マンへの催促、美術への受け渡し。`;
+      // walking the floor yourself turns up whatever the 進行 was sitting on
+      for (const inc of s.incidents.filter((i) => !i.revealed && i.team === t.key)) { inc.found = true; reveal(s, inc); s.hiddenFound++; }
+      pumpEvents(s);
+    } else if (id === "hireShinko") {
+      const old = shinkoBy(s, arg), t = teamOfShinko(s, old.id), nu = makeShinko(s, [35, 55]);
+      nu.team = t.key; t.shinko = nu.id;
+      s.shinkos.splice(s.shinkos.indexOf(old), 1, nu);
+      msg = `新人進行の${nu.name}を入れた。${t.label}を引き継がせる。`;
+    } else if (id === "extConte") { addMod(s, "extConte", 3, 1.6, "conte"); s.dirMood -= 1; msg = "外部のコンテマンに数話分のコンテを頼んだ。"; }
+    else if (id === "dirTalk") { s.dirMood = Math.min(0, s.dirMood + 2); msg = `監督・${s.staff.dir.name}と飲みに行った。少し機嫌が直った。`; }
+    else if (id === "grossPush") {
+      const ep = epBy(s, arg); ep.pushed = true;
+      ep.gprog = Math.min(1, ep.gprog + 1 / ep.plan.dur); ep.gslip = Math.max(0, ep.gslip - 1);
+      msg = `${grossOf(s, ep.plan).name}の社長に電話して、第${ep.n}話を巻いてもらった。`;
+    }
+    log(s, msg);
+    s.stat = forecast(s);
+    return msg;
+  }
+  function setPolicy(s, key, val) { s.policy[key] = val; s.stat = forecast(s); }
+
+  // ---------- 巻き（間に合わないときの最後の手段）----------
+  function canRush(s, ep, mode) {
+    if (!ep || !ep.started || ep.delivered || ep.aired) return false;
+    // グロス回は、協力会社に巻いてもらう（撮影短縮は先方の判断）
+    if (isGross(ep.plan)) return !!RUSH[mode] && rushRank(ep) < RUSH[mode].rank;
+    // デスクに見えている工程で判断する（進行が隠しているぶんは分からない）
+    const st = withView(s, ep, () => stageOf(ep));
+    if (mode === "short") return !ep.short && ["douga", "shiage", "satsuei"].includes(st) && ep.satsuei > 0.5;
+    const r = RUSH[mode];
+    if (!r || rushRank(ep) >= r.rank) return false;
+    if (mode === "2gen") return st === "rough" || st === "genga";
+    return ["rough", "genga", "douga", "shiage"].includes(st);
+  }
+  function setRush(s, n, mode) {
+    const ep = epBy(s, n);
+    if (!canRush(s, ep, mode)) return false;
+    if (isGross(ep.plan)) {
+      const gain = RUSH[mode].rank - rushRank(ep);
+      ep.rush = mode; ep.penFix = RUSH[mode].gfix;
+      ep.gprog = Math.min(0.999, ep.gprog + gain / ep.plan.dur); ep.gslip = Math.max(0, ep.gslip - gain);
+      log(s, `第${n}話、${grossOf(s, ep.plan).name}に${RUSH[mode].label}で巻いてもらう。`);
+      s.stat = forecast(s);
+      return true;
+    }
+    if (mode === "short") ep.short = true; else ep.rush = mode;
+    ep.penFix = (ep.rush ? RUSH[ep.rush].fix : 0) + (ep.short ? SHORT_FIX : 0);
+    if (mode === "short") { log(s, `第${n}話、撮影スケジュールを短縮。上がった端から撮って出す。`); }
+    else log(s, `第${n}話を${RUSH[mode].label}に切り替えた。`);
+    s.stat = forecast(s);
+    return true;
+  }
+  // 品質がどれくらい落ちるかの見込み（これから上がるカットぶん）
+  function rushPenalty(ep, mode) {
+    if (isGross(ep.plan)) return RUSH[mode].gfix - (ep.penFix || 0);
+    const c = ep.cuts, g = sumA(ep, "genga");
+    if (mode === "short") return ((c - ep.satsuei) * SHORT_PEN) / c + SHORT_FIX;
+    const r = RUSH[mode];
+    return ((c - ep.douga) * r.pen + (r.gpen ? (c - g) * r.gpen : 0)) / c + r.fix - (ep.rush ? RUSH[ep.rush].fix : 0);
+  }
+  // 手を打ったらどうなるか（写しで試す）
+  function preview(s, n, fn) {
+    const c = JSON.parse(JSON.stringify(s));
+    fn(c, epBy(c, n));
+    const e2 = epBy(c, n);
+    return { fc: epForecast(c, e2), q: Math.round(epQuality(c, e2)) };
+  }
+  function previewRush(s, n, mode) {
+    const r = preview(s, n, (c) => setRush(c, n, mode));
+    const ep = epBy(s, n), pen = rushPenalty(ep, mode);
+    r.q = Math.round(clamp(epQuality(s, ep) - pen, 0, 100)); r.pen = Math.round(pen); r.q0 = Math.round(epQuality(s, ep));
+    return r;
+  }
+
+  // ---------- trouble ----------
+  // Who brings the news. A 進行 with poor judgment sits on bad news until the last moment.
+  function reportDelay(s, sh, ep) {
+    if (!sh || sh.gone) return 0;
+    if (sh.skill >= 66) return 0;
+    if (sh.skill >= 52) return rnd(s) < 0.5 ? 1 : 0;
+    if (sh.skill >= 42) return ri(s, 1, 2);
+    // ぎりぎりまで抱え込む
+    const air = airWeekOf(s, ep);
+    return Math.max(1, air - 2 - s.week);
+  }
+  const activeInh = (s) => unaired(s).filter((e) => e.started && !e.delivered && !isGross(e.plan));
+  const liveAnims = (ep) => ep.anims.filter((a) => !a.out && a.hold <= 0 && a.slow === 1 && a.cuts - a.genga > 5);
+  const animOf = (s, p) => epBy(s, p.n).anims.find((x) => x.id === p.aid);
+  const kaishuCand = (ep) => ep.anims.filter((a) => !a.out && a.hold <= 0 && a.slow === 1 && a.genga >= 8);
+  // 原画が減ったら、その先の工程も原画を超えないように
+  function capDown(ep, g0) {
+    const g1 = sumA(ep, "genga");
+    ep.qG *= g1 / Math.max(1, g0);
+    for (const k of ["douga", "shiage", "satsuei"]) ep[k] = Math.min(ep[k], g1);
+  }
+  const reporterOfEp = (s, ep) => (isGross(ep.plan) ? { kind: "gross", id: grossOf(s, ep.plan).id } : { kind: "shinko", team: ep.plan.team });
+  const EVENTS = {
+    kakae: { title: "カットを抱えたまま連絡が取れない", hideable: true,
+      when: (s) => activeInh(s).some((e) => liveAnims(e).length > 1), weight: () => 1.4,
+      prep: (s) => { const ep = pick(s, activeInh(s).filter((e) => liveAnims(e).length > 1)); const a = pick(s, liveAnims(ep)); return { n: ep.n, aid: a.id }; },
+      start: (s, p) => { const a = epBy(s, p.n).anims.find((x) => x.id === p.aid); a.hold = 99; },
+      text: (s, p, inc) => { const a = epBy(s, p.n).anims.find((x) => x.id === p.aid); return `第${p.n}話の原画・${a.name}さんが、カット${Math.round(a.cuts - a.genga)}本を抱えたまま連絡が取れません${inc && inc.late ? `……実は${s.week - inc.start}週間前からです` : ""}。`; },
+      choices: [
+        { label: "カットを回収して他の人に配り直す（行動−1）", ap: 1, run: (s, p) => { const ep = epBy(s, p.n); dropAnimator(s, ep, ep.anims.find((x) => x.id === p.aid)); return `第${p.n}話のカットを回収して配り直した。`; } },
+        { label: "連絡を待つ（2週間止まる）", run: (s, p) => { const a = epBy(s, p.n).anims.find((x) => x.id === p.aid); a.hold = 2; return "待つことにした。"; } },
+      ] },
+    slow: { title: "他社の仕事を優先している", hideable: true,
+      when: (s) => activeInh(s).some((e) => liveAnims(e).length > 1), weight: () => 1.2,
+      prep: (s) => { const ep = pick(s, activeInh(s).filter((e) => liveAnims(e).length > 1)); const a = pick(s, liveAnims(ep)); return { n: ep.n, aid: a.id }; },
+      start: (s, p) => { const a = epBy(s, p.n).anims.find((x) => x.id === p.aid); a.slow = 0.25; },
+      text: (s, p, inc) => { const a = epBy(s, p.n).anims.find((x) => x.id === p.aid); return `第${p.n}話の原画・${a.name}さん、他社の劇場作品を優先していて、うちのカットがほとんど進んでいません${inc && inc.late ? `。${s.week - inc.start}週間前からこの調子でした` : ""}。`; },
+      choices: [
+        { label: "直接電話して戻ってきてもらう（行動−1）", ap: 1, run: (s, p) => { const a = epBy(s, p.n).anims.find((x) => x.id === p.aid); a.slow = 1; return `${a.name}さんがこっちに戻ってきた。`; } },
+        { label: "外して、カットを他の人に配り直す", run: (s, p) => { const ep = epBy(s, p.n); dropAnimator(s, ep, ep.anims.find((x) => x.id === p.aid)); return "カットを配り直した。"; } },
+      ] },
+    sakkanNG: { title: "作監のリテイク", hideable: true, hideAll: true,
+      when: (s) => activeInh(s).some((e) => sumA(e, "genga") > 60), weight: () => 1.0,
+      prep: (s) => ({ n: pick(s, activeInh(s).filter((e) => sumA(e, "genga") > 60)).n }),
+      start: (s, p) => { const ep = epBy(s, p.n); p.cuts = Math.round(Math.min(50, sumA(ep, "genga") * 0.25)); retake(s, ep, p.cuts, "genga"); },
+      text: (s, p, inc) => `第${p.n}話の原画、作監から${p.cuts}カットのリテイクが出ています${inc && inc.late ? `。${s.week - inc.start}週間前から描き直し中でした` : ""}。`,
+      choices: [{ label: "わかった", run: () => "描き直しを進めてもらう。" }] },
+    tobi: { title: "制作進行が飛んだ",
+      when: (s) => s.shinkos.some((x) => !x.gone), weight: (s) => 0.5 + s.shinkos.filter((x) => !x.gone && x.stamina < 30).length * 2.5 + (s.policy.ot ? 1 : 0),
+      prep: (s) => { const l = s.shinkos.filter((x) => !x.gone).sort((a, b) => a.stamina - b.stamina); const sh = rnd(s) < 0.7 ? l[0] : pick(s, l); return { id: sh.id, team: sh.team }; },
+      reporter: (s, p) => ({ kind: "sakkan", team: p.team }),
+      text: (s, p) => `${p.team}班の進行・${shinkoBy(s, p.id)?.name}さんと連絡が取れません。カット袋が机に積まれたままです。`,
+      choices: [
+        { label: "家まで迎えに行く（行動−2・休ませて戻す）", ap: 2, run: (s, p) => { const sh = shinkoBy(s, p.id); sh.stamina = 70; return `${sh.name}は戻ってきた。しばらく無理はさせない。`; } },
+        { label: "そのままにする（班の進みが大きく落ちる。新しい進行を入れられる）", run: (s, p) => { const sh = shinkoBy(s, p.id); sh.gone = true; return `${sh.name}の席は空いたままだ。`; } },
+      ] },
+    kodawari: { title: "監督のこだわり", when: (s) => activeInh(s).length > 0, weight: (s) => s.staff.dir.quirk * 4,
+      prep: (s) => ({ n: activeInh(s)[0].n }), reporter: () => ({ kind: "dir" }),
+      text: (s, p) => `「第${p.n}話のアクション、レイアウトから全部描き直したい」`,
+      choices: [
+        { label: "認める（その回の品質+8、ラフ原が40カット戻る）", run: (s, p) => { const e = epBy(s, p.n); e.bonus += 8; retake(s, e, 40, "rough"); return "監督が自らレイアウトを描き始めた。"; } },
+        { label: "なだめて止める（監督の機嫌が悪くなり、全話の品質−3）", run: (s) => { s.dirMood -= 3; return "監督は黙って席に戻った。"; } },
+      ] },
+    kanshu: { title: "原作監修の修正指示", when: (s) => s.flags.kanshu > 0 && activeInh(s).some((e) => sumA(e, "genga") > 20), weight: (s) => s.flags.kanshu * 8,
+      prep: (s) => { const l = activeInh(s).filter((e) => sumA(e, "genga") > 20); return { n: l[l.length - 1].n }; },
+      reporter: (s, p) => ({ kind: "shinko", team: epBy(s, p.n).plan.team }),
+      text: (s, p) => `原作サイドから第${p.n}話の修正指示です。「キャラの髪の分け目が原作と逆です」`,
+      choices: [
+        { label: "交渉する（行動−1・20カットだけ直す）", ap: 1, run: (s, p) => { retake(s, epBy(s, p.n), 20, "genga"); return "半分は今回のままで了承してもらえた。"; } },
+        { label: "全部直す（原画が40カット戻る）", run: (s, p) => { retake(s, epBy(s, p.n), 40, "genga"); return "修正カットをまとめて再発注した。"; } },
+      ] },
+    kyakuhon: { title: "脚本が上がらない", when: (s) => unaired(s).some((e) => e.script < 1), weight: (s) => (100 - s.staff.wri.speed) / 40,
+      reporter: () => ({ kind: "dir" }),
+      text: (s) => `「${s.staff.wri.name}さんの脚本が上がってこない。コンテが止まってる」`,
+      choices: [
+        { label: "毎日催促する（行動−1・影響は今週だけ）", ap: 1, run: (s) => { addMod(s, "kyaku", 1, 0.5, "pre"); return "ホテルに缶詰めにしてもらった。"; } },
+        { label: "待つ（2週間、脚本とコンテが半分の速さ）", run: (s) => { addMod(s, "kyaku", 2, 0.5, "pre"); return "締め切りを伸ばした。"; } },
+      ] },
+    kaigai: { title: "海外スタジオの納品遅れ", when: (s) => s.policy.douga === "overseas", weight: () => 1.3,
+      reporter: () => ({ kind: "post" }),
+      text: () => "海外の動画スタジオから連絡です。現地の祝日で、今週分の納品がありません。",
+      choices: [{ label: "了解", run: (s) => { addMod(s, "kaigai", 1, 0, "os"); return "海外分の穴を社内でかぶる。"; } }] },
+    grossLate: { title: "グロス先の遅れ", when: (s) => unaired(s).some((e) => e.started && !e.delivered && isGross(e.plan)), weight: () => 0.9,
+      prep: (s) => ({ n: pick(s, unaired(s).filter((e) => e.started && !e.delivered && isGross(e.plan))).n }),
+      reporter: (s, p) => ({ kind: "gross", id: grossOf(s, epBy(s, p.n).plan).id }),
+      text: (s, p) => `「第${p.n}話、原画マンが集まらなくて2週遅れそうです……」`,
+      choices: [
+        { label: "社長に直接頼み込む（行動−1・1週の遅れで済ませる）", ap: 1, run: (s, p) => { epBy(s, p.n).gslip += 1; return "1週の遅れで手を打ってもらった。"; } },
+        { label: "受け入れる（2週遅れる）", run: (s, p) => { epBy(s, p.n).gslip += 2; return "2週遅れを受け入れた。"; } },
+      ] },
+    artLate: { title: "美術の遅れ", when: (s) => activeInh(s).some((e) => !e.art), weight: () => 0.6,
+      prep: (s) => ({ n: activeInh(s).find((e) => !e.art).n }),
+      reporter: (s, p) => ({ kind: "shinko", team: epBy(s, p.n).plan.team }),
+      text: (s, p) => `美術会社から、第${p.n}話の背景が1週遅れると連絡がありました。`,
+      choices: [{ label: "仕方ない", run: (s, p) => { epBy(s, p.n).artDelay = 1; return "背景待ちになる。"; } }] },
+    flu: { title: "インフルエンザ流行", weight: () => 0.6, reporter: () => ({ kind: "studio" }),
+      text: () => "スタジオでインフルエンザが流行しています。作画部屋の半分がマスク姿で咳をしています。",
+      choices: [{ label: "仕方ない（2週間、作画の進み−20%）", run: (s) => { addMod(s, "flu", 2, 0.8, "ga"); return "加湿器を3台買った。"; } }] },
+    ace: { title: "腕利きが空いた", when: (s) => activeInh(s).some((e) => canAddAnim(s, e)), weight: () => 0.5,
+      prep: (s) => ({ n: activeInh(s).filter((e) => canAddAnim(s, e))[0].n }),
+      reporter: (s, p) => ({ kind: "shinko", team: epBy(s, p.n).plan.team }),
+      text: (s, p) => `腕利きの原画マンさんの手が空いたそうです。第${p.n}話に入ってもらえるかもしれません。`,
+      choices: [
+        { label: "入ってもらう（実力85前後の原画マンが1人入る）", run: (s, p) => { const ep = epBy(s, p.n); const a = makeAnimator(s); a.skill = ri(s, 82, 92); ep.anims.push(a); redistribute(ep, s); return `${a.name}さんが第${p.n}話に入ってくれた。`; } },
+        { label: "見送る", run: () => "今回は見送った。" },
+      ] },
+    burnout: { title: "作画部屋がダウン", when: (s) => s.policy.ot, weight: () => 1.6, reporter: () => ({ kind: "studio" }),
+      text: () => "残業続きで、原画マンが何人か寝込みました。",
+      choices: [{ label: "休ませる（2週間、作画の進み−15%）", run: (s) => { addMod(s, "down", 2, 0.85, "ga"); return "みんなに休めと言った。"; } }] },    // ---- 制作進行の現場でありがちなこと ----
+    kaishu: { title: "原画の回収漏れ", hideable: true,
+      when: (s) => activeInh(s).some((e) => kaishuCand(e).length), weight: () => 1.1,
+      prep: (s) => { const ep = pick(s, activeInh(s).filter((e) => kaishuCand(e).length)); const a = pick(s, kaishuCand(ep)); return { n: ep.n, aid: a.id, x: Math.round(Math.min(a.genga, ri(s, 6, 14))) }; },
+      start: (s, p) => { const a = animOf(s, p); a.genga -= p.x; a.hold = 99; },
+      text: (s, p, inc) => `第${p.n}話、原画の${animOf(s, p).name}さんのところに、上がった原画${p.x}カットが回収されないまま置きっぱなしでした${inc && inc.late ? `。${s.week - inc.start}週間前に上がっていたそうです` : ""}。そのあいだ${animOf(s, p).name}さんは次のカットを待っています。`,
+      choices: [
+        { label: "今夜、車で回収に行く（行動−1・すぐ動き出す）", ap: 1, run: (s, p) => { const a = animOf(s, p); if (!a.out) { a.hold = 0; a.genga = Math.min(a.rough, a.genga + p.x); } return "深夜の環八を走って回収した。"; } },
+        { label: "バイク便で送ってもらう（1週間止まる）", run: (s, p) => { const a = animOf(s, p); if (!a.out) { a.hold = 1; a.genga = Math.min(a.rough, a.genga + p.x); } return "バイク便を手配した。"; } },
+      ] },
+    fukuro: { title: "カット袋の紛失", hideable: true,
+      when: (s) => activeInh(s).some((e) => e.anims.some((a) => !a.out && a.genga >= 6)), weight: () => 0.7,
+      prep: (s) => { const ep = pick(s, activeInh(s).filter((e) => e.anims.some((a) => !a.out && a.genga >= 6))); const a = pick(s, ep.anims.filter((a) => !a.out && a.genga >= 6)); return { n: ep.n, aid: a.id, x: Math.round(Math.min(a.genga, ri(s, 5, 10))) }; },
+      start: (s, p) => { const ep = epBy(s, p.n), a = animOf(s, p), g0 = sumA(ep, "genga"); a.genga -= p.x; a.rough -= p.x; capDown(ep, g0); },
+      text: (s, p, inc) => `第${p.n}話、${animOf(s, p).name}さんの原画のカット袋が${p.x}本見当たりません。進行車の中も、作監机の下も探しましたが……${inc && inc.late ? `（なくしたのは${s.week - inc.start}週間前です）` : ""}`,
+      choices: [
+        { label: "もう一度スタジオ中を探す（行動−1・見つかるかは五分五分）", ap: 1, run: (s, p) => { if (rnd(s) < 0.5) { const ep = epBy(s, p.n), a = animOf(s, p); a.rough = Math.min(a.cuts, a.rough + p.x); a.genga = Math.min(a.rough, a.genga + p.x); return "撮影机の裏から出てきた。"; } return "見つからなかった。描き直してもらう。"; } },
+        { label: "描き直してもらう", run: () => "レイアウトから描き直してもらう。" },
+      ] },
+    nijuu: { title: "カットの二重発注", hideable: true, hideAll: true,
+      when: (s) => activeInh(s).some((e) => sumA(e, "genga") > 40), weight: () => 0.6,
+      prep: (s) => ({ n: pick(s, activeInh(s).filter((e) => sumA(e, "genga") > 40)).n, x: ri(s, 8, 16) }),
+      start: (s, p) => retake(s, epBy(s, p.n), p.x, "genga"),
+      text: (s, p, inc) => `第${p.n}話、同じカットを二人の原画マンに振っていました。${p.x}カットぶんの手が無駄になって、そのぶんのカットがまだ誰の手元にもありません${inc && inc.late ? `。${s.week - inc.start}週間前から気づいていたようです` : ""}。`,
+      choices: [{ label: "振り直させる", run: () => "カット表を作り直させた。" }] },
+    enshutsu: { title: "演出が捕まらない",
+      when: (s) => activeInh(s).some((e) => ["rough", "genga"].includes(stageOf(e))), weight: () => 0.9,
+      prep: (s) => ({ n: pick(s, activeInh(s).filter((e) => ["rough", "genga"].includes(stageOf(e)))).n }),
+      text: (s, p) => `第${p.n}話の演出さんが捕まりません。原画のチェックが止まって、上がりが机に溜まっています。`,
+      choices: [
+        { label: "演出の家の近くで待ち伏せる（行動−1・1週で済む）", ap: 1, run: (s, p) => { addMod(s, "ens", 1, 0.5, "ga:" + p.n); return "ファミレスで捕まえてチェックしてもらった。"; } },
+        { label: "連絡を待つ（2週間、その話数の原画が半分の速さ）", run: (s, p) => { addMod(s, "ens", 2, 0.5, "ga:" + p.n); return "演出からの連絡を待つ。"; } },
+      ] },
+    sakkanTamari: { title: "作監修正が溜まっている",
+      when: (s) => activeInh(s).some((e) => sumA(e, "genga") > 40 && e.douga < e.cuts - 40), weight: () => 0.8,
+      prep: (s) => ({ n: pick(s, activeInh(s).filter((e) => sumA(e, "genga") > 40 && e.douga < e.cuts - 40)).n }),
+      text: (s, p) => `第${p.n}話、作監の修正が追いつかず、原画が作監机に山積みです。動画に出せていません。`,
+      choices: [
+        { label: "作監補佐を立てる（行動−1・その話数の品質−2）", ap: 1, run: (s, p) => { epBy(s, p.n).bonus -= 2; return "作監補佐を2人立てた。"; } },
+        { label: "作監に任せる（2週間、その話数の動画がほぼ止まる）", run: (s, p) => { addMod(s, "tamari", 2, 0.3, "dg:" + p.n); return "作監が徹夜で修正を入れている。"; } },
+      ] },
+    sakkanDown: { title: "作監が倒れた",
+      when: (s) => activeInh(s).some((e) => ["genga", "douga"].includes(stageOf(e))), weight: () => 0.4,
+      prep: (s) => ({ n: pick(s, activeInh(s).filter((e) => ["genga", "douga"].includes(stageOf(e)))).n }),
+      text: (s, p) => `第${p.n}話の作監・${teamBy(s, epBy(s, p.n).plan.team).sakkan.name}さんが過労で倒れました。修正が止まっています。`,
+      choices: [
+        { label: "総作監に入ってもらう（行動−1）", ap: 1, run: () => "総作監が引き取ってくれた。" },
+        { label: "作監修正なしで動画に出す（その話数の品質−6）", run: (s, p) => { epBy(s, p.n).bonus -= 6; return "修正なしで先に進める。"; } },
+        { label: "戻るまで待つ（2週間、その話数の動画が止まる）", run: (s, p) => { addMod(s, "sdown", 2, 0.15, "dg:" + p.n); return "作監の回復を待つ。"; } },
+      ] },
+    irosashi: { title: "色指定のミス",
+      when: (s) => activeInh(s).some((e) => e.shiage > 40), weight: () => 0.6,
+      prep: (s) => { const ep = pick(s, activeInh(s).filter((e) => e.shiage > 40)); return { n: ep.n, x: Math.round(Math.min(ep.shiage - 10, ri(s, 15, 30))) }; },
+      start: (s, p) => { const ep = epBy(s, p.n); ep.shiage -= p.x; ep.satsuei = Math.min(ep.satsuei, ep.shiage); },
+      text: (s, p) => `第${p.n}話、色指定表の版が古いまま仕上げに回っていました。${p.x}カットが塗り直しです。`,
+      choices: [{ label: "塗り直してもらう", run: () => "色指定表を差し替えた。" }] },
+    satsueiData: { title: "撮影データが飛んだ",
+      when: (s) => activeInh(s).some((e) => e.satsuei > 40), weight: () => 0.4,
+      prep: (s) => { const ep = pick(s, activeInh(s).filter((e) => e.satsuei > 40)); return { n: ep.n, x: Math.round(Math.min(ep.satsuei - 10, ri(s, 25, 45))) }; },
+      start: (s, p) => { epBy(s, p.n).satsuei -= p.x; },
+      text: (s, p) => `撮影のサーバーが落ちて、第${p.n}話の撮影データが${p.x}カットぶん飛びました。`,
+      choices: [
+        { label: "バックアップを探してもらう（行動−1・半分は戻る）", ap: 1, run: (s, p) => { const ep = epBy(s, p.n); ep.satsuei = Math.min(ep.shiage, ep.satsuei + p.x / 2); return "先週のバックアップから半分戻った。"; } },
+        { label: "撮り直す", run: () => "撮り直してもらう。" },
+      ] },
+    kousa: { title: "局の考査でNG",
+      when: (s) => unaired(s).some((e) => e.delivered && !isGross(e.plan) && e.anims.length), weight: () => 0.4,
+      prep: (s) => ({ n: pick(s, unaired(s).filter((e) => e.delivered && !isGross(e.plan) && e.anims.length)).n, x: ri(s, 15, 30) }),
+      start: (s, p) => { const ep = epBy(s, p.n); ep.delivered = false; ep.deliveredWeek = null; ep.satsuei = ep.cuts - p.x; },
+      text: (s, p) => `納品した第${p.n}話、放送局の考査で光の点滅がNGになりました（光過敏性発作の基準）。撮影で${p.x}カット直しです。`,
+      choices: [{ label: "撮影に直してもらう", run: () => "撮影処理をやり直してもらう。" }] },
+    gaigai: { title: "海外動画が使えない",
+      when: (s) => s.policy.douga === "overseas" && activeInh(s).some((e) => e.douga > 50 && e.douga < e.cuts - 0.5), weight: () => 0.8,
+      prep: (s) => { const ep = pick(s, activeInh(s).filter((e) => e.douga > 50 && e.douga < e.cuts - 0.5)); return { n: ep.n, x: Math.round(Math.min(ep.douga - 10, ri(s, 30, 50))) }; },
+      text: (s, p) => `海外から上がってきた第${p.n}話の動画、中割りがガタガタで${p.x}カット使えません。`,
+      choices: [
+        { label: "社内でリテイクする（動画が戻る）", run: (s, p) => { const ep = epBy(s, p.n); ep.douga -= p.x; ep.qD = Math.max(0, ep.qD - p.x * 40); ep.shiage = Math.min(ep.shiage, ep.douga); ep.satsuei = Math.min(ep.satsuei, ep.shiage); return "社内の動画マンに描き直してもらう。"; } },
+        { label: "そのまま使う（その話数の品質−4）", run: (s, p) => { epBy(s, p.n).bonus -= 4; return "目をつぶって先に進めた。"; } },
+      ] },
+    kuruma: { title: "進行車が駐禁で持っていかれた",
+      when: (s) => activeInh(s).length > 0, weight: () => 0.6,
+      prep: (s) => ({ n: pick(s, activeInh(s)).n }),
+      text: (s, p) => `原画の回収中に、${epBy(s, p.n).plan.team}班の進行車がレッカー移動されました……`,
+      choices: [
+        { label: "保管場所まで取りに行く（行動−1）", ap: 1, run: () => "反則金を払って取り戻した。" },
+        { label: "今週は電車で回る（その班の進み−25%）", run: (s, p) => { addMod(s, "car", 1, 0.75, "tm:" + epBy(s, p.n).plan.team); return "電車とタクシーで回収する。"; } },
+      ] },
+    kyohi: { title: "納品拒否", when: () => false, weight: () => 0,
+      text: (s, p) => `「第${p.n}話、この品質（${p.q}）では受け取れません。うちの基準は${LINE}です。直してから納品してください」`,
+      choices: (s, p) => {
+        const ep = epBy(s, p.n), K = kyohiCuts(ep, p.q), gain = kyohiGain(p.q), out = [];
+        const nego = { label: "局Pに頭を下げて通してもらう（行動−1・五分五分。だめなら原画からリテイク）", ap: 1, run: (s2) => {
+          const e = epBy(s2, p.n);
+          if (rnd(s2) < 0.5) { e.rejectPending = false; e.waived = true; e.delivered = true; e.deliveredWeek = s2.week; return "今回だけ、ということで受け取ってもらえた。"; }
+          if (isGross(e.plan)) e.gprog = 1 - 2 / e.plan.dur; else retake(s2, e, K, "genga");
+          clearReject(s2, e, gain); return "通らなかった。リテイクを出す。"; } };
+        if (isGross(ep.plan)) {
+          out.push({ label: `協力会社にリテイクを出す（あと2週・品質 ${p.q}→${p.q + gain}）`, run: (s2) => { const e = epBy(s2, p.n); e.gprog = 1 - 2 / e.plan.dur; clearReject(s2, e, gain); return `${grossOf(s2, e.plan).name}にリテイクを出した。`; } });
+          out.push({ label: `社内で引き取って直す（行動−2・あと1週・品質 ${p.q}→${p.q + gain}）`, ap: 2, run: (s2) => { const e = epBy(s2, p.n); e.gprog = 1 - 1 / e.plan.dur; clearReject(s2, e, gain); return "社内の作監陣で引き取って直す。"; } });
+        } else {
+          out.push({ label: `原画からリテイクする（${K}カット描き直し・品質 ${p.q}→${p.q + gain}）`, run: (s2) => { const e = epBy(s2, p.n); retake(s2, e, K, "genga"); clearReject(s2, e, gain); return `第${p.n}話、${K}カットを原画から描き直す。`; } });
+          out.push({ label: `総作監に修正を入れてもらう（行動−2・撮影から${Math.round(K / 2)}カット撮り直し・品質 ${p.q}→${p.q + gain}）`, ap: 2, run: (s2) => { const e = epBy(s2, p.n); e.satsuei = e.cuts - Math.round(K / 2); e.delivered = false; clearReject(s2, e, gain); return "総作監が修正を入れて、撮影をやり直す。"; } });
+        }
+        out.push(nego);
+        return out;
+      } },
+    lateGross: { title: "グロス回が間に合わない", when: () => false, weight: () => 0,
+      text: (s, p) => { const ep = epBy(s, p.n); return `「第${p.n}話、いまの進み${Math.round(ep.gprog * 100)}%で、このままだと納品が第${epForecast(s, ep)}週になりそうです……」（放送は第${airWeekOf(s, ep)}週）`; },
+      choices: (s, p) => {
+        const ep = epBy(s, p.n), out = [], q0 = Math.round(epQuality(s, ep));
+        const fcq = (r) => `納品予測 W${r.fc}・品質 ${q0}→${r.q}${r.q < LINE ? "・局の基準割れ" : ""}`;
+        if (canAct(s, "grossPush", p.n)) { const r = preview(s, p.n, (c) => doAction(c, "grossPush", p.n)); out.push({ label: `社長に頼み込む（行動−1・${fcq(r)}）`, ap: 1, ok: (s2) => canAct(s2, "grossPush", p.n), run: (s2) => { s2.ap += 1; doAction(s2, "grossPush", p.n); return "社長に頭を下げた。"; } }); }
+        for (const m of ["24h", "12h", "2gen"]) {
+          if (!canRush(s, ep, m)) continue;
+          const r = previewRush(s, p.n, m);
+          out.push({ label: `${RUSH[m].label}で巻いてもらう（${fcq(r)}）`, run: (s2) => { setRush(s2, p.n, m); return `${RUSH[m].label}で巻いてもらう。`; } });
+        }
+        out.push({ label: "このまま待つ", run: () => "協力会社に任せる。" });
+        return out;
+      } },
+    // ---- 進行からの「間に合いません」 ----
+    late: { title: "放送に間に合わない", when: () => false, weight: () => 0,
+      text: (s, p) => { const ep = epBy(s, p.n), sh = shinkoOfTeam(s, ep.plan.team), st = withView(s, ep, () => stageOf(ep));
+        return `${sh && sh.skill < 45 ? "すみません……" : ""}第${p.n}話、いま${STAGE_LABEL[st]}です。このままだと完パケが第${epForecast(s, ep)}週で、放送（第${airWeekOf(s, ep)}週）に間に合いません。`; },
+      choices: (s, p) => {
+        const ep = epBy(s, p.n), out = [];
+        const q0 = Math.round(epQuality(s, ep));
+        const fcq = (r) => `完パケ予測 W${r.fc}・品質 ${q0}→${r.q}${r.q < LINE ? "・局の基準割れ" : ""}`;
+        if (withView(s, ep, () => canAddAnim(s, ep))) { const r = preview(s, p.n, (c) => addAnimators(c, p.n, 3, true)); out.push({ label: `原画マンを3人足す（${fcq(r)}）`, run: (s2) => { addAnimators(s2, p.n, 3); return "原画マンを3人足した。"; } }); }
+        for (const m of ["24h", "12h", "2gen", "short"]) {
+          if (!canRush(s, ep, m)) continue;
+          const r = previewRush(s, p.n, m);
+          out.push({ label: `${m === "short" ? "撮影スケジュールを短縮する" : `${RUSH[m].label}にする`}（${fcq(r)}）`, run: (s2) => { setRush(s2, p.n, m); return `${m === "short" ? "撮影を短縮" : RUSH[m].label}で巻く。`; } });
+        }
+        out.push({ label: "このまま粘る", run: () => "現場に任せて粘る。" });
+        return out;
+      } },
+  };
+  function retake(s, ep, n, stage) {
+    let left = n;
+    const g0 = sumA(ep, "genga");
+    const order = stage === "rough" ? ["rough", "genga"] : ["genga"];
+    for (const a of ep.anims.slice().sort((x, y) => y[stage] - x[stage])) {
+      if (left <= 0) break;
+      const back = Math.min(left, a[stage]);
+      if (back <= 0) continue;
+      const keep = a[stage] - back;
+      for (const k of order) a[k] = Math.min(a[k], keep);
+      left -= back;
+    }
+    const g1 = sumA(ep, "genga");
+    ep.qG *= g1 / Math.max(1, g0);
+    for (const k of ["douga", "shiage", "satsuei"]) ep[k] = Math.min(ep[k], g1);
+    if (stage === "rough" && sumA(ep, "rough") < ep.cuts - 0.5) ep.art = null;
+    ep.delivered = false;
+    // 抜けた人に戻ってきたカットは、残っている人に配り直す
+    for (const a of ep.anims) if (a.out && a.cuts > a.genga) { a.cuts = a.genga; a.rough = Math.min(a.rough, a.genga); }
+    redistribute(ep, s);
+  }
+
+  // Trouble gets more frequent as the series goes on.
+  function troubleRate(s) {
+    const T = TIERS[s.tier];
+    const total = s.pre + EPISODES;
+    return 0.36 * T.eventMul * (0.6 + 1.1 * Math.min(1, s.week / total));
+  }
+  function rollEvent(s) {
+    if (rnd(s) > troubleRate(s)) return null;
+    const pool = Object.entries(EVENTS).filter(([, e]) => !e.when || e.when(s)).map(([id, e]) => [id, Math.max(0, e.weight(s))]);
+    const total = pool.reduce((a, [, w]) => a + w, 0);
+    let r = rnd(s) * total;
+    for (const [id, w] of pool) {
+      r -= w;
+      if (r > 0) continue;
+      const ev = EVENTS[id], p = ev.prep ? ev.prep(s) : {};
+      const ep = p.n ? epBy(s, p.n) : null;
+      const reporter = ev.reporter ? ev.reporter(s, p) : reporterOfEp(s, ep);
+      const inc = { id, p, start: s.week, team: reporter.kind === "shinko" ? reporter.team : null, reporter, revealed: false };
+      if (ev.hideable) {
+        if (p.aid) { const a = ep.anims.find((x) => x.id === p.aid); a.fakeRough = a.rough; a.fakeGenga = a.genga; }
+        if (ev.hideAll) for (const a of ep.anims) { a.fakeRough = a.rough; a.fakeGenga = a.genga; }
+      }
+      if (ev.start) ev.start(s, p);
+      if (ev.hideable) {
+        const sh = shinkoOfTeam(s, inc.team);
+        const d = reportDelay(s, sh, ep);
+        inc.reportWeek = s.week + d;
+        inc.aid = p.aid;
+        if (ev.hideAll) inc.aids = ep.anims.map((a) => a.id);
+      } else inc.reportWeek = s.week;
+      s.incidents.push(inc);
+      return inc;
+    }
+    return null;
+  }
+  function reveal(s, inc) {
+    if (inc.revealed) return;
+    inc.revealed = true;
+    inc.late = s.week - inc.start >= 1;
+    if (inc.late && !inc.found) s.lateReports++;
+    s.queue.push(inc);
+  }
+  function pumpEvents(s) {
+    for (const inc of s.incidents) if (!inc.revealed && inc.reportWeek <= s.week) reveal(s, inc);
+    while (!s.event && s.queue.length) {
+      const inc = s.queue.shift();
+      // 「間に合わない」は、ほかの手で間に合うようになっていたら取り下げる
+      if (inc.alert) { const ep = epBy(s, inc.p.n); if (ep.delivered || ep.aired || epForecast(s, ep) <= airWeekOf(s, ep)) { ep.alerted = null; continue; } }
+      s.event = inc;
+    }
+    return s.event;
+  }
+  const choicesOf = (s, inc) => { const c = EVENTS[inc.id].choices; return typeof c === "function" ? c(s, inc.p) : c; };
+  function eventView(s) {
+    const inc = s.event;
+    if (!inc) return null;
+    const ev = EVENTS[inc.id], p = inc.p;
+    return { id: inc.id, title: ev.title, text: ev.text(s, p, inc), reporter: inc.reporter, late: inc.late, found: inc.found, weeksHidden: s.week - inc.start,
+             choices: choicesOf(s, inc).map((c, i) => ({ i, label: c.label, ok: (!c.ap || s.ap >= c.ap) && (!c.ok || c.ok(s, p)) })) };
+  }
+  function resolveEvent(s, i) {
+    const inc = s.event, ev = EVENTS[inc.id], c = choicesOf(s, inc)[i], p = inc.p;
+    if (!c || (c.ok && !c.ok(s, p))) return null;
+    if (c.ap) { if (s.ap < c.ap) return null; s.ap -= c.ap; }
+    const msg = c.run(s, p);
+    log(s, `【${ev.title}】${msg}`);
+    inc.closed = true;
+    s.event = null;
+    pumpEvents(s);
+    s.stat = forecast(s);
+    return msg;
+  }
+
+  // ---------- turn ----------
+  function endWeek(s) {
+    produce(s);
+    if (airDue(s)) {
+      const ep = unaired(s)[0];
+      if (ep.delivered) s.lastAir = airEpisode(s, "air");
+      else { s.pendingAir = { n: ep.n, prog: Math.min(1, done(ep)) }; return "air"; }
+    }
+    return nextWeek(s);
+  }
+  function resolveAir(s, choice) {
+    if (!s.pendingAir) return null;
+    if (choice === "recap" && s.recaps >= 2) return null;
+    if (choice === "air" && !canAirAsIs(s)) return null;
+    s.lastAir = airEpisode(s, choice);
+    s.pendingAir = null;
+    return nextWeek(s);
+  }
+  // 進行の報告ベースで放送に間に合わない話数が出たら、その工程で打てる手を持ってくる
+  const lateGroup = (s, ep) => { const st = withView(s, ep, () => stageOf(ep)); return st === "rough" || st === "genga" ? "ga" : st === "douga" || st === "shiage" ? "dg" : st === "satsuei" ? "sa" : null; };
+  function checkLate(s) {
+    for (const ep of unaired(s).filter((e) => e.started && !e.delivered && isGross(e.plan))) {
+      if (ep.alerted === "gross" + rushRank(ep) || rushRank(ep) >= 3) continue;
+      if (epForecast(s, ep) <= airWeekOf(s, ep)) continue;
+      ep.alerted = "gross" + rushRank(ep);
+      s.queue.push({ id: "lateGross", p: { n: ep.n }, start: s.week, team: null, reporter: { kind: "gross", id: grossOf(s, ep.plan).id }, revealed: true, reportWeek: s.week, alert: true });
+    }
+    for (const ep of activeInh(s)) {
+      const g = lateGroup(s, ep);
+      if (!g || ep.alerted === g) continue;
+      if (epForecast(s, ep) <= airWeekOf(s, ep)) continue;
+      if (!["24h", "12h", "2gen", "short"].some((m) => canRush(s, ep, m))) continue;
+      ep.alerted = g;
+      s.queue.push({ id: "late", p: { n: ep.n }, start: s.week, team: ep.plan.team, reporter: { kind: "shinko", team: ep.plan.team }, revealed: true, reportWeek: s.week, alert: true });
+    }
+  }
+  function nextWeek(s) {
+    if (s.aired >= EPISODES) { finish(s); return "end"; }
+    s.week++;
+    s.ap = 3;
+    startEpisodes(s);
+    rollEvent(s);
+    pumpEvents(s);
+    checkLate(s);
+    pumpEvents(s);
+    s.stat = forecast(s);
+    return s.event ? "event" : "week";
+  }
+
+  // ---------- result ----------
+  function finish(s) {
+    const T = TIERS[s.tier];
+    const qs = s.eps.map((e) => e.airQ || 0);
+    const avgQ = avg(qs);
+    const collapses = s.eps.filter((e) => e.collapse).length;
+    const drops = s.recaps + s.delays * 2;
+    const score = Math.round(avgQ - collapses * 4 - s.recaps * 3 - s.delays * 6 - T.rank);
+    const rank = score >= 74 && !collapses && !drops ? "S" : score >= 68 ? "A" : score >= 60 ? "B" : score >= 50 ? "C" : "D";
+    s.result = { avgQ, collapses, drops, score, rank, early: s.eps.filter((e) => e.deliveredWeek != null && e.airWeek != null && e.airWeek - e.deliveredWeek >= 1).length };
+    s.phase = "end";
+    log(s, `最終回放送。評価 ${rank}（平均の出来 ${avgQ.toFixed(1)}）。`);
+  }
+
+  return { TIERS, SOURCES, EPISODES, STAGES, STAGE_LABEL, ACTIONS, MIN_DUR, ART_WEEKS, BASE_ANIMS, DILUTION, ROUGH_W, GENGA_W,
+           newGame, conteWeek, autoPlan, planIssues, setPlan, recommendAnims, planAir, isGross, grossOf, grossBy, teamBy, teamOfShinko, shinkoOfTeam,
+           startProduction, progress, done, stageOf, epTotals, airWeekOf, weeksLeft, unaired, epBy, shinkoBy, epEff, teamBusy,
+           forecast, epForecast, epForecastRaw, deskNote, epQuality, dilution, canAct, doAction, setPolicy, addAnimators, canAddAnim, animWork, viewAnim, hiddenOn,
+           eventView, resolveEvent, pumpEvents, endWeek, resolveAir, troubleRate, clamp,
+           DEF_DUR, LINE, canAirAsIs, airAsIsQ, RUSH, canRush, setRush, previewRush, rushPenalty, preview, rushRank };
+})();
+if (typeof module !== "undefined") module.exports = Engine;
+</script>
+<script>
+/* ===================== 画面 ===================== */
+// Every screen is "collections on the left, the selected object's detail on the right".
+// You pick a thing (episode, team, person, company…) first; what you can do to it sits at the bottom of its detail.
+(() => {
+  "use strict";
+  const E = Engine;
+  const app = document.getElementById("app");
+  const modalRoot = document.getElementById("modal-root");
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let s = null;
+  let modal = null;
+  let sel = null;          // the selected object: { k: "studio" | "ep" | "team" | "shinko" | "dir" | "post" | "gross" | "tv", id }
+  let pickTier = "mid";    // the studio selected on the title screen
+  let officeCanvas = null, raf = 0;
+
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+  };
+
+  // ---------- pixel art helpers ----------
+  function prng(seed) { let a = seed | 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const HAIR = ["#2b2233", "#5a3a26", "#9b6b3f", "#c9c3b8", "#3d4f7a", "#7a2d3a", "#1f1f1f", "#d9b36a"];
+  const SKIN = ["#f3d2b8", "#e9bf9b", "#d9a77f", "#f6dccb"];
+  function lookOf(seed, shirt) {
+    const r = prng(seed);
+    return { hair: HAIR[(r() * HAIR.length) | 0], skin: SKIN[(r() * SKIN.length) | 0], style: (r() * 4) | 0, glasses: r() < 0.3, beard: r() < 0.15, shirt: shirt || ["#4a6fa5", "#7a5c8a", "#5a7a5a", "#a5704a", "#4a4a5a"][(r() * 5) | 0], ph: r() * 10 };
+  }
+  function faceCanvas(seed, cls = "") {
+    const size = 12, c = document.createElement("canvas"); c.width = c.height = size; c.className = "px face " + cls;
+    const g = c.getContext("2d"), L = lookOf(seed);
+    const bg = ["#c9d3e3", "#d7e6d9", "#ead9e4", "#e6e1cf"][(seed >>> 3) % 4];
+    const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
+    g.fillStyle = bg; g.fillRect(0, 0, size, size);
+    g.fillStyle = L.shirt; g.fillRect(2, 10, 8, 2);
+    g.fillStyle = L.skin; g.fillRect(3, 3, 6, 7); g.fillRect(5, 9, 2, 1);
+    g.fillStyle = L.hair; g.fillRect(2, 1, 8, 3);
+    if (L.style === 0) { g.fillRect(2, 3, 1, 4); g.fillRect(9, 3, 1, 4); }
+    if (L.style === 1) { g.fillRect(2, 3, 1, 7); g.fillRect(9, 3, 1, 7); }
+    if (L.style === 2) g.fillRect(3, 0, 6, 1);
+    if (L.style === 3) g.fillRect(2, 3, 2, 1);
+    px(4, 5, "#1a1e29"); px(7, 5, "#1a1e29");
+    if (L.glasses) { g.fillStyle = "#1a1e29"; g.fillRect(3, 5, 6, 1); px(4, 5, "#cfe3ff"); px(7, 5, "#cfe3ff"); }
+    if (L.beard) { g.fillStyle = L.hair; g.fillRect(4, 8, 4, 1); } else { px(5, 8, "#a8484d"); px(6, 8, "#a8484d"); }
+    return c;
+  }
+  // Key visual of an aired episode: the heroine, drawn worse as the episode's quality drops.
+  function kvCanvas(item, size = 32) {
+    const c = document.createElement("canvas"); c.width = c.height = size; c.className = "px";
+    drawKV(c.getContext("2d"), item, 0, 0, size);
+    return c;
+  }
+  function drawKV(g, item, ox, oy, size = 32) {
+    const k = size / 32;
+    const px = (x, y, col) => { g.fillStyle = col; g.fillRect(ox + Math.round(x * k), oy + Math.round(y * k), Math.ceil(k), Math.ceil(k)); };
+    const rect = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(ox + Math.round(x * k), oy + Math.round(y * k), Math.ceil(w * k), Math.ceil(h * k)); };
+    if (item.recap) { rect(0, 0, 32, 32, "#9aa3ba"); return; }
+    const q = item.q, r = prng(item.seed || item.n * 977);
+    const bad = item.collapse ? 1 : q < 52 ? 0.55 : q < 64 ? 0.2 : 0;
+    const j = () => (r() < bad ? Math.round((r() - 0.5) * 4 * bad) : 0);
+    if (q >= 64 && !item.collapse) { for (let y = 0; y < 32; y++) rect(0, y, 32, 1, y < 12 ? "#6f8fe0" : y < 20 ? "#e9a3c4" : "#f6d27a"); }
+    else rect(0, 0, 32, 32, item.collapse ? "#b7bcc6" : "#c9d3e3");
+    const skin = "#f6dccb", shade = q >= 70 && !item.collapse ? "#e9bf9b" : skin;
+    const hair = item.collapse ? "#6b5a52" : "#3d2b5a", hairHi = q >= 70 ? "#6a54a0" : hair;
+    const st = item.collapse ? 3 : bad > 0.5 ? 1 : 0;
+    rect(7, 6, 18, 20 + st, hair);
+    rect(9, 9 + j(), 14, 13 + st, skin);
+    rect(10, 22 + st, 12, 1, skin);
+    if (shade !== skin) { rect(9, 19, 2, 3, shade); rect(21, 19, 2, 3, shade); }
+    rect(8, 6, 16, 4, hair); rect(9, 10, 3, 2, hair); rect(15, 10, 2, 1, hair); rect(20, 10, 3, 2, hair);
+    if (hairHi !== hair) { rect(11, 7, 4, 1, hairHi); rect(18, 7, 3, 1, hairHi); }
+    const eyeW = q >= 64 && !item.collapse ? 3 : 2;
+    const lx = 11 + j(), rx = 18 + j() + (item.collapse ? 1 : 0), ly = 14 + j(), ry = 14 + j() + (item.collapse ? 2 : 0);
+    rect(lx, ly, eyeW, 4, "#2a2340"); rect(rx, ry, eyeW, item.collapse ? 2 : 4, "#2a2340");
+    if (q >= 64 && !item.collapse) { rect(lx + 1, ly + 1, 1, 2, "#5aa0ff"); rect(rx + 1, ry + 1, 1, 2, "#5aa0ff"); px(lx, ly, "#ffffff"); px(rx, ry, "#ffffff"); }
+    const my = 19 + st + j(), mx = 15 + j() + (item.collapse ? 2 : 0);
+    if (q >= 64 && !item.collapse) { rect(mx, my, 3, 1, "#c4506a"); px(mx + 1, my + 1, "#c4506a"); } else rect(mx, my, 2, 1, "#8a4a52");
+    if (q >= 70 && !item.collapse) { rect(10, 18, 2, 1, "#f2a0b4"); rect(20, 18, 2, 1, "#f2a0b4"); }
+    rect(9, 25 + st, 14, 32 - 25, item.collapse ? "#7c8494" : "#2f4a8a");
+    rect(14, 25 + st, 4, 3, "#eef1f5");
+    if (q >= 76 && !item.collapse) for (let i = 0; i < 6; i++) px((r() * 32) | 0, (r() * 10) | 0, "#ffffff");
+    if (item.collapse) for (let i = 0; i < 18; i++) px((r() * 32) | 0, (r() * 32) | 0, r() < 0.5 ? "#1a1e29" : "#eef1f5");
+  }
+  function mountIn(root, sel, node) { const el = root.querySelector(sel); if (el) { el.innerHTML = ""; el.appendChild(node); } }
+
+  // ---------- the office ----------
+  const DIG = { 0: "111101101101111", 1: "010110010010111", 2: "111001111100111", 3: "111001111001111", 4: "101101111001001", 5: "111100111001111", 6: "111100111101111", 7: "111001010010010", 8: "111101111101111", 9: "111101111001111" };
+  function digits(g, str, x, y, col) {
+    g.fillStyle = col;
+    String(str).split("").forEach((ch, i) => { const m = DIG[ch]; if (!m) return; for (let k = 0; k < 15; k++) if (m[k] === "1") g.fillRect(x + i * 4 + (k % 3), y + ((k / 3) | 0), 1, 1); });
+  }
+  function rect(g, x, y, w, h, col) { g.fillStyle = col; g.fillRect(x | 0, y | 0, w | 0, h | 0); }
+  function drawPerson(g, x, y, L, pose, t) {
+    const tick = Math.floor((t / 260) + L.ph);
+    rect(g, x - 1, y + 5, 12, 11, "#20242f");      // chair back
+    if (pose === "away") { rect(g, x + 1, y + 3, 8, 3, "#20242f"); return; }
+    let hy = y;
+    if (pose === "idle") hy = y - 1;
+    if (pose === "draw" && !reduceMotion) hy = y + (tick % 3 === 0 ? 1 : 0);
+    if (pose === "sleep") hy = y + 5;
+    // body
+    rect(g, x + 1, y + 8, 10, 7, L.shirt);
+    // head
+    rect(g, x + 2, hy, 8, 8, L.skin);
+    rect(g, x + 2, hy, 8, 3, L.hair);
+    if (L.style === 1) { rect(g, x + 1, hy + 2, 1, 6, L.hair); rect(g, x + 10, hy + 2, 1, 6, L.hair); }
+    if (L.style === 0) { rect(g, x + 1, hy + 2, 1, 3, L.hair); rect(g, x + 10, hy + 2, 1, 3, L.hair); }
+    if (L.style === 2) rect(g, x + 3, hy - 1, 6, 1, L.hair);
+    if (pose !== "sleep") {
+      rect(g, x + 4, hy + 4, 1, 1, "#1a1e29"); rect(g, x + 7, hy + 4, 1, 1, "#1a1e29");
+      if (L.glasses) { rect(g, x + 3, hy + 4, 6, 1, "#1a1e29"); rect(g, x + 4, hy + 4, 1, 1, "#cfe3ff"); rect(g, x + 7, hy + 4, 1, 1, "#cfe3ff"); }
+    }
+    // arms
+    if (pose === "type") { const a = !reduceMotion && tick % 2 ? 1 : 0; rect(g, x, y + 10 + a, 2, 4, L.shirt); rect(g, x + 10, y + 11 - a, 2, 4, L.shirt); }
+    else if (pose === "draw") { rect(g, x + 9, y + 10, 3, 2, L.shirt); rect(g, x + 11, y + 11, 1, 1, L.skin); }
+    else if (pose === "idle") { rect(g, x - 1, y + 9, 2, 3, L.shirt); rect(g, x + 11, y + 9, 2, 3, L.shirt); }
+    if (pose === "sleep") { const z = !reduceMotion ? tick % 3 : 0; rect(g, x + 11 + z, hy - 4 - z, 3, 1, "#cfe3ff"); rect(g, x + 13 + z, hy - 3 - z, 1, 1, "#cfe3ff"); rect(g, x + 11 + z, hy - 2 - z, 3, 1, "#cfe3ff"); }
+  }
+  function drawDesk(g, seat, kind, t, glow) {
+    const { x, y, w, h } = seat;
+    if (kind === "light") {   // animator light table
+      rect(g, x, y, w, 4, glow ? "#f4f8ff" : "#c9d3e3");
+      rect(g, x + 4, y + 1, 12, 2, "#ffffff");
+      rect(g, x, y + 4, w, h - 4, "#6b5a4a");
+      rect(g, x + 2, y + h - 1, 2, 1, "#4a3f34"); rect(g, x + w - 4, y + h - 1, 2, 1, "#4a3f34");
+    } else {
+      rect(g, x, y, w, 4, "#a07c56");
+      rect(g, x, y + 4, w, h - 4, "#7a5c40");
+      // monitor on the left side
+      rect(g, x + 3, y - 9, 12, 9, "#1a1e29");
+      rect(g, x + 4, y - 8, 10, 6, glow ? (Math.floor(t / 700) % 2 ? "#5aa0ff" : "#4f8fe6") : "#3a4256");
+      rect(g, x + 8, y - 1, 2, 1, "#1a1e29");
+      // papers / cut bags
+      rect(g, x + w - 12, y + 1, 9, 2, "#e8dcc0");
+    }
+  }
+  function bubble(g, x, y, col, t) {
+    if (!reduceMotion && Math.floor(t / 400) % 2) y -= 1;
+    rect(g, x, y, 7, 8, col); rect(g, x + 3, y + 8, 1, 1, col);
+    rect(g, x + 3, y + 1, 1, 4, "#1a1e29"); rect(g, x + 3, y + 6, 1, 1, "#1a1e29");
+  }
+
+  const OW = 384, OH = 216;
+  const SEAT = {
+    desk: { x: 14, y: 64, w: 46, h: 14 },
+    shinko: [[14, 112], [58, 112], [102, 112], [14, 162], [58, 162], [102, 162]].map(([x, y]) => ({ x, y, w: 38, h: 14 })),
+    dir: { x: 150, y: 64, w: 42, h: 14 },
+    post: { x: 146, y: 104, w: 54, h: 46 },
+    sakkan: [0, 1, 2, 3, 4].map((i) => ({ x: 214 + i * 34, y: 64, w: 30, h: 14 })),
+    room: { x: 212, y: 92, w: 170, h: 120 },
+    board: { x: 214, y: 6, w: 92, h: 34 },
+    tv: { x: 340, y: 8, w: 38, h: 26 },
+    phone: { x: 64, y: 66, w: 10, h: 10 },
+  };
+  const ROOM_DESKS = [112, 148, 184].flatMap((y) => [0, 1, 2, 3].map((c) => ({ x: 216 + c * 42, y, w: 38, h: 14 })));
+  const TEAM_COL = { A: "#3b6fe0", B: "#1f9d63", C: "#c46a1a", D: "#7a5cd6", E: "#2ba3a3", F: "#c4506a" };
+  const teamColor = (key) => (key && key.startsWith("g") ? "#8a93ab" : TEAM_COL[key] || "#8a93ab");
+  const teamLabel = (key) => (key && key.startsWith("g") ? `グロス：${E.grossBy(s, +key.slice(1)).name}` : `${key}班`);
+  const teamShort = (key) => (key && key.startsWith("g") ? `G${key.slice(1)}` : key);
+
+  function danger(ep) { return !ep.aired && !ep.delivered && E.epForecast(s, ep) > E.airWeekOf(s, ep); }
+  const teamEps = (key) => s.eps.filter((e) => e.plan.team === key);
+  const activeEpOf = (key) => s.eps.find((e) => e.plan.team === key && e.started && !e.delivered && !e.aired);
+  const activeAnims = () => s.eps.filter((e) => e.started && !e.delivered && !e.aired && !E.isGross(e.plan)).reduce((a, e) => a + e.anims.filter((x) => !x.out).length, 0);
+
+  function drawOffice(t) {
+    if (!officeCanvas || !s || s.phase !== "prod") return;
+    const g = officeCanvas.getContext("2d");
+    rect(g, 0, 0, OW, 46, "#262c40");
+    rect(g, 0, 44, OW, 2, "#1b2030");
+    for (let y = 46; y < OH; y += 12) for (let x = 0; x < OW; x += 12) rect(g, x, y, 12, 12, ((x + y) / 12) % 2 ? "#323a52" : "#2e3549");
+    rect(g, 206, 46, 2, OH - 46, "#20263a");
+    rect(g, 138, 46, 1, OH - 46, "#2a3047");
+    // window
+    rect(g, 118, 6, 84, 32, "#151a2c"); rect(g, 120, 8, 80, 28, "#1d2747"); rect(g, 186, 11, 5, 5, "#f6f1d8");
+    [[122, 22, 10, 14], [134, 18, 12, 18], [148, 25, 9, 11], [160, 16, 11, 20], [174, 23, 13, 13], [189, 20, 9, 16]].forEach(([x, y, w, h], i) => {
+      rect(g, x, y, w, h, "#0f1424");
+      for (let yy = y + 2; yy < y + h - 1; yy += 3) for (let xx = x + 2; xx < x + w - 1; xx += 3) if (((xx * 7 + yy * 13 + i) % 5) < 2) rect(g, xx, yy, 1, 1, "#ffd27a");
+    });
+    rect(g, 159, 8, 2, 28, "#151a2c");
+    // whiteboard: the 12 episodes colored by team, filled by progress
+    const B = SEAT.board;
+    rect(g, B.x, B.y, B.w, B.h, "#c9d3e3"); rect(g, B.x + 2, B.y + 2, B.w - 4, B.h - 4, "#f4f6fa");
+    s.eps.forEach((ep, i) => {
+      const cx = B.x + 6 + (i % 6) * 14, cy = B.y + 5 + Math.floor(i / 6) * 13;
+      rect(g, cx, cy, 12, 10, "#dfe5ee");
+      if (ep.aired) rect(g, cx, cy, 12, 10, ep.collapse ? "#e5484d" : "#9aa3ba");
+      else { const p = E.progress(ep); rect(g, cx, cy + 10 - Math.round(10 * p), 12, Math.round(10 * p), ep.delivered ? "#1f9d63" : teamColor(ep.plan.team)); }
+      if (danger(ep) && (reduceMotion || Math.floor(t / 350) % 2)) { rect(g, cx - 1, cy - 1, 14, 1, "#e5484d"); rect(g, cx - 1, cy + 10, 14, 1, "#e5484d"); rect(g, cx - 1, cy, 1, 10, "#e5484d"); rect(g, cx + 12, cy, 1, 10, "#e5484d"); }
+      digits(g, ep.n, cx + (ep.n >= 10 ? 2 : 4), cy + 3, ep.aired || ep.delivered ? "#ffffff" : "#1a1e29");
+    });
+    rect(g, 312, 8, 22, 26, "#eef1f5"); rect(g, 312, 8, 22, 6, "#e5484d");
+    digits(g, s.week, 312 + (s.week >= 10 ? 4 : 8), 20, "#1a1e29");
+    const TV = SEAT.tv;
+    rect(g, TV.x, TV.y, TV.w, TV.h, "#111520");
+    const last = s.kv.filter((k) => !k.recap).slice(-1)[0];
+    if (last) drawKV(g, last, TV.x + 3, TV.y + 1, 24); else rect(g, TV.x + 3, TV.y + 2, 32, 22, "#2a3047");
+    if (s.aired > 0 || s.week >= s.nextAir) rect(g, TV.x + 30, TV.y + 3, 4, 4, Math.floor(t / 600) % 2 || reduceMotion ? "#e5484d" : "#7a2d3a");
+    // 制作デスク
+    drawPerson(g, SEAT.desk.x + 24, SEAT.desk.y - 13, lookOf(424242, "#2f3a5a"), "type", t);
+    drawDesk(g, SEAT.desk, "pc", t, true);
+    rect(g, SEAT.desk.x + 17, SEAT.desk.y - 8, 6, 8, "#1a1e29"); rect(g, SEAT.desk.x + 18, SEAT.desk.y - 7, 4, 5, "#4f8fe6");
+
+    // 進行 (one per 班)
+    s.teams.forEach((tm, i) => {
+      const seat = SEAT.shinko[i]; if (!seat) return;
+      const p = E.shinkoBy(s, tm.shinko);
+      const busy = !!activeEpOf(tm.key);
+      const pose = p.gone ? "away" : p.stamina < 18 ? "sleep" : busy ? "type" : "idle";
+      drawPerson(g, seat.x + 18, seat.y - 13, lookOf(p.seed, TEAM_COL[tm.key]), pose, t);
+      drawDesk(g, seat, "pc", t, !p.gone && busy);
+      rect(g, seat.x + seat.w - 6, seat.y + 6, 5, 5, TEAM_COL[tm.key]);
+      if (!p.gone && p.stamina < 35) rect(g, seat.x + 30, seat.y - 12 + (Math.floor(t / 300) % 3), 1, 2, "#7fc4ff");
+      if (p.gone || teamEps(tm.key).some(danger)) bubble(g, seat.x + 20, seat.y - 24, p.gone ? "#e5484d" : "#ffe14a", t);
+    });
+    // 監督
+    drawPerson(g, SEAT.dir.x + 22, SEAT.dir.y - 13, lookOf(s.staff.dir.seed, "#2b2233"), E.unaired(s).some((e) => e.conte < 1 && !E.isGross(e.plan)) ? "draw" : "idle", t);
+    drawDesk(g, SEAT.dir, "light", t, true);
+    rect(g, SEAT.dir.x + 2, SEAT.dir.y - 6, 1, 6, "#c9c3b8"); rect(g, SEAT.dir.x + 1, SEAT.dir.y - 8, 5, 2, "#ffe14a");
+    const f = s.stat || E.forecast(s);
+    if (f.conte < f.needConte) bubble(g, SEAT.dir.x + 24, SEAT.dir.y - 24, "#ffe14a", t);
+    // 撮影・仕上げ・美術・CG
+    const P = SEAT.post;
+    rect(g, P.x, P.y, P.w, P.h, "#20263a");
+    const busyPost = s.eps.some((e) => e.started && !e.delivered && !E.isGross(e.plan) && E.epTotals(e).genga > 0);
+    for (let i = 0; i < 3; i++) {
+      const mx = P.x + 4 + i * 17, my = P.y + 8;
+      rect(g, mx, my, 14, 10, "#111520");
+      rect(g, mx + 1, my + 1, 12, 8, busyPost ? ["#2ba3a3", "#1f9d63", "#7a5cd6"][(i + Math.floor(t / 900)) % 3] : "#2a3047");
+      rect(g, mx + 6, my + 10, 2, 3, "#111520");
+    }
+    rect(g, P.x + 4, P.y + 26, P.w - 8, 4, "#7a5c40");
+    rect(g, P.x + 8, P.y + 33, 10, 8, "#20242f"); rect(g, P.x + 30, P.y + 33, 10, 8, "#20242f");
+    // 作監 (one per 班)
+    s.teams.forEach((tm, i) => {
+      const seat = SEAT.sakkan[i]; if (!seat) return;
+      const busy = !!activeEpOf(tm.key);
+      drawPerson(g, seat.x + 10, seat.y - 13, lookOf(tm.sakkan.seed, "#a5404a"), busy ? "draw" : "idle", t);
+      drawDesk(g, seat, "light", t, busy);
+      rect(g, seat.x + 1, seat.y + 6, 4, 4, TEAM_COL[tm.key]);
+    });
+    // 作画部屋: generic figures, more of them as more animators are working
+    const shown = Math.min(ROOM_DESKS.length, Math.ceil(activeAnims() / 4));
+    ROOM_DESKS.forEach((seat, i) => {
+      if (i < shown) { drawPerson(g, seat.x + 18, seat.y - 13, lookOf(9000 + i * 77), "draw", t); drawDesk(g, seat, "light", t, true); }
+      else { rect(g, seat.x + 17, seat.y - 8, 12, 11, "#20242f"); drawDesk(g, seat, "light", t, false); }
+    });
+    const ph = SEAT.phone;
+    rect(g, ph.x, ph.y + 3, 9, 5, "#1a1e29"); rect(g, ph.x + 1, ph.y + 1, 7, 2, "#1a1e29");
+    if (s.eps.some((e) => E.isGross(e.plan) && danger(e)) && (reduceMotion || Math.floor(t / 400) % 2)) rect(g, ph.x + 9, ph.y, 2, 2, "#e5484d");
+    if (s.policy.ot) { g.fillStyle = "rgba(255,180,90,0.07)"; g.fillRect(0, 46, OW, OH - 46); }
+  }
+  function loop(t) { drawOffice(t); raf = requestAnimationFrame(loop); }
+
+
+  const pct = (v, total) => `${(v / total) * 100}%`;
+  const YOU = 424242;      // the desk's own face seed (same as in the office)
+  const prod = () => !!s && s.phase === "prod";
+  const narrow = () => matchMedia("(max-width: 920px)").matches;
+  const stars = (v) => { const n = Math.max(1, Math.min(5, Math.round((v - 20) / 13))); return "★".repeat(n) + "☆".repeat(5 - n); };
+  const isSel = (k, id) => !!sel && sel.k === k && String(sel.id ?? "") === String(id ?? "");
+  const selAttrs = (k, id) => `data-act="sel" data-k="${k}" data-v="${esc(id ?? "")}"`;
+  const grossShort = (key) => E.grossBy(s, +key.slice(1)).name.replace(/^有限会社\s*/, "");
+  const whoShort = (key) => (key && key.startsWith("g") ? `グロス ${grossShort(key)}` : `${key}班`);
+
+  // what the desk can see: hidden trouble stays hidden (the same view the 進行 reports)
+  function viewed(ep, fn) { const real = ep.anims; ep.anims = real.map((a) => E.viewAnim(s, a)); try { return fn(); } finally { ep.anims = real; } }
+  const stageV = (ep) => (ep.anims ? viewed(ep, () => E.stageOf(ep)) : E.stageOf(ep));
+  const totalsV = (ep) => viewed(ep, () => E.epTotals(ep));
+  const progV = (ep) => (ep.anims ? viewed(ep, () => E.progress(ep)) : E.progress(ep));
+  const airOf = (ep) => (ep.aired ? ep.airWeek : prod() ? E.airWeekOf(s, ep) : E.planAir(s, ep.n));
+  const fcOf = (ep) => (prod() ? E.epForecast(s, ep) : ep.plan.start + ep.plan.dur - 1);
+  const qOf = (ep) => Math.round(E.epQuality(s, ep));
+
+  // ---------- your own read of the drawing: words, never a number ----------
+  const WORD = {
+    late: ["bad", "このままじゃ放送に間に合わない・・・", "間に合わない"],
+    line: ["bad", "これは局に突き返されるぞ・・・", "突き返される"],
+    shoot: ["bad", "撮影にものが入ってない", "撮影が空"],
+    tight: ["worry", "スケジュールが無い・・・", "余裕なし"],
+    rough: ["worry", "ちょっと作画厳しいか・・・？", "厳しいか…？"],
+    good: ["good", "良い感じだ", "良い感じ"],
+    ok: ["ok", "まあ、なんとかなるか", "なんとか"],
+    wait: ["mute", "まだ手を付けていない。様子見だ", "様子見"],
+    done: ["good", "納品済み。あとは放送を待つだけ", "納品済"],
+  };
+  const word = (k) => ({ tone: WORD[k][0], t: WORD[k][1], short: WORD[k][2] });
+  function judge({ q = null, fc = null, air = null, emptyShoot = false }) {
+    if (fc != null && air != null && fc > air) return word("late");
+    if (q != null && q < E.LINE) return word("line");
+    if (emptyShoot) return word("shoot");
+    if (fc != null && air != null && fc === air) return word("tight");
+    if (q == null) return word("ok");
+    if (q < E.LINE + 8) return word("rough");
+    if (q >= E.LINE + 20) return word("good");
+    return word("ok");
+  }
+  const qWord = (q) => judge({ q }).short;
+  function mutterOf(ep) {
+    if (ep.aired) return null;
+    if (ep.delivered) return word("done");
+    const gross = E.isGross(ep.plan), air = airOf(ep), fc = fcOf(ep);
+    if (!prod()) return judge({ q: gross ? E.grossOf(s, ep.plan).quality : null, fc, air });
+    if (!ep.started && !gross) return fc > air ? word("late") : word("wait");
+    return judge({ q: qOf(ep), fc, air, emptyShoot: !gross && ep.satsuei < 1 && air - s.week <= 1 });
+  }
+  const face = (seed, cls = "") => `<span data-face="${seed}" data-cls="${cls}"></span>`;
+  const mutHtml = (m, label = "あなたの見立て（作画）") => (m ? `<div class="mut">${face(YOU)}<div class="mut-b tone-${m.tone}"><div class="l">${label}</div><div class="t">${esc(m.t)}</div></div></div>` : "");
+
+  // ---------- the parts every screen reuses ----------
+  const tile = (l, v, cls = "") => `<div class="tile ${cls}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  const tagHtml = (t, cls = "") => (t ? `<span class="tag ${cls}">${esc(t)}</span>` : "");
+  function oh(type, name, sub, tag = "", faceSeed = null, pre = "", id = "") {
+    return `<div class="oh"><div class="oh-top"><span class="typ">${esc(type)}</span>${pre}${tag}</div>
+      <div class="oh-name">${faceSeed != null ? face(faceSeed) : ""}<h2 ${id ? `id="${id}"` : ""}>${esc(name)}</h2></div>${sub ? `<span class="oh-sub">${sub}</span>` : ""}</div>`;
+  }
+  function li({ c, t, sub = "", r = "", on = false, attrs = "" }) {
+    const tagName = attrs ? "button" : "div";
+    return `<${tagName} class="li ${on ? "on" : ""} ${attrs ? "" : "static"}" style="--c:${c}" ${attrs}><i></i><span><span class="t">${t}</span>${sub ? `<span class="s">${sub}</span>` : ""}</span><span class="r">${r}</span>${attrs ? `<span class="chev" aria-hidden="true">›</span>` : "<span></span>"}</${tagName}>`;
+  }
+  function rel({ ico = "", c = "", faceSeed = null, t, sub, attrs }) {
+    return `<button class="rel" ${attrs}>${faceSeed != null ? face(faceSeed, "sm") : `<span class="ico" style="--c:${c}">${esc(ico)}</span>`}<span><span class="t">${t}</span><span class="s">${sub}</span></span><span class="chev" aria-hidden="true">›</span></button>`;
+  }
+  function act({ label, sub = "", cost = null, attrs = "", pri = false, disabled = false }) {
+    const c = cost == null ? "" : `<span class="cost ${/^行動\d/.test(cost) ? "ap" : ""}">${esc(cost)}</span>`;
+    return `<button class="act ${pri ? "pri" : ""}" ${attrs} ${disabled ? "disabled" : ""}><span class="m"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>${c}</button>`;
+  }
+  // a desk action from the engine (uses this week's 行動)
+  function actFor(id, arg, opt = {}) {
+    const a = E.ACTIONS[id], ok = E.canAct(s, id, arg);
+    let why = "";
+    if (!ok) {
+      if (s.ap < a.ap) why = "今週の行動が足りない";
+      else if (id === "help") why = "今週はヘルプ済み";
+      else if (id === "dirTalk") why = "監督の機嫌は悪くない";
+      else if (id === "extConte") why = "もう頼んでいる／コンテ待ちがない";
+      else if (id === "grossPush") why = "今週は催促済み";
+    }
+    return act({ label: opt.label || a.label, sub: why || opt.sub || "", cost: `行動${a.ap}`, attrs: `data-act="do" data-v="${id}" ${arg != null ? `data-arg="${arg}"` : ""}`, pri: opt.pri, disabled: !ok });
+  }
+  function paneFoot(name, acts, note = "", one = false) {
+    return `<div class="pane-f"><span class="lbl">${esc(name)} にできること</span>${acts ? `<div class="acts ${one ? "one" : ""}">${acts}</div>` : ""}${note ? `<p class="note" style="color:var(--ink-soft)">${note}</p>` : ""}</div>`;
+  }
+  const pane = (label, body, foot) => `<aside class="pane" aria-label="選択中：${esc(label)}"><div class="pane-b">${body}</div>${foot}</aside>`;
+  function seg(label, key, opts) {
+    return `<div class="field"><span>${label}</span><div class="seg">${opts.map(([v, t]) => `<button class="${s.policy[key] === v ? "on" : ""}" data-act="policy" data-k="${key}" data-v="${v}" aria-pressed="${s.policy[key] === v}">${t}</button>`).join("")}</div></div>`;
+  }
+  function capRow(label, have, need, unit, digitsN = 0) {
+    if (need <= 0.001) return `<span>${label}</span><span class="g"><i style="width:100%;background:var(--rule)"></i></span><span class="n" style="color:var(--ink-soft)">完了</span>`;
+    const scale = Math.max(have, need) * 1.1, ok = have >= need;
+    return `<span>${label}</span><span class="g"><i style="width:${(have / scale) * 100}%;background:${ok ? "var(--green)" : "var(--red)"}"></i><b style="left:${(need / scale) * 100}%"></b></span><span class="n ${ok ? "" : "bad"}">${have.toFixed(digitsN)} / ${need.toFixed(digitsN)}${unit}</span>`;
+  }
+  function capHtml(withConte) {
+    const f = s.stat || E.forecast(s);
+    return `<div class="cap">${withConte ? capRow("コンテ", f.conte, f.needConte, " 話", 2) : ""}${capRow("動画", f.douga, f.need.douga, " カット")}${capRow("仕上げ", f.shiage, f.need.shiage, " カット")}${capRow("撮影", f.satsuei, f.need.satsuei, " カット")}</div><p>黒い線＝放送に間に合わせるのに必要な、週あたりの量</p>`;
+  }
+  function epRow(e) {
+    const end = e.plan.start + e.plan.dur - 1;
+    let st = "着手前", cls = "mute";
+    if (e.aired) st = "放送済";
+    else if (e.delivered) { st = "納品済"; cls = ""; }
+    else if (e.started) { st = prod() && danger(e) ? "遅れ" : E.isGross(e.plan) ? `${Math.round(e.gprog * 100)}%` : E.STAGE_LABEL[stageV(e)]; cls = prod() && danger(e) ? "bad" : ""; }
+    return `<button class="row" ${selAttrs("ep", e.n)}><span>第${e.n}話（W${e.plan.start}–W${end}）</span><span class="v ${cls}">${esc(st)}</span></button>`;
+  }
+  function artState(ep) {
+    if (E.isGross(ep.plan)) return "協力会社";
+    if (!ep.art) return ep.started ? "ラフ原待ち" : "—";
+    if (s.week < ep.art.start) return `W${ep.art.start}から`;
+    if (s.week < ep.art.start + E.ART_WEEKS) return `作業中（W${ep.art.start + E.ART_WEEKS - 1}まで）`;
+    return "完了";
+  }
+  function teamOptions(ep) {
+    return s.teams.map((t) => `<option value="${t.key}" ${ep.plan.team === t.key ? "selected" : ""}>${t.label}（社内）</option>`).join("")
+      + s.gross.map((c) => `<option value="g${c.id}" ${ep.plan.team === "g" + c.id ? "selected" : ""}>グロス：${esc(c.name)}</option>`).join("");
+  }
+  // what adding k animators would do: forecast and quality on a throwaway copy
+  function previewAdd(ep, k) {
+    const c = JSON.parse(JSON.stringify(s));
+    E.addAnimators(c, ep.n, k, true);
+    const e2 = E.epBy(c, ep.n);
+    return { fc: E.epForecast(c, e2), q: Math.round(E.epQuality(c, e2)) };
+  }
+  const rushModes = (ep) => ["24h", "12h", "2gen", "short"].filter((m) => E.canRush(s, ep, m));
+
+  // ---------- header: brand | the week and its one main action | system ----------
+  function hdr(sub, wk, right) {
+    return `<header class="hdr"><div class="brand"><b>深夜アニメP</b><span>${esc(sub)}</span></div>${wk}<div class="hdr-r">${right}</div></header>`;
+  }
+  const studioSub = () => `${E.TIERS[s.tier].studio} ／ ${s.src.title}`;
+  const apHtml = () => `<span class="ap" aria-label="今週の行動 残り${s.ap}回（3回中）">行動 ${[0, 1, 2].map((i) => `<i class="${i < s.ap ? "on" : ""}"></i>`).join("")} 残り${s.ap}</span>`;
+  function phaseLabel() {
+    const next = E.unaired(s)[0];
+    if (!next) return "放送終了";
+    const w = s.nextAir - s.week;
+    if (w === 0) return `第${next.n}話 <b>放送週</b>`;
+    return `第${next.n}話 放送まで <b>あと${w}週</b>`;
+  }
+
+  // ---------- the office: a map of the people (pick one) ----------
+  function hotspots() {
+    const h = [];
+    const box = (seat, extra = 16) => ({ x: seat.x, y: seat.y - extra, w: seat.w, h: seat.h + extra });
+    h.push({ ...box(SEAT.desk), attrs: selAttrs("studio", ""), on: isSel("studio", ""), label: "あなたの席（スタジオ・現場の方針）" });
+    s.teams.forEach((tm, i) => {
+      const p = E.shinkoBy(s, tm.shinko);
+      if (SEAT.shinko[i]) h.push({ ...box(SEAT.shinko[i]), attrs: selAttrs("shinko", p.id), on: isSel("shinko", p.id), label: `${tm.label} 制作進行 ${p.name}${p.gone ? "（連絡が取れない）" : ""}` });
+      if (SEAT.sakkan[i]) h.push({ ...box(SEAT.sakkan[i]), attrs: selAttrs("team", tm.key), on: isSel("team", tm.key), label: `${tm.label}（作画監督 ${tm.sakkan.name}）` });
+    });
+    h.push({ ...box(SEAT.dir), attrs: selAttrs("dir", ""), on: isSel("dir", ""), label: `監督 ${s.staff.dir.name}` });
+    h.push({ ...SEAT.post, attrs: selAttrs("post", ""), on: isSel("post", ""), label: "動画・仕上げ・撮影・美術・CG" });
+    h.push({ ...SEAT.room, attrs: `data-act="xls" data-v="all"`, on: false, label: `作画部屋（原画マン ${activeAnims()}人）・一覧を開く` });
+    const g = s.gross.find((c) => s.eps.some((e) => e.plan.team === "g" + c.id && e.started && !e.aired && !e.delivered)) || s.gross[0];
+    h.push({ x: SEAT.phone.x - 1, y: SEAT.phone.y - 2, w: 12, h: 12, attrs: selAttrs("gross", g.id), on: sel && sel.k === "gross", label: "電話（協力会社）" });
+    h.push({ ...SEAT.board, attrs: `data-act="ganttBig"`, on: false, label: "ホワイトボード（グランドスケジュール）" });
+    h.push({ ...SEAT.tv, attrs: selAttrs("tv", ""), on: isSel("tv", ""), label: "テレビ（放送・SNS）" });
+    return h;
+  }
+  function officeHtml() {
+    const chip = (t, x, y, c = "", on = false) => `<span class="ochip ${on ? "on" : ""}" style="${c ? `--c:${c};` : ""}left:${pct(x, OW)};top:${pct(y, OH)}">${esc(t)}</span>`;
+    const chips = [chip("あなた", 14, 80, "var(--on)", isSel("studio", "")), chip("監督", 150, 48, "var(--red-d)", isSel("dir", "")), chip("撮影・仕上げ・美術・CG", 146, 94, "", isSel("post", "")), chip("作監", 214, 48), chip("作画部屋", 216, 94)];
+    s.teams.forEach((tm, i) => {
+      const st = SEAT.shinko[i]; if (!st) return;
+      const ep = activeEpOf(tm.key), sh = E.shinkoBy(s, tm.shinko);
+      chips.push(chip(`${tm.label}${sh.gone ? " 不在" : ep ? ` #${ep.n}` : ""}`, st.x, st.y + 15, TEAM_COL[tm.key], isSel("shinko", tm.shinko) || isSel("team", tm.key)));
+    });
+    return `<div class="office" id="office"><canvas class="px" width="${OW}" height="${OH}" id="officeCanvas" aria-hidden="true"></canvas>${chips.join("")}
+      ${hotspots().map((h) => `<button class="hot ${h.on ? "on" : ""}" style="left:${pct(h.x, OW)};top:${pct(h.y, OH)};width:${pct(h.w, OW)};height:${pct(h.h, OH)}" ${h.attrs} aria-label="${esc(h.label)}" title="${esc(h.label)}"></button>`).join("")}</div>`;
+  }
+
+  // ---------- the 12 episodes ----------
+  function epsHtml() {
+    return `<div class="eps">${s.eps.map((ep) => {
+      const c = ep.aired ? (ep.collapse ? "var(--red-d)" : "var(--gross)") : ep.delivered ? "var(--green-d)" : ep.started ? teamColor(ep.plan.team) : "var(--line-2)";
+      const air = ep.aired ? null : E.airWeekOf(s, ep), fc = ep.aired || ep.delivered ? null : E.epForecast(s, ep);
+      const late = fc != null && fc > air;
+      const sub = ep.aired ? `放送済 ${ep.airQ}` : ep.delivered ? "納品済" : late ? `遅れ${fc - air}週` : ep.started ? (E.isGross(ep.plan) ? `グロス ${Math.round(ep.gprog * 100)}%` : E.STAGE_LABEL[stageV(ep)]) : `着手W${ep.plan.start}`;
+      const p = ep.aired || ep.delivered ? 1 : progV(ep);
+      return `<button class="epc ${ep.started || ep.aired ? "" : "pre"} ${isSel("ep", ep.n) ? "on" : ""}" style="--c:${c}" ${selAttrs("ep", ep.n)} aria-label="第${ep.n}話 ${esc(sub)}">
+        <span class="n">#${ep.n}<small>${esc(teamShort(ep.plan.team))}</small></span><span class="s ${late ? "bad" : ""}">${esc(sub)}</span><span class="b"><i style="width:${Math.round(p * 100)}%"></i></span></button>`;
+    }).join("")}</div>`;
+  }
+
+  // ---------- things to look at (each points at an object) ----------
+  function concerns() {
+    const f = s.stat || E.forecast(s), out = [];
+    for (const sh of s.shinkos.filter((x) => x.gone)) {
+      const t = E.teamOfShinko(s, sh.id); if (!t) continue;
+      out.push({ c: "var(--red-d)", t: `${t.label}の進行と連絡が取れない`, sub: `${esc(sh.name)} ・ 担当話数が止まりかけている`, k: "shinko", id: sh.id });
+    }
+    for (const n of f.late) {
+      const ep = E.epBy(s, n);
+      out.push({ c: "var(--red-d)", t: `第${n}話が放送に間に合わない`, sub: `${esc(whoShort(ep.plan.team))} ・ 完パケ予測 W${E.epForecast(s, ep)} ／ 放送 W${E.airWeekOf(s, ep)}`, k: "ep", id: n });
+    }
+    for (const ep of E.unaired(s)) {
+      if (ep.started && !ep.delivered && !f.late.includes(ep.n) && qOf(ep) < E.LINE) out.push({ c: "var(--red-d)", t: `第${ep.n}話、局に突き返されそう`, sub: "あなたの見立て：作画が基準に届かない", k: "ep", id: ep.n });
+    }
+    if (f.conte < f.needConte) out.push({ c: "var(--amber)", t: "コンテが上がってこない", sub: "監督 ・ 着手が遅れる話数が出る", k: "dir", id: "" });
+    [["douga", "動画が追いついていない"], ["shiage", "仕上げが詰まりそう"], ["satsuei", "撮影がパンクしそう"]].forEach(([k, t]) => { if (f[k] < f.need[k]) out.push({ c: "var(--amber)", t, sub: "動画・仕上げ・撮影", k: "post", id: "" }); });
+    for (const sh of s.shinkos.filter((x) => !x.gone && x.stamina < 30)) {
+      const t = E.teamOfShinko(s, sh.id); if (!t) continue;
+      out.push({ c: "var(--amber)", t: `${sh.name}がかなり疲れている`, sub: `${t.label} 制作進行 ・ そろそろ飛ぶかもしれない`, k: "shinko", id: sh.id });
+    }
+    return out;
+  }
+  function concernsHtml(list) {
+    if (!list.length) return li({ c: "var(--green-d)", t: "進行の報告では、全話グランドスケジュールどおり", sub: "あなた ・ ただし、報告がいつも本当とは限らない" });
+    return list.slice(0, 6).map((x) => li({ c: x.c, t: esc(x.t), sub: x.sub, on: isSel(x.k, x.id), attrs: selAttrs(x.k, x.id) })).join("");
+  }
+
+  // ---------- details (one per kind of object, all the same shape) ----------
+  function paneEp(ep, ctx) {
+    const P = prod(), gross = E.isGross(ep.plan), p = ep.plan, end = p.start + p.dur - 1;
+    const air = airOf(ep), fc = ep.aired || ep.delivered ? null : fcOf(ep);
+    const late = fc != null && air != null && fc > air;
+    const editable = !ep.started && !ep.aired;
+    const st = P ? stageV(ep) : "wait";
+    const tag = ep.aired ? tagHtml("放送済", "ink") : ep.delivered ? tagHtml("納品済", "ok") : late ? tagHtml(`遅れ ${fc - air}週`, "bad")
+      : !ep.started ? tagHtml(P && !gross && ep.conte < 1 ? "コンテ待ち" : "着手前") : tagHtml(E.STAGE_LABEL[st]);
+    const who = gross ? `グロス：${esc(E.grossOf(s, p).name)}` : `${p.team}班（社内）`;
+    let body = oh("話数", `第${ep.n}話`, `${who} ・ ${ep.cuts}カット ・ 予定 W${p.start}–W${end}`, tag);
+    if (ep.aired) body += `<div class="tiles">${tile("作画の出来", ep.airQ, ep.collapse ? "bad" : "")}${tile("放送", `W${ep.airWeek}`)}${tile("担当", gross ? "グロス" : `${p.team}班`)}</div>`;
+    else if (!P) body += `<div class="tiles">${tile("予定", `W${p.start}–${end}`)}${tile("放送", `W${air}`)}${tile("余裕", `${air - end}週`, air - end <= 0 ? "bad" : "")}</div>`;
+    else body += `<div class="tiles">${tile("工程", ep.delivered ? "納品済" : gross ? (ep.started ? `${Math.round(ep.gprog * 100)}%` : "着手前") : esc(E.STAGE_LABEL[st]))}${tile("完パケ予測", ep.delivered ? `W${ep.deliveredWeek}` : `W${fc}`, late ? "bad" : "")}${tile("放送", `W${air}`)}</div>`;
+    body += mutHtml(mutterOf(ep));
+
+    // 工程
+    if (P && !ep.aired && !ep.delivered) {
+      let inner = "";
+      if (gross && ep.started) inner = `<div class="bar"><i style="width:${Math.round(ep.gprog * 100)}%;background:var(--gross)"></i></div><p>協力会社が1話まるごと制作中 ・ ${Math.round(ep.gprog * 100)}%${ep.gslip ? ` ・ 遅れ ${ep.gslip}週` : ""}。原画マンの内訳は先方の管理です。</p>`;
+      else if (ep.started) {
+        const t = totalsV(ep), L = { rough: "ラフ原", genga: "原画", douga: "動画", shiage: "仕上げ", satsuei: "撮影" };
+        inner = `<div class="stages">${Object.keys(L).map((k) => { const v = Math.min(1, t[k] / ep.cuts); const cls = k === st ? "now" : t[k] >= ep.cuts - 0.5 ? "done" : ""; return `<span class="${cls}"><i></i>${L[k]}${cls === "now" ? ` ${Math.floor(v * 100)}%` : ""}</span>`; }).join("")}</div>
+          <p>美術・CG：${artState(ep)}${ep.rush || ep.short ? ` ・ 巻き：${[ep.rush ? E.RUSH[ep.rush].label : "", ep.short ? "撮影短縮" : ""].filter(Boolean).join("＋")}` : ""}</p>`;
+        const sh = E.shinkoOfTeam(s, p.team);
+        if (sh && sh.skill < 45) inner += `<p>数字は進行の報告ベース。${esc(p.team)}班の進行は段取りが悪いので、実態はずれているかもしれない。</p>`;
+      } else inner = `<p>${!gross && ep.conte < 1 ? `コンテ ${Math.round(ep.conte * 100)}%。` : ""}予定 W${p.start} から。${gross ? "" : `前の話数の原画が上がり次第、班が入ります（原画マン${E.recommendAnims(s, ep)}人の予定）。`}</p>`;
+      body += `<section class="psec"><h3>工程</h3>${inner}</section>`;
+    }
+    if (!P) {
+      const iss = E.planIssues(s).filter((i) => i.n === ep.n);
+      if (iss.length) body += `<section class="psec"><h3>チェック</h3>${iss.map((i) => `<p style="color:${i.soft ? "var(--ink-soft)" : "var(--red)"}">${esc(i.msg)}</p>`).join("")}</section>`;
+    }
+
+    // 関係するもの
+    let rels = "";
+    if (gross) { const c = E.grossOf(s, p); rels += rel({ ico: "G", c: "var(--gross)", t: esc(c.name), sub: `協力会社 ・ 同時に${c.cap}話`, attrs: selAttrs("gross", c.id) }); }
+    else {
+      const t = E.teamBy(s, p.team), sh = E.shinkoBy(s, t.shinko);
+      rels += rel({ ico: p.team, c: TEAM_COL[p.team], t: t.label, sub: `班 ・ 作監 ${esc(t.sakkan.name)}`, attrs: selAttrs("team", p.team) });
+      rels += rel({ faceSeed: sh.seed, t: esc(sh.name), sub: `制作進行 ・ 段取り${stars(sh.skill)}${sh.gone ? " ・ 連絡が取れない" : sh.stamina < 30 ? " ・ 体力 低" : ""}`, attrs: selAttrs("shinko", sh.id) });
+    }
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rels}</div></section>`;
+
+    // できること
+    const name = `第${ep.n}話`;
+    if (editable) {
+      const minStart = P ? s.week : 1;
+      const form = `<label class="field"><span>担当</span><select data-act="planTeam" data-v="${ep.n}" aria-label="第${ep.n}話の担当">${teamOptions(ep)}</select></label>
+        <div class="field"><span>着手</span><div class="step"><button data-act="planStart" data-v="${ep.n}" data-d="-1" aria-label="着手を1週早める" ${p.start <= minStart ? "disabled" : ""}>−</button><span>W${p.start}</span><button data-act="planStart" data-v="${ep.n}" data-d="1" aria-label="着手を1週遅らせる">＋</button></div></div>
+        <div class="field"><span>期間</span><div class="step"><button data-act="planDur" data-v="${ep.n}" data-d="-1" aria-label="期間を1週短く" ${p.dur <= E.MIN_DUR ? "disabled" : ""}>−</button><span>${p.dur}週</span><button data-act="planDur" data-v="${ep.n}" data-d="1" aria-label="期間を1週長く">＋</button></div></div>`;
+      return pane(name, body, `<div class="pane-f"><span class="lbl">${name} にできること（着手前なので担当と日程を変えられる・行動なし）</span>${form}</div>`);
+    }
+    const acts = [];
+    if (P && ep.started && !ep.delivered && !ep.aired) {
+      const modes = rushModes(ep);
+      if (modes.length) acts.push(act({ label: "巻く…", sub: late ? "放送に間に合わせる手を選ぶ" : "急がせると絵が荒れる", cost: "行動なし", attrs: `data-act="rushOpen" data-v="${ep.n}"`, pri: late }));
+      if (gross) acts.push(actFor("grossPush", ep.n, { label: "協力会社を催促", sub: "1週ぶん巻いてもらう", pri: !late }));
+      else {
+        if (E.canAddAnim(s, ep)) [3, 1].forEach((k) => { const x = previewAdd(ep, k); acts.push(act({ label: `原画マンを足す ＋${k}`, sub: `予測 W${x.fc} ・ 作画：${judge({ q: x.q, fc: x.fc, air }).short}`, cost: "行動なし", attrs: `data-act="addAnim" data-v="${ep.n}" data-k="${k}"`, pri: !late && k === 3 && !acts.length })); });
+        if (ctx === "xls") { const sh = E.shinkoOfTeam(s, p.team); if (sh) acts.push(sh.gone ? actFor("hireShinko", sh.id) : actFor("help", sh.id, { label: `${sh.name}のヘルプに入る`, sub: "現場の本当の状況が分かる" })); }
+        else acts.push(act({ label: "進行表を開く", sub: "原画マンごとの進み", attrs: `data-act="xls" data-v="${p.team}" data-n="${ep.n}"` }));
+      }
+    }
+    if (ep.aired) acts.push(act({ label: "放送・SNSを見る", attrs: selAttrs("tv", "") }));
+    return pane(name, body, paneFoot(name, acts.join(""), acts.length ? "" : ep.delivered ? "納品済み。放送を待つだけです。" : ""));
+  }
+
+  function shinkoTag(sh) {
+    return sh.gone ? tagHtml("連絡が取れない", "bad") : sh.stamina < 30 ? tagHtml("体力 低", "bad") : sh.helped ? tagHtml("今週ヘルプ済み", "ok") : "";
+  }
+  function paneTeam(key) {
+    const t = E.teamBy(s, key); if (!t) return paneStudio();
+    const sh = E.shinkoBy(s, t.shinko), ep = activeEpOf(key), eps = teamEps(key);
+    const tag = sh.gone ? tagHtml("進行と連絡が取れない", "bad") : eps.some(danger) ? tagHtml("遅れ", "bad") : tagHtml("報告ベース");
+    let body = oh("班", t.label, `社内 ・ 同時に1話 ・ 担当 ${eps.map((e) => `#${e.n}`).join(" ") || "なし"}`, tag);
+    body += `<div class="tiles">${tile("作業中", ep ? `#${ep.n} ${esc(E.STAGE_LABEL[stageV(ep)])}` : "空き")}${tile("完パケ予測", ep ? `W${E.epForecast(s, ep)}` : "—", ep && danger(ep) ? "bad" : "")}${tile("作監 実力", t.sakkan.skill)}</div>`;
+    if (ep) body += mutHtml(mutterOf(ep), `あなたの見立て（第${ep.n}話の作画）`);
+    body += `<section class="psec"><h3>担当する話数</h3><div class="rows">${eps.map(epRow).join("")}</div><p>段取りの悪い進行は、トラブルを報告せずに抱え込むことがある。ヘルプに入れば現場の本当の状況が分かる。</p></section>`;
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ faceSeed: sh.seed, t: esc(sh.name), sub: `制作進行 ・ 段取り${stars(sh.skill)}`, attrs: selAttrs("shinko", sh.id) })}</div></section>`;
+    const acts = act({ label: "進行表を開く", sub: "原画マンごとの進み", attrs: `data-act="xls" data-v="${key}"`, pri: true }) + (sh.gone ? actFor("hireShinko", sh.id) : actFor("help", sh.id, { label: "進行のヘルプに入る", sub: "隠れていたトラブルも見つかる" }));
+    return pane(t.label, body, paneFoot(t.label, acts));
+  }
+  function paneShinko(id) {
+    const sh = E.shinkoBy(s, id), t = sh && E.teamOfShinko(s, id);
+    if (!sh || !t) return paneStudio();
+    let body = oh("人", sh.name, `${t.label} 制作進行${sh.skill < 45 ? " ・ 新人" : ""}`, shinkoTag(sh), sh.seed);
+    body += `<div class="tiles">${tile("段取り", stars(sh.skill))}${tile("体力", Math.round(sh.stamina), sh.stamina < 30 ? "bad" : "")}${tile("担当", t.label)}</div>`;
+    body += `<section class="psec"><h3>担当する話数</h3><div class="rows">${teamEps(t.key).map(epRow).join("")}</div><p>${sh.skill < 45 ? "段取りが悪い。トラブルを報告せずに抱え込み、放送直前まで黙っていることがある。" : "段取りは悪くない。報告はおおむね信用できる。"}</p></section>`;
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ ico: t.key, c: TEAM_COL[t.key], t: t.label, sub: `班 ・ 作監 ${esc(t.sakkan.name)}`, attrs: selAttrs("team", t.key) })}</div></section>`;
+    const acts = (sh.gone ? actFor("hireShinko", sh.id, { pri: true }) : actFor("help", sh.id, { pri: true, sub: "現場の本当の状況が分かる" })) + act({ label: "進行表を開く", attrs: `data-act="xls" data-v="${t.key}"` });
+    return pane(sh.name, body, paneFoot(sh.name, acts));
+  }
+  function paneDir() {
+    const d = s.staff.dir, w = s.staff.wri, f = s.stat || E.forecast(s), inh = s.eps.filter((e) => !E.isGross(e.plan));
+    const short = f.conte < f.needConte;
+    let body = oh("人", d.name, `監督${d.quirk >= 0.3 ? " ・ こだわり強" : ""}`, s.dirMood < 0 ? tagHtml("機嫌が悪い", "warn") : "", d.seed);
+    body += `<div class="tiles">${tile("実力", d.skill + s.dirMood, s.dirMood < 0 ? "bad" : "")}${tile("コンテの速さ", d.speed)}${tile("コンテ", `${f.conte.toFixed(2)}話/週`, short ? "bad" : "")}</div>`;
+    body += `<p class="speech">${short ? "コンテ、もうちょっと待って。妥協はしたくない。" : "いい画になってきてる。"}</p>`;
+    body += `<section class="psec"><h3>上がり</h3><div class="rows">
+      <div class="row"><span>コンテ（社内の回）</span><span class="v">${inh.filter((e) => e.conte >= 1).length} / ${inh.length}話</span></div>
+      <div class="row"><span>脚本（シリーズ構成 ${esc(w.name)}）</span><span class="v">${s.eps.filter((e) => e.script >= 1).length} / 12話</span></div></div>
+      <p>必要なコンテのペースは 週${f.needConte.toFixed(2)}話。グロスの回は協力会社が描きます。</p></section>`;
+    return pane(d.name, body, paneFoot("監督", actFor("extConte", undefined, { pri: short }) + actFor("dirTalk")));
+  }
+  function panePost() {
+    const f = s.stat || E.forecast(s);
+    const shortK = ["douga", "shiage", "satsuei"].filter((k) => f[k] < f.need[k]);
+    const act2 = s.eps.filter((e) => e.started && !e.aired && !e.delivered && !E.isGross(e.plan));
+    let body = oh("部署", "動画・仕上げ・撮影", "美術・CG も同じ部屋 ・ 社内の回だけを受け持つ", shortK.length ? tagHtml("手が足りない", "warn") : "");
+    body += `<section class="psec" style="border-top:0;padding-top:0"><h3>処理能力と必要なペース（週あたり）</h3>${capHtml(false)}</section>`;
+    body += `<section class="psec"><h3>美術・CG</h3><div class="rows">${act2.length ? act2.map((e) => `<button class="row" ${selAttrs("ep", e.n)}><span>第${e.n}話</span><span class="v ${artState(e) === "完了" ? "" : "mute"}">${esc(artState(e))}</span></button>`).join("") : `<div class="row"><span>作業中の話数はありません</span><span></span></div>`}</div><p>ラフ原が全部上がると美術とCGが入り、${E.ART_WEEKS}週間で上がる。撮影は美術とCGが上がってから。</p></section>`;
+    return pane("動画・仕上げ・撮影", body, `<div class="pane-f"><span class="lbl">部署 にできること（行動なし）</span>${seg("発注先", "douga", [["inhouse", "社内のみ"], ["overseas", "海外も可"]])}<p class="note" style="color:var(--ink-soft)">海外は量をこなせるが、品質は落ちる。</p></div>`);
+  }
+  function paneStudio() {
+    const T = E.TIERS[s.tier], list = concerns();
+    const m = list.some((x) => x.c.includes("red")) ? { tone: "bad", t: "やばい話数がある・・・" } : list.length ? { tone: "worry", t: "ちょっと気になるところがある" } : { tone: "good", t: "今のところ、良い感じだ" };
+    let body = oh("スタジオ", T.studio, `あなたの会社 ・ 社内${s.teams.length}班 ・「${esc(s.src.title)}」`, "", YOU);
+    body += `<div class="tiles">${tile("放送済み", `${s.aired}/12`)}${tile("評判", s.aired ? Math.round(s.R) : "—")}${tile("今週の行動", `${s.ap}/3`)}</div>`;
+    body += mutHtml(m, "あなたの見立て（全体）");
+    body += `<section class="psec"><h3>処理能力と必要なペース（週あたり）</h3>${capHtml(true)}</section>`;
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ faceSeed: s.staff.dir.seed, t: esc(s.staff.dir.name), sub: "監督", attrs: selAttrs("dir", "") })}${rel({ ico: "部", c: "var(--teal)", t: "動画・仕上げ・撮影", sub: "部署", attrs: selAttrs("post", "") })}${rel({ ico: "TV", c: "#b8336f", t: "放送・SNS", sub: `次の放送 W${s.nextAir}`, attrs: selAttrs("tv", "") })}</div></section>`;
+    const foot = `<div class="pane-f"><span class="lbl">スタジオ にできること（現場の方針・行動なし）</span>
+      ${seg("発注先", "douga", [["inhouse", "社内のみ"], ["overseas", "海外も可"]])}${seg("進め方", "mode", [["stock", "作り置き優先"], ["quality", "品質優先"]])}${seg("残業", "ot", [[false, "させない"], [true, "させる"]])}
+      <p class="note" style="color:var(--ink-soft)">品質優先は丁寧なぶん遅い。残業は2割速いが、人が倒れ、進行が飛びやすくなる。</p></div>`;
+    return pane(T.studio, body, foot);
+  }
+  function paneGross(id) {
+    const c = E.grossBy(s, id); if (!c) return paneStudio();
+    const eps = s.eps.filter((e) => e.plan.team === "g" + id);
+    const m = c.quality < E.LINE + 3 ? { tone: "bad", t: "ここに出すと基準ぎりぎりだ・・・" } : c.quality < E.LINE + 12 ? { tone: "worry", t: "ちょっと作画厳しいか・・・？" } : { tone: "good", t: "ここなら安心だ" };
+    let body = oh("協力会社", c.name, esc(c.note), c.quality < E.LINE + 3 ? tagHtml("基準ぎりぎり", "warn") : "");
+    body += `<div class="tiles">${tile("同時に", `${c.cap}話`)}${tile("受けている", eps.length ? eps.map((e) => `#${e.n}`).join(" ") : "なし")}${tile("局の基準", E.LINE)}</div>`;
+    body += mutHtml(m, "あなたの見立て（この会社の作画）");
+    body += `<section class="psec"><h3>受けている話数</h3><div class="rows">${eps.length ? eps.map(epRow).join("") : `<div class="row"><span>発注している話数はありません</span><span></span></div>`}</div><p>グランドスケジュールで話数の担当を切り替えると発注できる。</p></section>`;
+    const acts = prod() ? eps.filter((e) => e.started && !e.delivered && !e.aired).map((e) => actFor("grossPush", e.n, { label: `第${e.n}話を催促`, sub: "1週ぶん巻いてもらう" })).join("") : "";
+    return pane(c.name, body, paneFoot(c.name, acts, acts ? "" : "いま制作中の話数はありません。"));
+  }
+  function paneTV() {
+    let body = oh("放送", "放送・SNS", `放送済み ${s.aired}/12 ・ 次の放送 W${s.nextAir}`);
+    body += `<div class="tiles">${tile("放送済み", `${s.aired}/12`)}${tile("評判", s.aired ? Math.round(s.R) : "—")}${tile("次の放送", `W${s.nextAir}`)}</div>`;
+    body += `<section class="psec"><h3>放送済みの1枚絵</h3><div class="kvs">${s.eps.map((e) => `<div class="kvbox"><span data-kv="${e.n}"></span><span>#${e.n}${e.airQ != null ? ` ${e.airQ}` : ""}</span></div>`).join("")}</div></section>`;
+    body += `<section class="psec"><h3>SNSの反応</h3>${s.sns.length ? s.sns.slice(0, 8).map(postHtml).join("") : "<p>放送が始まると、ここに反応が流れます。</p>"}</section>`;
+    body += `<section class="psec"><h3>現場ログ</h3><div class="log">${s.log.slice(-24).reverse().map((l) => `<p><span class="w">W${l.w}</span>${esc(l.text)}</p>`).join("")}</div></section>`;
+    return pane("放送・SNS", body, paneFoot("放送", "", "放送は毎週自動で進みます。間に合わない話数があると、放送日に判断を求められます。"));
+  }
+  const postHtml = (p) => `<div class="post ${["god", "good"].includes(p.kind) ? "good" : ["bad", "collapse", "recap", "delay"].includes(p.kind) ? "bad" : ""}"><i></i><span><small>${esc(p.h)} ・ 第${p.n}話</small>${esc(p.t)}</span></div>`;
+  function paneFor() {
+    const k = sel.k;
+    if (k === "ep") return paneEp(E.epBy(s, +sel.id), "prod");
+    if (k === "team") return paneTeam(sel.id);
+    if (k === "shinko") return paneShinko(+sel.id);
+    if (k === "dir") return paneDir();
+    if (k === "post") return panePost();
+    if (k === "gross") return paneGross(+sel.id);
+    if (k === "tv") return paneTV();
+    return paneStudio();
+  }
+
+  // ---------- the schedule (timeline of episodes) ----------
+  function weekSpan() {
+    const last = Math.max(...s.eps.map((e) => (e.plan ? e.plan.start + e.plan.dur - 1 : 0)), s.pre + E.EPISODES, prod() ? s.nextAir + E.unaired(s).length : 0);
+    return Math.min(40, last + 1);
+  }
+  function timelineHtml() {
+    const W = weekSpan(), P = prod(), now = P ? s.week : 1;
+    const left = (w) => ((w - 1) / W) * 100, width = (n) => (n / W) * 100;
+    const bad = new Set(E.planIssues(s).filter((i) => !i.soft).map((i) => i.n));
+    const head = `<div class="tl-head"><span>話</span><span>担当</span><span class="tl-weeks" style="grid-template-columns:repeat(${W},minmax(0,1fr))">${Array.from({ length: W }, (_, i) => `<span class="${i + 1 === now ? "now" : ""}">${i + 1}</span>`).join("")}</span></div>`;
+    const rows = s.eps.map((ep) => {
+      const p = ep.plan, c = teamColor(p.team), air = airOf(ep);
+      const fc = P && !ep.aired && !ep.delivered ? E.epForecast(s, ep) : null;
+      const late = fc != null && air != null && fc > air;
+      let bars = `<span class="plan" style="left:${left(p.start)}%;width:${width(p.dur)}%"></span>`;
+      if (P && ep.started) {
+        const to = ep.delivered ? ep.deliveredWeek : ep.aired ? ep.airWeek : s.week - 1;
+        if (to >= ep.startWeek) bars += `<span class="act2" style="left:${left(ep.startWeek)}%;width:${width(to - ep.startWeek + 1)}%"></span>`;
+      }
+      if (fc != null) { const from = ep.started ? s.week : Math.max(s.week, fc - p.dur + 1); if (fc >= from) bars += `<span class="fc" style="left:${left(from)}%;width:${width(fc - from + 1)}%"></span>`; }
+      const mark = air ? `<span class="air ${ep.aired ? "done" : late ? "late" : ""}" style="left:${left(air)}%;width:${width(1)}%">${ep.aired ? "●" : "▼"}</span>` : "";
+      return `<button class="tl-row ${isSel("ep", ep.n) ? "on" : ""} ${bad.has(ep.n) || late ? "bad" : ""}" style="--c:${c}" ${selAttrs("ep", ep.n)} aria-label="第${ep.n}話 ${esc(whoShort(p.team))}">
+        <span class="n">#${ep.n}</span><span class="w"><i></i>${esc(whoShort(p.team))}</span>
+        <span class="tl-track"><span class="grid" style="background-size:${100 / W}% 100%"></span><span class="nowc" style="left:${left(now)}%;width:${width(1)}%"></span>${bars}${mark}</span></button>`;
+    }).join("");
+    return `${head}<div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <div class="legend"><span>薄いバー＝予定</span>${P ? "<span>濃いバー＝作業した週</span><span>斜線＝完パケまでの予測（進行の報告）</span>" : ""}<span>▼＝放送週</span><span>黄＝今週</span><span>1話は標準${E.DEF_DUR}週（最短${E.MIN_DUR}週）・1班は同時に1話まで</span></div>`;
+  }
+  function checksHtml() {
+    const issues = E.planIssues(s);
+    if (!issues.length) return li({ c: "var(--green-d)", t: "問題はありません", sub: "全話が放送週までに終わる予定 ・ 班の重なりなし" });
+    return issues.map((i) => li({ c: i.soft ? "var(--amber)" : "var(--red-d)", t: esc(i.msg), on: isSel("ep", i.n), attrs: selAttrs("ep", i.n) })).join("");
+  }
+
+  // ---------- screens ----------
+  function render() {
+    cancelAnimationFrame(raf); officeCanvas = null;
+    if (!s) renderTitle();
+    else if (s.phase === "schedule") renderSchedule();
+    else if (s.phase === "prod") renderProd();
+    else renderEnd();
+    mountFaces(app); mountKV(app);
+    if (prod()) { officeCanvas = document.getElementById("officeCanvas"); raf = requestAnimationFrame(loop); }
+  }
+  function mountFaces(root) { root.querySelectorAll("[data-face]").forEach((el) => el.replaceWith(faceCanvas(+el.dataset.face, el.dataset.cls || ""))); }
+  function mountKV(root) { if (!s) return; root.querySelectorAll("[data-kv]").forEach((el) => { const k = s.kv.find((x) => x.n === +el.dataset.kv && !x.recap); if (k) { el.innerHTML = ""; el.appendChild(kvCanvas(k)); } }); }
+
+  const DIFF = { top: ["やさしい", "ok", "var(--green-d)"], mid: ["ふつう", "warn", "var(--amber)"], low: ["むずかしい", "bad", "var(--red-d)"] };
+  function renderTitle() {
+    const best = store.get("animep.best4") || {};
+    const T = E.TIERS[pickTier];
+    const rows = Object.values(E.TIERS).map((t) => `<button class="st-row ${t.key === pickTier ? "on" : ""}" style="--c:${DIFF[t.key][2]}" data-act="pickTier" data-v="${t.key}" aria-pressed="${t.key === pickTier}">
+        <i></i><span><span style="display:block;font-weight:700">${esc(t.studio)}</span><span style="display:block;font-size:12px;color:var(--on-soft)">${esc(t.name)}</span></span>
+        <span class="tag dark ${DIFF[t.key][1]}" style="justify-self:start">${DIFF[t.key][0]}</span>
+        <span class="big r hide-n">${t.teams}</span><span class="big r hide-n">${t.pre}<small>週</small></span><span class="hide-n" style="font-size:13px">${esc(E.SOURCES[t.source].label)}</span>
+        <span class="big r hide-n" style="color:${best[t.key] ? "var(--pink)" : "var(--on-soft)"}">${esc(best[t.key] || "—")}</span><span style="color:var(--on-soft)" aria-hidden="true">›</span></button>`).join("");
+    let body = oh("スタジオ", T.studio, `${esc(T.name)} ・ ${esc(E.SOURCES[T.source].label)}`, tagHtml(DIFF[T.key][0], DIFF[T.key][1]));
+    body += `<div class="tiles">${tile("社内の班", T.teams)}${tile("放送前", `${T.pre}週`)}${tile("ベスト", esc(best[T.key] || "—"))}</div>`;
+    body += `<p style="margin:0;font-size:13.5px">${esc(T.blurb)}</p>`;
+    body += `<section class="psec"><h3>座組（スタジオで決まっている）</h3><div class="rows">
+      <div class="row"><span>監督 実力 ／ コンテの速さ</span><span class="v">${stars(T.dir.skill)} ／ ${stars(T.dir.speed)}</span></div>
+      ${T.shinkoSkill.map((r, i) => { const v = (r[0] + r[1]) / 2; return `<div class="row"><span>${"ABCDEF"[i]}班 進行の段取り${v < 45 ? "（新人）" : ""}</span><span class="v ${v < 45 ? "bad" : ""}">${stars(v)}</span></div>`; }).join("")}</div></section>`;
+    const foot = paneFoot(T.studio, act({ label: "このスタジオで始める", sub: "グランドスケジュールを引くところから", attrs: `data-act="tier" data-v="${T.key}"`, pri: true, cost: "→" }), "", true);
+    app.innerHTML = hdr("制作デスク篇", `<div class="wk"><span class="wk-n mute">放送前</span><span class="wk-t">スタジオを選ぶと、グランドスケジュールに進みます</span></div>`, `<button class="btn-sys" data-act="howto">遊び方</button>`)
+      + `<div class="main"><div class="col">
+          <div class="logo"><div class="logo-t"><h1>深夜アニメP</h1><span class="stamp">制作デスク篇</span></div>
+            <p>グランドスケジュールを引き、進行の報告を受け、原画マンを足し、協力会社を急かす。TVアニメ1クール全12話を、放送まで落とさずに届ける。<b>ただし、進行の報告がいつも本当とは限らない。</b></p></div>
+          <section class="sec"><div class="sec-h"><h2>スタジオ 3</h2></div>
+            <div class="st-head"><span></span><span>名前</span><span>難しさ</span><span class="r">社内の班</span><span class="r">放送前</span><span>作品</span><span class="r">ベスト</span><span></span></div>
+            ${rows}</section>
+          <p class="note">1プレイ15〜25分。制作中の進行状況はこのブラウザに保存されます。</p>
+        </div>${pane(T.studio, body, foot)}</div>`;
+  }
+
+  function renderSchedule() {
+    const issues = E.planIssues(s), hard = issues.filter((i) => !i.soft);
+    if (!sel || !["ep", "gross"].includes(sel.k)) sel = { k: "ep", id: (hard[0] || issues[0] || { n: 1 }).n };
+    const gross = s.eps.filter((e) => E.isGross(e.plan)).length;
+    const first = E.planAir(s, 1);
+    app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">放送前</span><span class="wk-t">第1話 放送 <b>W${first}</b> ・ 準備 ${first - 1}週</span><button class="btn-main" data-act="start" ${hard.length ? "disabled" : ""}>${hard.length ? "問題を直すと制作開始" : "制作開始"}</button></div>`, `<button class="btn-sys" data-act="title">スタジオを選び直す</button>`)
+      + `<div class="main"><div class="col">
+          <section class="sec"><div class="sec-h"><h2>話数 12 ・ 社内${12 - gross} ・ グロス${gross}</h2><button class="btn-sys" data-act="autoPlan">おまかせで組み直す</button></div>${timelineHtml()}</section>
+          <section class="sec"><div class="sec-h"><h2>チェック${issues.length ? ` ${issues.length}件` : ""}</h2></div><div class="grid2">${checksHtml()}</div></section>
+          <section class="sec"><div class="sec-h"><h2>協力会社（グロス先） ${s.gross.length}</h2></div><div class="grid2">${s.gross.map((c) => li({ c: "var(--gross)", t: esc(c.name), sub: `同時に${c.cap}話 ・ ${esc(c.note)}`, on: isSel("gross", c.id), attrs: selAttrs("gross", c.id) })).join("")}</div></section>
+        </div>${sel.k === "gross" ? paneGross(+sel.id) : paneEp(E.epBy(s, +sel.id), "sched")}</div>`;
+  }
+
+  function renderProd() {
+    if (!sel) sel = { k: "studio" };
+    const list = concerns();
+    app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">第${s.week}週</span><span class="wk-t">${phaseLabel()}</span>${apHtml()}<button class="btn-main" data-act="endWeek">今週を締める</button></div>`, `<button class="btn-sys" data-act="howto">遊び方</button><button class="btn-sys" data-act="quit">やめる</button>`)
+      + `<div class="main"><div class="col">
+          <section class="sec"><div class="sec-h"><h2>スタジオ　人・班・協力会社</h2></div>${officeHtml()}</section>
+          <section class="sec"><div class="sec-h"><h2>話数 12 ・ 放送済み ${s.aired}</h2><button class="btn-sys" data-act="ganttBig">グランドスケジュール</button></div>${epsHtml()}</section>
+          <section class="sec"><div class="sec-h"><h2>気になること${list.length ? ` ${list.length}` : ""}</h2></div><div class="grid2">${concernsHtml(list)}</div></section>
+        </div>${paneFor()}</div>`;
+  }
+
+  // ---------- result ----------
+  const GRADE = { god: ["神回", "pink", "var(--pink)"], good: ["良", "ok", "var(--green-d)"], mid: ["並", "", "var(--amber)"], bad: ["不安", "warn", "#d9731a"], collapse: ["作画崩壊", "bad", "var(--red-d)"] };
+  function renderEnd() {
+    const r = s.result, T = E.TIERS[s.tier];
+    const best = store.get("animep.best4") || {};
+    const order = "DCBAS";
+    if (!s.savedBest) {
+      s.newBest = !best[s.tier] || order.indexOf(r.rank) > order.indexOf(best[s.tier]);
+      if (s.newBest) { best[s.tier] = r.rank; store.set("animep.best4", best); }
+      s.savedBest = true;
+    }
+    const H = 240;
+    const bars = s.eps.map((e) => { const g = GRADE[e.grade || (e.collapse ? "collapse" : "mid")]; return `<div style="display:flex;flex-direction:column;justify-content:flex-end;gap:4px;height:100%"><span class="pix" style="font-size:13px;text-align:center">${e.airQ ?? "—"}</span><i style="display:block;border-radius:3px 3px 0 0;height:${Math.round(((e.airQ || 0) / 100) * (H - 24))}px;background:${g[2]}"></i></div>`; }).join("");
+    const xs = s.eps.map((e) => { const g = GRADE[e.grade || (e.collapse ? "collapse" : "mid")]; return `<span><b>#${e.n}</b><span style="color:var(--on-soft)">${g[0]}${E.isGross(e.plan) ? "・G" : ""}</span></span>`; }).join("");
+    let body = oh("シリーズ", s.src.title, `${esc(T.studio)} ・ 全12話 ・ ${esc(E.SOURCES[s.src.type].label)}`, s.newBest ? tagHtml("ベスト更新", "pink") : "");
+    body += `<div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:center"><div class="rank" style="color:${r.rank === "S" || r.rank === "A" ? "#ff2f87" : r.rank === "D" ? "var(--red)" : "var(--ink)"}">${r.rank}</div>
+      <div class="tiles" style="grid-template-columns:repeat(2,minmax(0,1fr))">${tile("平均の出来", r.avgQ.toFixed(1))}${tile("作画崩壊", `${r.collapses}回`, r.collapses ? "bad" : "")}${tile("総集編", `${s.recaps}回`, s.recaps ? "bad" : "")}${tile("放送延期", `${s.delays}回`, s.delays ? "bad" : "")}</div></div>`;
+    body += `<section class="psec"><h3>シェア用の結果</h3><div class="share"><p id="shareText" style="white-space:pre-wrap;margin:0;user-select:all">${esc(shareText())}</p></div></section>`;
+    const foot = `<div class="pane-f"><span class="lbl">シリーズ にできること</span><div class="acts">${act({ label: "結果をコピー", attrs: `data-act="copy"`, pri: true })}${act({ label: "スタジオを選び直す", attrs: `data-act="title"` })}</div><span class="note" id="copyMsg" style="color:var(--ink-soft)"></span></div>`;
+    app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">第${s.week}週</span><span class="wk-t">最終回 放送 ・ <b>12 / 12話</b></span><button class="btn-main" data-act="again">同じスタジオでもう一度</button></div>`, "")
+      + `<div class="main"><div class="col">
+          <section class="sec"><div class="sec-h"><h2>話数 12 ・ 作画の出来（線＝局の基準${E.LINE}）</h2></div>
+            <div class="chart"><div class="bars" style="height:${H}px"><span class="line" style="bottom:${Math.round((E.LINE / 100) * (H - 24))}px"><span>基準${E.LINE}</span></span>${bars}</div><div class="bars-x">${xs}</div></div></section>
+          <section class="sec"><div class="sec-h"><h2>放送した1枚絵</h2></div><div class="kvs" style="grid-template-columns:repeat(12,minmax(0,1fr))">${s.eps.map((e) => `<div class="kvbox"><span data-kv="${e.n}"></span></div>`).join("")}</div></section>
+          <section class="sec"><div class="sec-h"><h2>現場の記録</h2></div><div class="stats">
+            <div class="stat"><div class="l">起きたトラブル</div><div class="v">${s.incidents.length}<small>件</small></div></div>
+            <div class="stat"><div class="l">抱え込まれていた</div><div class="v">${s.lateReports}<small>件</small></div></div>
+            <div class="stat"><div class="l">ヘルプで発見</div><div class="v">${s.hiddenFound}<small>件</small></div></div>
+            <div class="stat"><div class="l">ヘルプに入った</div><div class="v">${s.helpCount}<small>回</small></div></div>
+            <div class="stat"><div class="l">足した原画マン</div><div class="v">${s.added}<small>人</small></div></div>
+            <div class="stat"><div class="l">納品拒否</div><div class="v">${s.rejects}<small>回</small></div></div>
+            <div class="stat"><div class="l">グロスに出した</div><div class="v">${s.eps.filter((e) => E.isGross(e.plan)).length}<small>話</small></div></div>
+          </div></section>
+        </div>${pane(s.src.title, body, foot)}</div>`;
+  }
+  function shareText() {
+    const r = s.result;
+    const row = s.eps.map((e) => (e.collapse ? "🟥" : e.grade === "god" ? "🟪" : e.grade === "good" ? "🟩" : e.grade === "mid" ? "🟨" : "🟧")).join("");
+    return `深夜アニメP 制作デスク篇 ${E.TIERS[s.tier].name}「${s.src.title}」\n${row}${s.recaps ? ` 総集編${s.recaps}` : ""}\n評価 ${r.rank}（平均の出来 ${r.avgQ.toFixed(1)}）`;
+  }
+
+  // ---------- the 進行表 (spreadsheet) ----------
+  let xls = null;   // { key: team key or "all", n: episode on the open tab }
+  function xlsTabs() {
+    if (xls.key === "all") return s.eps.filter((e) => e.started && !e.aired && !e.delivered && !E.isGross(e.plan));
+    return s.eps.filter((e) => e.plan.team === xls.key);
+  }
+  function openXls(key, n) {
+    xls = { key, n: null };
+    const tabs = xlsTabs();
+    const cur = (n && tabs.find((e) => e.n === n)) || tabs.find((e) => e.started && !e.delivered && !e.aired) || tabs.find((e) => !e.aired) || tabs[0];
+    xls.n = cur ? cur.n : null;
+    showModal({ kind: "xls" });
+  }
+  function dbar(v, total, cls = "") {
+    const p = Math.max(0, Math.min(1, v / Math.max(1, total)));
+    return `<td class="db"><div class="dbar ${cls}"><span><i style="width:${p * 100}%"></i></span><em>${Math.floor(v + 0.001)}/${Math.round(total)}</em></div></td>`;
+  }
+  function xlsSheet() {
+    const tabs = xlsTabs();
+    const ep = xls.n ? E.epBy(s, xls.n) : null;
+    const team = xls.key !== "all" ? E.teamBy(s, xls.key) : ep && !E.isGross(ep.plan) ? E.teamBy(s, ep.plan.team) : null;
+    const sh = team ? E.shinkoBy(s, team.shinko) : null;
+    const title = xls.key === "all" ? "作画部屋_原画マン一覧.xlsx" : `進行表_${team.label}.xlsx`;
+    let grid = "", post = "";
+    if (!ep) grid = `<div class="xls-msg">この班にはまだ話数が割り当てられていません。</div>`;
+    else if (E.isGross(ep.plan)) grid = `<div class="xls-msg">第${ep.n}話は協力会社に1話まるごと発注しています。原画マンの内訳は先方の管理です。</div>`;
+    else if (!ep.started) grid = `<div class="xls-msg">第${ep.n}話は着手前です。${ep.conte < 1 ? `コンテ待ち（${Math.round(ep.conte * 100)}%）。` : ""}予定 W${ep.plan.start} から（原画マン${E.recommendAnims(s, ep)}人の予定）。</div>`;
+    else {
+      const view = ep.anims.map((a) => E.viewAnim(s, a));
+      const live = view.filter((a) => !a.out);
+      const rows = view.map((a, i) => {
+        const held = a.hold > 0 || a.slow < 1;
+        const state = a.out ? "外れた" : a.hold > 0 ? "連絡待ち" : a.slow < 1 ? "他社優先" : a.genga >= a.cuts - 0.5 ? "上がり" : a.rough >= a.cuts - 0.5 ? "原画中" : a.rough > 0 ? "ラフ原中" : "未着手";
+        return `<tr class="${held ? "held" : a.out ? "out" : ""}"><th class="rn">${i + 1}</th><td>${esc(a.name)}</td><td class="n">${a.skill}</td><td class="n">${Math.round(a.cuts)}</td>${dbar(a.rough, a.cuts, "r")}${dbar(a.genga, a.cuts, held ? "bad" : "")}<td class="st">${state}</td></tr>`;
+      }).join("");
+      const tr = view.reduce((x, a) => x + a.rough, 0), tg = view.reduce((x, a) => x + a.genga, 0);
+      grid = `<div class="xls-grid"><table><thead><tr><th class="rn"></th><th>原画マン</th><th style="text-align:right">実力</th><th style="text-align:right">持ち</th><th>ラフ原</th><th>原画</th><th>状態</th></tr></thead>
+        <tbody>${rows}<tr class="tot"><th class="rn"></th><td>合計 ${live.length}人${E.dilution(ep) > 0 ? `（${E.BASE_ANIMS}人を超えたぶん絵がばらつく）` : ""}</td><td class="n">${Math.round(live.reduce((x, a) => x + a.skill, 0) / Math.max(1, live.length))}</td><td class="n">${ep.cuts}</td>${dbar(tr, ep.cuts, "r")}${dbar(tg, ep.cuts)}<td></td></tr></tbody></table></div>`;
+      const pc = (v) => `${Math.min(100, Math.floor((v / ep.cuts) * 100 + 0.001))}%`;
+      const cls = (v) => (v >= ep.cuts - 0.5 ? "ok" : v > 0.05 ? "wip" : "");
+      const art = artState(ep);
+      post = `<div class="xls-post"><div class="${cls(ep.douga)}"><div class="l">動画</div><div class="v">${pc(ep.douga)}</div></div><div class="${cls(ep.shiage)}"><div class="l">仕上げ</div><div class="v">${pc(ep.shiage)}</div></div><div class="${cls(ep.satsuei)}"><div class="l">撮影</div><div class="v">${pc(ep.satsuei)}</div></div><div class="${art === "完了" ? "ok" : ep.art ? "wip" : ""}"><div class="l">美術</div><div class="v">${esc(art)}</div></div><div class="${art === "完了" ? "ok" : ep.art ? "wip" : ""}"><div class="l">CG</div><div class="v">${esc(art)}</div></div></div>`;
+    }
+    const fx = ep ? `=第${ep.n}話!完パケ予測 → <b>${ep.aired ? "放送済" : ep.delivered ? `W${ep.deliveredWeek}` : `W${E.epForecast(s, ep)}`}</b>　（${sh ? `進行 ${esc(sh.name)} の報告` : "現場の数字"}）` : "";
+    return `<section class="xls" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="xls-top"><span class="xls-file">${esc(title)}</span>
+        ${sh ? `<span class="xls-who">進行 ${esc(sh.name)} ・ 段取り ${stars(sh.skill)} ・ 体力 ${Math.round(sh.stamina)}${sh.gone ? " ・ 連絡が取れない" : sh.helped ? " ・ 今週ヘルプ済み（実態）" : ""}</span>` : ""}
+        <button class="xls-x" data-act="closeModal" aria-label="閉じる">×</button></div>
+      <div class="xls-fx"><span class="fxl">fx</span><span>${fx}</span></div>
+      ${grid}${post}
+      <div class="xls-tabs">${tabs.map((e) => `<button class="${e.n === xls.n ? "on" : ""}" data-act="xlsTab" data-v="${e.n}">#${e.n}${e.aired ? "（済）" : e.delivered ? "（納品）" : e.started ? " 制作中" : "（前）"}</button>`).join("") || `<span style="padding:10px;font-size:12px">シートがありません</span>`}</div>
+    </section>`;
+  }
+
+  // ---------- dialogs: the same detail, on top ----------
+  function showModal(m) { modal = m; renderModal(); }
+  function closeModal() { modal = null; xls = null; modalRoot.innerHTML = ""; }
+  function reporter(rep) {
+    if (!rep) return null;
+    if (rep.kind === "shinko") { const sh = E.shinkoOfTeam(s, rep.team); return sh ? { seed: sh.seed, w: `<b>${esc(sh.name)}</b> ・ ${rep.team}班 制作進行 ・ 段取り${stars(sh.skill)}` } : null; }
+    if (rep.kind === "sakkan") { const t = E.teamBy(s, rep.team); return { seed: t.sakkan.seed, w: `<b>${esc(t.sakkan.name)}</b> ・ ${t.label} 作画監督` }; }
+    if (rep.kind === "dir") return { seed: s.staff.dir.seed, w: `<b>${esc(s.staff.dir.name)}</b> ・ 監督` };
+    if (rep.kind === "gross") { const c = E.grossBy(s, rep.id); return { seed: 7000 + rep.id, w: `<b>${esc(c.name)}</b> ・ 協力会社` }; }
+    if (rep.kind === "post") return { seed: 5150, w: "<b>海外窓口</b> ・ 仕上げ担当" };
+    if (rep.kind === "kyoku") return { seed: s.staff.kp.seed, w: `<b>${esc(s.staff.kp.name)}</b> ・ 製作委員会・局プロデューサー` };
+    return { seed: YOU, w: "<b>あなた</b> ・ 気づいたこと" };
+  }
+  // an event choice reads "label（行動−1・effect・品質 66→58）": split it into the verb, its cost and its effect
+  function choiceAct(label, attrs, disabled, pri) {
+    let main = label, inner = "";
+    const m = label.match(/^(.*?)（(.*)）$/);
+    if (m) { main = m[1]; inner = m[2]; }
+    let cost = "行動なし";
+    const rest = [];
+    for (const part of inner ? inner.split("・") : []) {
+      const a = part.match(/^行動−(\d)/);
+      if (a) { cost = `行動${a[1]}`; const tail = part.slice(a[0].length).trim(); if (tail) rest.push(tail); } else rest.push(part);
+    }
+    const sub = rest.join(" ・ ").replace(/品質\s*(\d+)\s*→\s*(\d+)/g, (_, a, b) => `作画：${qWord(+b)}`);
+    return act({ label: main, sub, cost, attrs, pri, disabled });
+  }
+  const dlg = (body, foot, label = "") => `<div class="modal-bg"><div class="pane dlg flashin" role="dialog" aria-modal="true" ${label ? `aria-label="${esc(label)}"` : `aria-labelledby="dlgT"`}><div class="pane-b">${body}</div>${foot}</div></div>`;
+  function renderModal() {
+    if (!modal) { modalRoot.innerHTML = ""; return; }
+    let html = "";
+    if (modal.kind === "xls") {
+      const ep = xls.n ? E.epBy(s, xls.n) : null;
+      html = `<div class="modal-bg"><div class="xls-wrap">${xlsSheet()}${ep ? paneEp(ep, "xls") : ""}</div></div>`;
+    } else if (modal.kind === "gantt") {
+      const ep = sel && sel.k === "ep" ? E.epBy(s, +sel.id) : E.unaired(s)[0] || s.eps[0];
+      const issues = E.planIssues(s);
+      html = `<div class="modal-bg"><div class="gantt-dlg" role="dialog" aria-modal="true" aria-label="グランドスケジュール"><div class="col">
+        <div class="sec-h"><h2>グランドスケジュール ・ 第${s.week}週</h2><button class="btn-sys" data-act="closeModal">閉じる</button></div>${timelineHtml()}
+        ${issues.length ? `<div class="grid2">${checksHtml()}</div>` : ""}</div>${paneEp(ep, "prod")}</div></div>`;
+    } else if (modal.kind === "rush") html = rushHtml();
+    else if (modal.kind === "event") {
+      const v = E.eventView(s);
+      if (!v) return closeModal();
+      const rp = reporter(v.reporter);
+      const pre = v.found ? tagHtml("ヘルプで発見", "warn") : v.late ? tagHtml("報告が遅れた", "warn") : "";
+      let body = oh("報告", v.title, `第${s.week}週${v.found && v.weeksHidden > 0 ? ` ・ ${v.weeksHidden}週間、報告がなかった` : v.found ? " ・ まだ報告されていなかった" : v.late ? " ・ 進行が抱え込んでいた" : ""}`, tagHtml("トラブル", "bad"), null, pre, "dlgT");
+      body += `<div class="who">${face(rp ? rp.seed : YOU)}<div><div class="w">${rp ? rp.w : ""}</div><p class="speech">${esc(v.text)}</p></div></div>`;
+      const foot = `<div class="pane-f"><span class="lbl">この報告にできること ・ 今週の行動 残り${s.ap}</span><div class="acts one">${v.choices.map((c, i) => choiceAct(c.label, `data-act="evChoice" data-v="${c.i}"`, !c.ok, i === 0)).join("")}</div></div>`;
+      html = dlg(body, foot);
+    } else if (modal.kind === "air") {
+      const pa = s.pendingAir, pctv = Math.round(pa.prog * 100);
+      const can = E.canAirAsIs(s), q = Math.round(E.airAsIsQ(s));
+      const m = !can ? { tone: "bad", t: "局の基準を割っている。このままは出せない" } : pctv < 85 ? { tone: "bad", t: "このまま出したら作画崩壊だ・・・" } : judge({ q });
+      let body = oh("放送", `第${pa.n}話が間に合わない`, `第${s.week}週 ・ 今週が放送日`, tagHtml("放送日", "bad"), null, "", "dlgT");
+      body += `<div class="tiles">${tile("撮影まで上がったカット", `${pctv}%`, "bad")}${tile("総集編 残り", `${Math.max(0, 2 - s.recaps)}回`)}</div>`;
+      body += mutHtml(m, "あなたの見立て（このまま放送したら）");
+      const foot = `<div class="pane-f"><span class="lbl">第${pa.n}話 にできること</span><div class="acts one">
+        ${act({ label: "このまま放送する", sub: !can ? "局の基準を割っているので出せない" : pctv < 85 ? "作画崩壊は確実" : `作画：${qWord(q)}`, attrs: `data-act="airChoice" data-v="air"`, disabled: !can })}
+        ${act({ label: "総集編を挟む", sub: `第${pa.n}話は翌週へ ・ 残り${Math.max(0, 2 - s.recaps)}回`, attrs: `data-act="airChoice" data-v="recap"`, disabled: s.recaps >= 2 })}
+        ${act({ label: "放送を2週延期する", sub: "万策尽きた", attrs: `data-act="airChoice" data-v="delay"` })}</div></div>`;
+      html = dlg(body, foot);
+    } else if (modal.kind === "aired") {
+      const a = s.lastAir;
+      if (!a || !a.ep || a.recap || a.delay) { const next = modal.next; closeModal(); return afterTurn(next); }
+      const g = GRADE[a.ep.collapse ? "collapse" : a.grade] || GRADE.mid;
+      const posts = s.sns.filter((p) => p.n === a.ep.n).slice(0, 2);
+      const gross = E.isGross(a.ep.plan);
+      let body = oh("放送", `第${a.ep.n}話 放送`, `第${a.ep.airWeek}週 深夜 ・ ${gross ? `グロス（${esc(E.grossOf(s, a.ep.plan).name)}）` : `${a.ep.plan.team}班（社内）`}${a.ep.rush ? ` ・ 巻き：${E.RUSH[a.ep.rush].label}` : ""}`, tagHtml(g[0], g[1]), null, tagHtml("ON AIR", "bad"), "dlgT");
+      body += `<div class="tiles">${tile("作画の出来", a.ep.airQ, a.ep.collapse ? "bad" : "")}${tile("評判", Math.round(s.R))}${tile("放送済み", `${s.aired}/12`)}</div>`;
+      body += `<section class="psec" style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:start"><span data-bigkv style="display:block;width:120px;height:120px;background:var(--chip);border-radius:4px;overflow:hidden"></span><div style="display:flex;flex-direction:column;gap:6px"><h3>放送後のSNS</h3>${posts.map(postHtml).join("")}</div></section>`;
+      const next = E.unaired(s)[0];
+      html = dlg(body, `<div class="pane-f"><span class="lbl">第${a.ep.n}話 放送 にできること</span><div class="acts one">${act({ label: "次へ", sub: next ? `次の放送：第${next.n}話（${whoShort(next.plan.team)}）W${E.airWeekOf(s, next)}` : "全話の放送が終わりました", attrs: `data-act="airedOk"`, pri: true, cost: "→" })}</div></div>`);
+    } else if (modal.kind === "quit") {
+      html = dlg(oh("メニュー", "やめますか", "進行中のデータは消え、スタジオ選びに戻ります。", "", null, "", "dlgT"),
+        `<div class="pane-f"><span class="lbl">この画面でできること</span><div class="acts">${act({ label: "続ける", attrs: `data-act="closeModal"`, pri: true })}${act({ label: "やめてスタジオ選びに戻る", attrs: `data-act="quitYes"` })}</div></div>`);
+    } else if (modal.kind === "help") {
+      const body = oh("遊び方", "制作デスクの仕事", "夜のスタジオで、人や物を選ぶと右に詳しい様子が出ます。できることは、いつもその下にあります。", "", YOU, "", "dlgT")
+        + `<ul>
+          <li><b>選ぶ → 詳しく見る → できること</b>。オフィスの人、話数の帯、気になることのどれを押しても、右側にその詳細と「できること」が出ます。</li>
+          <li><b>制作進行</b>（各班の席）を選ぶと、進行の様子と<b>ヘルプに入る</b>が出ます。<b>段取りの悪い進行はトラブルを抱え込み、放送直前まで報告しません</b>。そのあいだ進行表の数字は順調に見えます。</li>
+          <li><b>話数</b>を選ぶと、工程・完パケ予測・放送週と、<b>あなたの見立て</b>が出ます。遅れていたら、原画マンを足すか、<b>巻く</b>（24時間動仕・12時間動仕・2原動仕・撮影短縮）。速いほど絵が荒れます。</li>
+          <li>局・製作委員会の納品基準を下回ると<b>納品拒否</b>でリテイク。基準を割った話数は、放送日に「このまま放送」もできません。</li>
+          <li>行動は週3回（ヘルプ、新しい進行、外部コンテ、監督と打ち合わせ、協力会社の催促）。原画マンの追加・巻き・方針の変更は行動を使いません。最後に<b>今週を締める</b>。</li>
+          <li>ホワイトボードはグランドスケジュール、電話は協力会社、テレビは放送とSNSです。</li></ul>`;
+      html = dlg(body, `<div class="pane-f"><span class="lbl">この画面でできること</span><div class="acts one">${act({ label: "閉じる", attrs: `data-act="closeModal"`, pri: true })}</div></div>`);
+    }
+    modalRoot.innerHTML = html;
+    mountFaces(modalRoot); mountKV(modalRoot);
+    const big = modalRoot.querySelector("[data-bigkv]");
+    if (big && s.lastAir?.ep) { const k = s.kv.find((x) => x.n === s.lastAir.ep.n && !x.recap); if (k) { const c = kvCanvas(k); c.style.width = c.style.height = "100%"; big.appendChild(c); } }
+    const first = modalRoot.querySelector(".opt.on, button:not(:disabled)");
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  // 巻く: compare each way of rushing by week and by your read of the drawing
+  const RUSH_DESC = { "24h": "動画・仕上げを急がせる", "12h": "さらに速いが粗くなる", "2gen": "原画から仕上げまで飛ばす", short: "上がった端から撮って出す" };
+  function rushHtml() {
+    const ep = E.epBy(s, modal.n);
+    if (!ep || ep.aired || ep.delivered) return "";
+    const air = E.airWeekOf(s, ep), fc0 = E.epForecast(s, ep), q0 = qOf(ep);
+    const opts = rushModes(ep).map((m) => { const x = E.previewRush(s, ep.n, m); return { m, label: m === "short" ? "撮影スケジュール短縮" : E.RUSH[m].label, desc: RUSH_DESC[m], fc: x.fc, q: x.q }; });
+    opts.push({ m: "stay", label: "このまま粘る", desc: "何もしない", fc: fc0, q: q0 });
+    opts.forEach((o) => { o.j = judge({ q: o.q, fc: o.fc, air }); });
+    const pick = opts.find((o) => o.m === modal.pick) || opts[0];
+    const W0 = s.week, W1 = Math.max(air, ...opts.map((o) => o.fc)), cols = W1 - W0 + 1;
+    const toneC = { good: "var(--green)", ok: "var(--teal)", worry: "var(--amber)", bad: "var(--red)", mute: "var(--gross)" };
+    const toneT = { good: "var(--green)", ok: "var(--teal)", worry: "#8a6d00", bad: "var(--red)", mute: "var(--ink-soft)" };
+    let body = oh("話数", `第${ep.n}話を巻く`, `${esc(whoShort(ep.plan.team))} ・ いま${esc(E.STAGE_LABEL[stageV(ep)])} ・ 放送 W${air}`, fc0 > air ? tagHtml(`遅れ ${fc0 - air}週`, "bad") : "", null, "", "dlgT");
+    body += `<div class="tiles">${tile("完パケ予測", `W${fc0} → W${pick.fc}`, pick.fc > air ? "bad" : "good")}${tile("放送", `W${air}`)}</div>`;
+    body += mutHtml(pick.j);
+    body += `<section class="psec"><div class="opt-head"><span>巻き方</span><span class="wks" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${Array.from({ length: cols }, (_, i) => `<span class="${W0 + i === air ? "air" : ""}">W${W0 + i}${W0 + i === air ? "▼" : ""}</span>`).join("")}</span><span>あなたの見立て</span></div>
+      <div role="radiogroup" aria-label="巻き方" style="display:flex;flex-direction:column;gap:4px">${opts.map((o) => `<button class="opt ${o === pick ? "on" : ""}" role="radio" aria-checked="${o === pick}" data-act="rushPick" data-v="${o.m}">
+        <span><span class="t">${esc(o.label)}</span><span class="s">${esc(o.desc)}</span></span>
+        <span class="trk"><span class="airc" style="left:${((air - W0) / cols) * 100}%;width:${100 / cols}%"></span><i style="width:${(Math.max(1, o.fc - W0 + 1) / cols) * 100}%;background:${toneC[o.j.tone]}"></i></span>
+        <span class="word tone-${o.j.tone}" style="color:${toneT[o.j.tone]}">${esc(o.j.short)}</span></button>`).join("")}</div>
+      <p class="verdict ${pick.fc > air || pick.q < E.LINE || (pick.m !== "stay" && pick.fc >= fc0) ? "bad" : "good"}">${pick.m !== "stay" && pick.fc >= fc0 ? `巻いても完パケは早まらない（W${pick.fc}のまま）。絵が荒れるだけになる。` : pick.fc > air ? `W${pick.fc}に完パケ。放送（W${air}）に${pick.fc - air}週間に合わない。放送日に「総集編」か「延期」を選ぶことになる。` : pick.q < E.LINE ? `W${pick.fc}に完パケ。間に合うが、局の基準を割りそう。納品拒否されたらリテイクになる。` : `W${pick.fc}に完パケ。放送（W${air}）には間に合う${air - pick.fc > 0 ? `（余裕${air - pick.fc}週）` : "（ぎりぎり）"}。`}</p></section>`;
+    const foot = `<div class="pane-f"><span class="lbl">第${ep.n}話 にできること</span><div class="acts">${act({ label: pick.m === "stay" ? "このまま粘る" : `「${pick.label}」で指示する`, cost: "行動なし", attrs: `data-act="rushGo" data-v="${ep.n}" data-k="${pick.m}"`, pri: true })}${act({ label: "やめる", attrs: `data-act="closeModal"` })}</div></div>`;
+    return dlg(body, foot);
+  }
+
+  function afterTurn(res) {
+    save();
+    if (res === "end") { closeModal(); sel = null; render(); window.scrollTo(0, 0); return; }
+    render();
+    if (s.event) showModal({ kind: "event" }); else closeModal();
+  }
+  function runTurn(step) {
+    const before = s.aired;
+    const res = step();
+    if (res == null) return;
+    if (res === "air") { save(); render(); return showModal({ kind: "air" }); }
+    if (s.aired > before) { save(); render(); return showModal({ kind: "aired", next: res }); }
+    afterTurn(res);
+  }
+  // after an action, a newly surfaced trouble takes over the screen
+  const rerender = () => { save(); render(); if (s.event) showModal({ kind: "event" }); else if (modal && ["xls", "gantt", "rush"].includes(modal.kind)) renderModal(); };
+
+  // ---------- input ----------
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-act]");
+    if (!b || b.disabled) return;
+    const what = b.dataset.act, v = b.dataset.v;
+    if (b.tagName === "INPUT" || b.tagName === "SELECT") return;
+    switch (what) {
+      case "sel": {
+        sel = { k: b.dataset.k, id: v === "" ? undefined : v };
+        if (modal && modal.kind === "gantt") { render(); renderModal(); break; }
+        if (modal) closeModal();
+        render();
+        if (narrow()) app.querySelector(".pane")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        break;
+      }
+      case "pickTier": pickTier = v; render(); if (narrow()) app.querySelector(".pane")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); break;
+      case "tier": s = E.newGame(v, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break;
+      case "title": s = null; sel = null; closeModal(); clearSave(); render(); break;
+      case "again": { const t = s.tier; s = E.newGame(t, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break; }
+      case "autoPlan": E.autoPlan(s); render(); break;
+      case "planStart": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { start: ep.plan.start + +b.dataset.d }); rerender(); break; }
+      case "planDur": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { dur: ep.plan.dur + +b.dataset.d }); rerender(); break; }
+      case "start": if (E.planIssues(s).some((i) => !i.soft)) break; E.startProduction(s); sel = { k: "studio" }; save(); render(); window.scrollTo(0, 0); showModal({ kind: "help" }); break;
+      case "howto": showModal({ kind: "help" }); break;
+      case "closeModal": closeModal(); render(); break;
+      case "xls": openXls(v, b.dataset.n ? +b.dataset.n : null); break;
+      case "ganttBig": showModal({ kind: "gantt" }); break;
+      case "xlsTab": xls.n = +v; renderModal(); break;
+      case "addAnim": E.addAnimators(s, +v, +b.dataset.k); rerender(); break;
+      case "rushOpen": showModal({ kind: "rush", n: +v }); break;
+      case "rushPick": modal.pick = v; renderModal(); break;
+      case "rushGo": { const k = b.dataset.k; if (k !== "stay") E.setRush(s, +v, k); closeModal(); sel = { k: "ep", id: v }; rerender(); break; }
+      case "policy": { const k = b.dataset.k; const val = v === "true" ? true : v === "false" ? false : v; E.setPolicy(s, k, val); rerender(); break; }
+      case "do": { const arg = b.dataset.arg != null ? +b.dataset.arg : undefined; const keep = modal && modal.kind === "xls" ? { ...xls } : null; E.doAction(s, v, arg); if (s.event) { modal = null; xls = null; } else if (keep) xls = keep; rerender(); break; }
+      case "endWeek": closeModal(); runTurn(() => E.endWeek(s)); break;
+      case "airChoice": runTurn(() => E.resolveAir(s, v)); break;
+      case "airedOk": { const next = modal.next; closeModal(); afterTurn(next); break; }
+      case "evChoice": { if (E.resolveEvent(s, +v) != null) { closeModal(); save(); render(); if (s.event) showModal({ kind: "event" }); } break; }
+      case "quit": showModal({ kind: "quit" }); break;
+      case "quitYes": closeModal(); s = null; sel = null; clearSave(); render(); window.scrollTo(0, 0); break;
+      case "copy": {
+        const text = shareText(), msg = document.getElementById("copyMsg");
+        const fallback = () => { const r = document.createRange(); r.selectNodeContents(document.getElementById("shareText")); const selection = getSelection(); selection.removeAllRanges(); selection.addRange(r); msg.textContent = "選択しました。コピーしてください。"; };
+        try { navigator.clipboard.writeText(text).then(() => { msg.textContent = "コピーしました"; }, fallback); } catch (e) { fallback(); }
+        break;
+      }
+    }
+  });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && modal && ["xls", "gantt", "help", "quit", "rush"].includes(modal.kind)) { closeModal(); render(); } });
+  document.addEventListener("change", (ev) => {
+    const b = ev.target.closest("[data-act]");
+    if (!b || !s) return;
+    if (b.dataset.act === "planTeam") { E.setPlan(s, +b.dataset.v, { team: b.value }); rerender(); }
+  });
+
+  // ---------- save / resume ----------
+  function save() { if (s && s.phase === "prod") store.set("animep.save", s); }
+  function clearSave() { try { localStorage.removeItem("animep.save"); } catch (e) { /* storage unavailable */ } }
+  function start(hotData) {
+    const saved = hotData && hotData.s ? hotData.s : store.get("animep.save");
+    if (saved && saved.v === 6 && saved.phase) s = saved;
+    if (hotData && hotData.sel) sel = hotData.sel;
+    render();
+    if (s && s.phase === "prod") { if (s.pendingAir) showModal({ kind: "air" }); else if (s.event) showModal({ kind: "event" }); }
+  }
+  window.claude?.hot?.snapshot?.(() => ({ s, sel }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
