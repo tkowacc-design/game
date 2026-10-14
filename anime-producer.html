@@ -3,280 +3,372 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap">
 <style>
-  /* Layout: a night-time anime studio seen from above (pixel office) on the left; the sheet you clicked (desk report, 香盤表, a 進行's episodes) on the right. */
+  /* Layout: every screen is "collections on the left, the selected object's detail on the right".
+     The header carries the current week and its one main action; a detail always ends with what you can do to that object. */
   :root {
-    --desk: #1b2030;        /* page ground: the dark studio */
-    --desk-2: #262c40;      /* HUD, raised items */
-    --paper: #eef1f5;       /* cool office paper */
-    --paper-2: #ffffff;
-    --paper-line: #c9d3e3;  /* ruled grid */
-    --ink: #1a1e29;
-    --ink-soft: #5b6478;
-    --on-desk: #e6e9f2;
-    --on-desk-soft: #9aa3ba;
-    --marker: #ffe14a;      /* highlighter yellow: attention, primary action */
-    --pink: #ff5fa2;        /* hype */
-    --black: #1f9d63;       /* 黒字 / done */
-    --red: #e5484d;         /* 赤字 / danger */
-    --blue: #3b6fe0;        /* progress */
-    --st-script: #b9c6e4; --st-conte: #8aa6dd; --st-genga: #3b6fe0; --st-sakkan: #7a5cd6; --st-douga: #2ba3a3; --st-satsuei: #1f9d63;
+    --night: #12151f;       /* page ground */
+    --desk: #1c2130;        /* collection items */
+    --desk-2: #262c40;      /* selected item, office floor */
+    --line: #2a3146;
+    --line-2: #323a52;
+    --on: #e8eaf1;
+    --on-soft: #a1a9be;
+    --paper: #f4f2ec;       /* the detail of the selected object */
+    --card: #ffffff;
+    --rule: #dcd8cc;
+    --ink: #1a1c24;
+    --ink-soft: #5a6072;
+    --chip: #e3dfd3;
+    --marker: #ffe14a;      /* the one main action, "now", the selection */
+    --marker-d: #b89e1e;
+    --red: #c8323a;  --red-d: #e5484d;  --red-l: #ff9a9d;
+    --green: #1a8a57; --green-d: #1f9d63; --green-l: #8fe0b5;
+    --amber: #e0b400;
+    --teal: #2ba3a3;
+    --pink: #ff5fa2;
+    --gross: #8a93ab;
     --font-pixel: "DotGothic16", "IPAGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
     --font-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "IPAPGothic", sans-serif;
     color-scheme: dark;
   }
   html, body { height: 100%; }
-  body { margin: 0; background: var(--desk); color: var(--on-desk); font-family: var(--font-body); font-size: 14px; line-height: 1.55; -webkit-tap-highlight-color: transparent; }
-  #app { max-width: 1280px; margin: 0 auto; padding: 12px 16px 40px; box-sizing: border-box; }
-  h1, h2, h3, .pix { font-family: var(--font-pixel); font-weight: 400; letter-spacing: .04em; }
-  h1 { font-size: 30px; margin: 0; text-wrap: balance; }
-  h2 { font-size: 18px; margin: 0 0 8px; text-wrap: balance; }
-  h3 { font-size: 15px; margin: 0 0 6px; }
-  button { font: inherit; color: inherit; cursor: pointer; }
+  body { margin: 0; background: var(--night); color: var(--on); font-family: var(--font-body); font-size: 14px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
+  #app { max-width: 1440px; margin: 0 auto; }
+  h1, h2, h3, .pix { font-family: var(--font-pixel); font-weight: 400; letter-spacing: .04em; margin: 0; }
+  button, select { font: inherit; color: inherit; cursor: pointer; }
   table { color: inherit; font-size: inherit; }
-  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+  button:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+  button:disabled { cursor: not-allowed; }
   .num { font-variant-numeric: tabular-nums; }
-  .sheet { background: var(--paper); color: var(--ink); border-radius: 3px; padding: 14px 16px; box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 6px 18px rgba(0,0,0,.35); min-width: 0; }
-  .sheet .sub, .sub { color: var(--ink-soft); font-size: 12px; }
-  .stamp { display: inline-block; font-family: var(--font-pixel); border: 2px solid currentColor; padding: 0 6px; border-radius: 3px; transform: rotate(-3deg); }
-  .btn { background: var(--ink); color: var(--paper); border: 0; border-radius: 3px; padding: 8px 12px; font-family: var(--font-pixel); font-size: 14px; line-height: 1.3; }
-  .btn:hover { background: #33394a; }
-  .btn:disabled { opacity: .35; cursor: not-allowed; }
-  .btn.primary { background: var(--marker); color: var(--ink); }
-  .btn.primary:hover { background: #ffe97a; }
-  .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
-  .btn.small { padding: 4px 8px; font-size: 12px; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  .grid { display: grid; gap: 14px; }
-  .pos { color: var(--black); } .neg { color: var(--red); }
-  .money { font-family: var(--font-pixel); }
   canvas.px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
-  .face { width: 36px; height: 36px; border-radius: 2px; flex: none; }
-  .face.sm { width: 22px; height: 22px; }
+  .face { width: 40px; height: 40px; border-radius: 3px; flex: none; }
+  .face.sm { width: 32px; height: 32px; }
 
-  /* title & setup */
-  .title-wrap { display: grid; gap: 18px; padding-top: 10px; }
-  .logo { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-  .lead { max-width: 62ch; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-  .card { text-align: left; border: 0; display: grid; gap: 6px; align-content: start; }
-  .card:hover { outline: 3px solid var(--marker); }
-  .card .name { font-family: var(--font-pixel); font-size: 17px; }
-  .kv { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; font-size: 12.5px; margin: 0; }
-  .kv dt { color: var(--ink-soft); } .kv dd { margin: 0; }
-  .step { color: var(--on-desk-soft); font-family: var(--font-pixel); font-size: 13px; margin: 0 0 4px; }
-  .roles { display: grid; gap: 14px; }
-  .cand-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
-  .cand { background: var(--paper-2); border: 1.5px solid var(--paper-line); border-radius: 3px; padding: 8px; text-align: left; display: flex; gap: 8px; color: var(--ink); align-items: flex-start; }
-  .cand:hover:not(:disabled) { border-color: var(--ink); }
-  .cand.on { border-color: var(--pink); box-shadow: 0 0 0 2px var(--pink); }
-  .cand:disabled { opacity: .45; cursor: not-allowed; }
-  .cand .nm { font-weight: 700; }
-  .arch { font-family: var(--font-pixel); font-size: 11px; background: var(--ink); color: var(--paper); padding: 0 4px; border-radius: 2px; }
-  .cand .st { font-size: 11.5px; color: var(--ink-soft); }
-  .footerbar { position: sticky; bottom: 0; margin-top: 16px; padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 10px); background: linear-gradient(transparent, var(--desk) 30%); }
-  .summary { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; }
-  .summary b { font-family: var(--font-pixel); font-weight: 400; }
-  .offer { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--paper-line); }
-  .offer:last-child { border-bottom: 0; }
-  .offer input { width: 18px; height: 18px; accent-color: var(--ink); }
-  .offer .cond { font-size: 12px; color: var(--ink-soft); }
-  input[type=range] { width: 100%; accent-color: var(--ink); }
-  table.pl { border-collapse: collapse; width: 100%; font-size: 13px; }
-  .pl td, .pl th { padding: 4px 4px; border-bottom: 1px solid var(--paper-line); text-align: left; font-weight: 400; }
-  .pl th { font-size: 11.5px; color: var(--ink-soft); }
-  .pl td.r, .pl th.r { text-align: right; font-variant-numeric: tabular-nums; }
-  .pl tr.total td { border-top: 2px solid var(--ink); border-bottom: 0; font-weight: 700; }
-  .pl tr.subt td { color: var(--ink-soft); }
-  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+  /* ---------- header: brand | the week and its action | system ---------- */
+  .hdr { min-height: 64px; box-sizing: border-box; padding: 8px 24px; display: flex; align-items: center; gap: 24px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .brand { width: 264px; display: grid; line-height: 1.3; }
+  .brand b { font-family: var(--font-pixel); font-weight: 400; font-size: 18px; }
+  .brand span { font-size: 12px; color: var(--on-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wk { display: flex; align-items: center; gap: 16px; padding-left: 24px; border-left: 1px solid var(--line); min-height: 44px; flex-wrap: wrap; }
+  .wk-n { font-family: var(--font-pixel); font-size: 28px; line-height: 1; color: var(--marker); }
+  .wk-n.mute { color: var(--on-soft); font-size: 20px; }
+  .wk-t b { font-family: var(--font-pixel); font-weight: 400; color: var(--marker); }
+  .ap { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--on-soft); }
+  .ap i { width: 16px; height: 10px; border-radius: 2px; box-shadow: inset 0 0 0 1.5px #4a5370; }
+  .ap i.on { background: var(--marker); box-shadow: none; }
+  .hdr-r { margin-left: auto; display: flex; gap: 8px; }
+  .btn-main { height: 44px; padding: 0 20px; font-family: var(--font-pixel); font-size: 16px; background: var(--marker); color: var(--night); border: 0; border-radius: 4px; box-shadow: 0 3px 0 var(--marker-d); white-space: nowrap; }
+  .btn-main:hover:not(:disabled) { background: #ffe97a; }
+  .btn-main:disabled { opacity: .45; box-shadow: none; }
+  .btn-sys { height: 40px; padding: 0 14px; background: transparent; color: var(--on); border: 1px solid var(--line-2); border-radius: 4px; white-space: nowrap; }
+  .btn-sys:hover { border-color: var(--on-soft); }
 
-  /* production */
-  .hud { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; background: var(--desk-2); border-radius: 3px; padding: 8px 12px; margin-bottom: 12px; }
-  .hud .it { display: grid; line-height: 1.2; }
-  .hud .lb { font-size: 11px; color: var(--on-desk-soft); }
-  .hud .vl { font-family: var(--font-pixel); font-size: 17px; }
-  .hud .week { font-size: 19px; color: var(--marker); }
-  .ap { letter-spacing: 2px; color: var(--marker); }
-  .meter { height: 6px; width: 76px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
-  .meter > i { display: block; height: 100%; }
-  .hud .tools { margin-left: auto; display: flex; gap: 6px; }
-  .hud .tools .btn { background: #39405a; }
+  /* ---------- body: collections | detail ---------- */
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 488px; gap: 24px; padding: 16px 24px 32px; align-items: start; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .sec { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .sec-h { display: flex; align-items: center; gap: 12px; min-height: 20px; }
+  .sec-h h2 { font-size: 13px; color: var(--on-soft); }
+  .sec-h .btn-sys { margin-left: auto; height: 36px; font-size: 13px; }
+  .note { font-size: 12px; color: var(--on-soft); margin: 0; }
 
-  .studio { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(320px, 1fr); gap: 14px; align-items: start; }
-  .officecol { display: grid; gap: 10px; min-width: 0; position: sticky; top: 8px; }
-  .officewrap { min-width: 0; border-radius: 3px; }
-  .office { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 3px; overflow: hidden; background: #262c40; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+  /* collection item (the same row everywhere) */
+  .li { min-height: 52px; display: grid; grid-template-columns: 4px minmax(0, 1fr) auto auto; gap: 12px; align-items: center; text-align: left; background: var(--desk); color: var(--on); border: 0; border-radius: 4px; padding: 0 12px 0 0; overflow: hidden; }
+  .li:hover { background: #232940; }
+  .li.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  .li > i { align-self: stretch; background: var(--c, var(--gross)); }
+  .li .t { display: block; font-weight: 700; font-size: 13px; }
+  .li .s { display: block; font-size: 12px; color: var(--on-soft); }
+  .li .r { font-family: var(--font-pixel); font-size: 12px; }
+  .li .chev { color: var(--on-soft); }
+  .li.static { cursor: default; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+  /* tags (status) */
+  .tag { font-family: var(--font-pixel); font-size: 12px; padding: 0 8px; border-radius: 2px; white-space: nowrap; background: var(--chip); color: var(--ink); }
+  .tag.bad { background: var(--red); color: #fff; }
+  .tag.warn { background: var(--marker); color: var(--ink); }
+  .tag.ok { background: #d6f2e4; color: #11633c; }
+  .tag.ink { background: var(--ink); color: var(--paper); }
+  .tag.pink { background: var(--pink); color: var(--night); }
+  .tag.dark.bad { background: #3a1c22; color: var(--red-l); }
+  .tag.dark.ok { background: #1c3a2c; color: var(--green-l); }
+  .tag.dark { background: var(--desk-2); color: var(--on-soft); }
+  .tag.dark.warn { background: #3a3418; color: var(--marker); }
+
+  /* ---------- the office (map of people) ---------- */
+  .office { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: var(--desk-2); box-shadow: 0 0 0 1px var(--line-2); }
   .office canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .hot { position: absolute; background: transparent; border: 0; padding: 0; border-radius: 2px; }
-  .hot:hover, .hot:focus-visible, .hot.on { outline: 2px solid var(--marker); outline-offset: 0; background: rgba(255,225,74,.08); }
-  .hot .tag { position: absolute; left: 50%; bottom: calc(100% + 2px); transform: translateX(-50%); white-space: nowrap; font-size: 11px; background: var(--ink); color: var(--paper); padding: 1px 6px; border-radius: 2px; pointer-events: none; opacity: 0; font-family: var(--font-body); }
-  .hot:hover .tag, .hot:focus-visible .tag, .hot.on .tag { opacity: 1; }
-  .zone { position: absolute; font-family: var(--font-pixel); font-size: 11px; color: rgba(230,233,242,.75); pointer-events: none; text-shadow: 0 1px 0 #000; }
-  .deskline { display: flex; gap: 10px; align-items: center; background: var(--desk-2); border-radius: 3px; padding: 8px 10px; }
-  .deskline .say { flex: 1; min-width: 0; font-size: 13px; }
-  .deskline .say b { font-family: var(--font-pixel); font-weight: 400; color: var(--marker); margin-right: 6px; }
-  .endweek { font-size: 17px; padding: 12px 18px; white-space: nowrap; }
+  .hot { position: absolute; background: transparent; border: 0; padding: 0; border-radius: 3px; }
+  .hot:hover, .hot:focus-visible { box-shadow: inset 0 0 0 2px rgba(232, 234, 241, .5); }
+  .hot.on { box-shadow: inset 0 0 0 2px var(--marker); background: rgba(255, 225, 74, .08); }
+  .ochip { position: absolute; font-family: var(--font-pixel); font-size: 11px; line-height: 18px; padding: 0 6px 0 8px; border-radius: 2px; white-space: nowrap; background: var(--night); color: var(--on); box-shadow: inset 3px 0 0 var(--c, var(--on-soft)); pointer-events: none; }
+  .ochip.on { background: var(--marker); color: var(--night); box-shadow: none; }
 
-  .panel { display: grid; gap: 12px; min-width: 0; }
-  .who { display: flex; gap: 10px; align-items: center; }
-  .who .nm { font-family: var(--font-pixel); font-size: 17px; }
-  .speech { background: var(--paper-2); border: 1.5px solid var(--ink); border-radius: 3px; padding: 8px 10px; font-size: 13px; position: relative; }
-  .tabs { display: flex; flex-wrap: wrap; gap: 4px; }
-  .tabs button { background: #39405a; color: var(--on-desk); border: 0; border-radius: 3px; padding: 4px 9px; font-size: 12px; font-family: var(--font-pixel); }
-  .tabs button.on { background: var(--marker); color: var(--ink); }
-  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--ink); border-radius: 3px; overflow: hidden; }
-  .seg button { border: 0; background: transparent; padding: 5px 6px; font-size: 12.5px; color: var(--ink); }
+  /* ---------- the 12 episodes ---------- */
+  .eps { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+  .epc { height: 64px; text-align: left; border: 0; border-radius: 4px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; color: var(--on); background: var(--desk); box-shadow: inset 0 3px 0 var(--c); min-width: 0; }
+  .epc.pre { background: #161a26; }
+  .epc.on { background: var(--desk-2); box-shadow: inset 0 3px 0 var(--c), 0 0 0 2px var(--marker); }
+  .epc .n { display: flex; justify-content: space-between; width: 100%; font-family: var(--font-pixel); font-size: 14px; }
+  .epc .n small { font-size: 11px; color: var(--on-soft); }
+  .epc .s { font-size: 11px; color: var(--on-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .epc .s.bad { color: var(--red-l); }
+  .epc .b { width: 100%; height: 4px; background: var(--line-2); border-radius: 2px; overflow: hidden; margin-top: auto; }
+  .epc .b i { display: block; height: 100%; background: var(--c); }
+
+  /* ---------- the detail of the selected object (paper) ---------- */
+  .pane { background: var(--paper); color: var(--ink); border-radius: 6px; display: flex; flex-direction: column; box-shadow: 0 0 0 2px var(--marker); min-width: 0; }
+  .pane-b { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 16px; }
+  .pane-f { margin-top: 16px; padding: 12px 16px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
+  .pane-f > .lbl { font-size: 11px; color: var(--ink-soft); }
+  .oh { display: flex; flex-direction: column; gap: 4px; }
+  .oh-top { display: flex; align-items: center; gap: 8px; }
+  .oh-top .tag:last-child { margin-left: auto; }
+  .typ { font-family: var(--font-pixel); font-size: 11px; background: var(--ink); color: var(--paper); padding: 0 6px; border-radius: 2px; }
+  .oh-name { display: flex; align-items: center; gap: 10px; }
+  .oh-name h2 { font-size: 24px; line-height: 1.3; }
+  .oh-sub { font-size: 12px; color: var(--ink-soft); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+  .tile { background: var(--card); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+  .tile .l { font-size: 11px; color: var(--ink-soft); }
+  .tile .v { font-family: var(--font-pixel); font-size: 18px; white-space: nowrap; }
+  .tile.bad { box-shadow: inset 0 0 0 1.5px var(--red); }
+  .tile.bad .l, .tile.bad .v { color: var(--red); }
+  .tile.good { box-shadow: inset 0 0 0 1.5px var(--green); }
+  .tile.good .l, .tile.good .v { color: var(--green); }
+
+  /* your own read of the work: never a number */
+  .mut { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .mut-b { background: var(--card); border-radius: 4px; padding: 8px 12px; box-shadow: inset 4px 0 0 var(--tone, var(--gross)); }
+  .mut-b .l { font-size: 11px; color: var(--ink-soft); }
+  .mut-b .t { font-size: 15px; font-weight: 700; }
+  .tone-good { --tone: var(--green); } .tone-ok { --tone: var(--teal); } .tone-worry { --tone: var(--amber); } .tone-bad { --tone: var(--red); } .tone-mute { --tone: var(--gross); }
+  .word { font-size: 12px; font-weight: 700; padding-left: 8px; box-shadow: inset 3px 0 0 var(--tone); white-space: nowrap; }
+
+  .psec { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--rule); padding-top: 16px; }
+  .psec h3 { font-size: 14px; }
+  .psec p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+  .stages { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; font-size: 11px; text-align: center; color: var(--ink-soft); }
+  .stages span { display: flex; flex-direction: column; gap: 4px; }
+  .stages i { height: 8px; background: var(--rule); }
+  .stages .done i { background: var(--green); }
+  .stages .now { color: var(--ink); font-weight: 700; }
+  .stages .now i { background: var(--amber); }
+  .bar { height: 8px; background: var(--rule); border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--gross); }
+  .rows { display: flex; flex-direction: column; }
+  .row { min-height: 36px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; border-bottom: 1px dashed var(--rule); background: transparent; border-left: 0; border-right: 0; border-top: 0; padding: 0 2px; text-align: left; color: var(--ink); }
+  button.row:hover { background: rgba(26, 28, 36, .04); }
+  .row .v { font-family: var(--font-pixel); }
+  .row .v.bad { color: var(--red); }
+  .row .v.mute { color: var(--ink-soft); }
+  .rel { min-height: 48px; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; background: transparent; border: 0; border-radius: 4px; padding: 0 4px; color: var(--ink); }
+  .rel:hover { background: rgba(26, 28, 36, .05); }
+  .rel .ico { width: 32px; height: 32px; border-radius: 3px; display: grid; place-items: center; color: #fff; font-family: var(--font-pixel); font-size: 12px; background: var(--c, var(--ink-soft)); }
+  .rel .t { display: block; font-size: 13px; font-weight: 700; }
+  .rel .s { display: block; font-size: 11.5px; color: var(--ink-soft); }
+  .rel .chev { color: var(--ink-soft); }
+  .speech { background: var(--card); border-radius: 4px; padding: 10px 12px; font-size: 14px; margin: 0; color: var(--ink); }
+  .who { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .who .w { font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+  .who .w b { color: var(--ink); }
+
+  /* what you can do with this object */
+  .acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .acts.one { grid-template-columns: minmax(0, 1fr); }
+  .act { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 4px; text-align: left; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+  .act.pri { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .act:hover:not(:disabled) { box-shadow: 0 2px 0 var(--ink); }
+  .act:disabled { color: #8a8f9e; border: 1.5px dashed #c9c4b6; background: transparent; }
+  .act .m { display: grid; line-height: 1.35; }
+  .act .m small { font-size: 11.5px; opacity: .8; font-weight: 400; }
+  .act .m b { font-weight: 700; }
+  .cost { font-family: var(--font-pixel); font-size: 11px; padding: 0 6px; border-radius: 2px; white-space: nowrap; background: var(--chip); color: var(--ink); }
+  .cost.ap { background: var(--marker); color: var(--night); }
+  .act.pri .cost:not(.ap) { background: #3a4158; color: var(--on); }
+  .act:disabled .cost { opacity: .6; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; min-height: 36px; font-size: 12.5px; color: var(--ink); }
   .seg button.on { background: var(--ink); color: var(--paper); }
-  .policy { display: grid; gap: 8px; }
-  .plab { font-size: 12px; color: var(--ink-soft); margin-bottom: 2px; }
-  .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-  .act { text-align: left; background: var(--paper-2); border: 1.5px solid var(--paper-line); border-radius: 3px; padding: 6px 8px; color: var(--ink); display: grid; gap: 1px; }
-  .act:hover:not(:disabled) { border-color: var(--ink); }
-  .act:disabled { opacity: .4; cursor: not-allowed; }
-  .act .an { font-family: var(--font-pixel); font-size: 13px; }
-  .act .ac { font-size: 11px; color: var(--ink-soft); }
-  .stagebar { display: flex; height: 10px; background: #dfe5ee; border-radius: 2px; overflow: hidden; min-width: 60px; }
-  .stagebar i { display: block; height: 100%; }
-  .legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--ink-soft); }
-  .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 3px; border-radius: 1px; background: var(--c); }
-  .tagx { font-family: var(--font-pixel); font-size: 11px; padding: 0 5px; border-radius: 2px; white-space: nowrap; background: #dfe5ee; color: var(--ink); }
-  .t-ok { background: #d6f2e4; color: #11633c; } .t-warn { background: var(--marker); color: var(--ink); } .t-bad { background: var(--red); color: #fff; } .t-air { background: var(--ink); color: var(--paper); }
-  .kohyo-wrap { overflow-x: auto; }
-  table.kohyo { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  .kohyo th { font-family: var(--font-pixel); font-weight: 400; text-align: left; font-size: 11.5px; color: var(--ink-soft); border-bottom: 2px solid var(--ink); padding: 4px 5px; white-space: nowrap; }
-  .kohyo td { border-bottom: 1px solid var(--paper-line); padding: 4px 5px; vertical-align: middle; }
-  .kohyo tr.aired td { color: var(--ink-soft); }
-  .kohyo tr.next td { background: rgba(255,225,74,.35); }
-  .kohyo tr.click { cursor: pointer; } .kohyo tr.click:hover td { background: rgba(59,111,224,.08); }
-  .cap { display: grid; grid-template-columns: 6.5em 1fr auto; gap: 4px 8px; align-items: center; font-size: 12.5px; }
-  .cap .bar2 { height: 8px; background: #dfe5ee; border-radius: 2px; position: relative; overflow: hidden; }
-  .cap .bar2 i { position: absolute; left: 0; top: 0; bottom: 0; }
-  .ep { color: var(--ink); border: 1.5px solid var(--paper-line); background: var(--paper-2); border-radius: 3px; padding: 10px; display: grid; gap: 6px; }
-  .ep.hot2 { border-color: var(--red); }
-  .ep .hd { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
-  .ep .hd .t { font-family: var(--font-pixel); font-size: 15px; }
-  .stages { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; font-size: 11px; text-align: center; }
-  .stages div { background: #eef1f5; border-radius: 2px; padding: 2px 0; line-height: 1.25; }
-  .stages div b { display: block; font-weight: 400; font-variant-numeric: tabular-nums; font-size: 11.5px; color: var(--ink); }
-  .stages div.done { background: #d6f2e4; } .stages div.now { background: rgba(255,225,74,.6); }
-  .people { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { display: flex; gap: 6px; align-items: center; border: 1px solid var(--paper-line); border-radius: 3px; padding: 3px 6px 3px 3px; background: var(--paper); font-size: 12px; text-align: left; color: var(--ink); }
-  .chip:hover { border-color: var(--ink); }
-  .chip .mini { font-size: 10.5px; color: var(--ink-soft); display: block; line-height: 1.2; }
-  .stam { height: 6px; width: 90px; background: #dfe5ee; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
-  .stam i { display: block; height: 100%; }
-  .log { font-size: 12.5px; display: grid; gap: 3px; max-height: 240px; overflow-y: auto; }
-  .log p { margin: 0; } .log .w { font-family: var(--font-pixel); color: var(--ink-soft); margin-right: 6px; }
-  .sns { display: grid; gap: 6px; max-height: 300px; overflow-y: auto; }
-  .post { font-size: 12.5px; background: var(--paper-2); border-radius: 3px; padding: 6px 8px; border-left: 3px solid var(--paper-line); }
-  .post .h { color: var(--ink-soft); font-size: 11px; } .post.good { border-left-color: var(--black); } .post.bad { border-left-color: var(--red); }
+  .field { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; font-size: 13px; }
+  .field > span:first-child { color: var(--ink-soft); }
+  .field select { height: 40px; padding: 0 10px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--card); color: var(--ink); color-scheme: light; min-width: 0; }
+  .step { display: grid; grid-template-columns: 44px 1fr 44px; height: 40px; border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; background: var(--card); }
+  .step button { border: 0; background: var(--chip); color: var(--ink); font-size: 16px; }
+  .step button:disabled { opacity: .35; }
+  .step span { display: grid; place-items: center; font-family: var(--font-pixel); }
+  .cap { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 8px 10px; align-items: center; font-size: 12px; }
+  .cap .g { position: relative; height: 10px; background: var(--chip); border-radius: 2px; }
+  .cap .g i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
+  .cap .g b { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+  .cap .n { font-family: var(--font-pixel); text-align: right; white-space: nowrap; }
+  .cap .n.bad { color: var(--red); }
   .kvs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
   .kvbox { display: grid; gap: 2px; justify-items: center; font-size: 11px; color: var(--ink-soft); }
-  .kvbox > span[data-kv] { display: block; width: 100%; max-width: 72px; aspect-ratio: 1; background: #dfe5ee; border-radius: 2px; overflow: hidden; }
+  .kvbox > span[data-kv] { display: block; width: 100%; aspect-ratio: 1; background: var(--chip); border-radius: 2px; overflow: hidden; }
   .kvbox canvas { width: 100%; height: 100%; }
-  select { font: inherit; font-size: 12px; padding: 2px 4px; border: 1.5px solid var(--ink); border-radius: 3px; background: var(--paper-2); color: var(--ink); color-scheme: light; }
+  .post { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 10px; background: var(--card); border-radius: 4px; overflow: hidden; font-size: 13px; }
+  .post > i { background: var(--rule); } .post.good > i { background: var(--green); } .post.bad > i { background: var(--red); }
+  .post > span { padding: 6px 10px 6px 0; }
+  .post small { display: block; font-size: 11px; color: var(--ink-soft); }
+  .log { font-size: 12.5px; display: grid; gap: 3px; max-height: 220px; overflow-y: auto; }
+  .log p { margin: 0; color: var(--ink); } .log .w { font-family: var(--font-pixel); color: var(--ink-soft); margin-right: 6px; }
 
+  /* ---------- schedule (timeline of episodes) ---------- */
+  .tl-head, .tl-row { display: grid; grid-template-columns: 40px 132px minmax(0, 1fr); gap: 0 12px; align-items: center; padding-left: 12px; }
+  .tl-head { font-size: 11px; color: var(--on-soft); padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .tl-weeks { display: grid; text-align: center; font-family: var(--font-pixel); }
+  .tl-weeks .now { background: var(--marker); color: var(--night); border-radius: 2px; }
+  .tl-row { height: 40px; text-align: left; color: var(--on); border: 0; border-radius: 4px; background: var(--desk); padding-right: 0; }
+  .tl-row:hover { background: #232940; }
+  .tl-row.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  .tl-row.bad { box-shadow: inset 3px 0 0 var(--red-d); }
+  .tl-row.on.bad { box-shadow: 0 0 0 2px var(--marker), inset 3px 0 0 var(--red-d); }
+  .tl-row .n { font-family: var(--font-pixel); font-size: 14px; }
+  .tl-row .w { display: flex; align-items: center; gap: 6px; font-size: 12.5px; white-space: nowrap; overflow: hidden; }
+  .tl-row .w i { width: 8px; height: 8px; border-radius: 1px; flex: none; background: var(--c); }
+  .tl-track { position: relative; height: 40px; }
+  .tl-track .grid { position: absolute; inset: 0; background-image: linear-gradient(90deg, var(--line) 1px, transparent 1px); }
+  .tl-track .nowc { position: absolute; top: 0; bottom: 0; background: rgba(255, 225, 74, .10); }
+  .tl-track .plan { position: absolute; top: 12px; height: 16px; border-radius: 3px; background: color-mix(in srgb, var(--c) 45%, transparent); }
+  .tl-track .act2 { position: absolute; top: 12px; height: 16px; border-radius: 3px 0 0 3px; background: var(--c); }
+  .tl-track .fc { position: absolute; top: 12px; height: 16px; background-image: repeating-linear-gradient(135deg, var(--c) 0 3px, transparent 3px 6px); }
+  .tl-track .air { position: absolute; top: 9px; text-align: center; font-family: var(--font-pixel); font-size: 13px; }
+  .tl-track .air.late { color: var(--red-l); }
+  .tl-track .air.done { color: var(--on-soft); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11px; color: var(--on-soft); padding-left: 12px; }
 
-  /* grand schedule (Gantt) */
-  .gantt-wrap { overflow-x: auto; border: 1px solid var(--paper-line); border-radius: 3px; background: var(--paper-2); }
-  table.gantt { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
-  .gantt th, .gantt td { border-bottom: 1px solid #e3e8f0; padding: 0; height: 26px; }
-  .gantt thead th { font-family: var(--font-pixel); font-weight: 400; font-size: 11px; color: var(--ink-soft); background: var(--paper); position: sticky; top: 0; padding: 0 6px; text-align: left; }
-  .gantt th.wk { width: 20px; min-width: 20px; padding: 0; text-align: center; }
-  .gantt th.ep { padding: 0 6px; font-family: var(--font-pixel); font-weight: 400; position: sticky; left: 0; background: var(--paper-2); z-index: 1; border: 0; border-bottom: 1px solid #e3e8f0; border-right: 1px solid var(--paper-line); vertical-align: middle; text-align: left; }
-  .gantt td.ctl { padding: 0 6px; font-size: 12px; }
-  .gantt td.ctl.st { color: var(--ink-soft); font-size: 11.5px; }
-  .gantt td.c { width: 20px; min-width: 20px; position: relative; border-left: 1px solid #eef1f5; text-align: center; }
-  .gantt td.c.pl { background: color-mix(in srgb, var(--tc) 22%, white); }
-  .gantt td.c.ac { background: var(--tc); }
-  .gantt td.c.fc { background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--tc) 55%, white) 0 3px, transparent 3px 6px); }
-  .gantt td.c.now { box-shadow: inset 2px 0 0 var(--marker), inset -2px 0 0 var(--marker); }
-  .gantt th.wk.now { background: var(--marker); color: var(--ink); }
-  .gantt .air { font-size: 12px; color: var(--ink); position: relative; z-index: 1; }
-  .gantt .air.late { color: var(--red); font-weight: 700; }
-  .gantt .air.done { color: var(--ink-soft); }
-  .gantt tr.bad th.ep { color: var(--red); }
-  .gantt tr.bad td.ctl { background: rgba(229,72,77,.08); }
-  .gantt select { max-width: 11em; }
-  .mini { border: 1px solid var(--paper-line); background: var(--paper); border-radius: 2px; padding: 0 4px; margin: 0 3px; font-size: 11px; line-height: 18px; color: var(--ink); }
-  .mini:hover:not(:disabled) { border-color: var(--ink); }
-  .mini:disabled { opacity: .35; }
-  .tm { display: inline-block; border-left: 4px solid var(--tc); padding-left: 5px; }
-  .issues { margin: 0; padding-left: 1.2em; font-size: 12.5px; color: var(--red); display: grid; gap: 2px; }
-  .issues li.soft { color: var(--ink-soft); }
+  /* ---------- title ---------- */
+  .logo { padding: 24px 0 8px; display: flex; flex-direction: column; gap: 12px; }
+  .logo-t { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .logo h1 { font-size: 64px; line-height: 1; }
+  .stamp { font-family: var(--font-pixel); font-size: 15px; color: var(--pink); border: 2px solid var(--pink); padding: 2px 10px; border-radius: 3px; transform: rotate(-4deg); }
+  .logo p { margin: 0; max-width: 600px; font-size: 15px; color: #c9cedc; }
+  .logo p b { color: var(--on); }
+  .st-head, .st-row { display: grid; grid-template-columns: 4px minmax(0, 1fr) 96px 64px 64px 120px 56px 12px; gap: 16px; align-items: center; padding-right: 16px; }
+  .st-head { font-size: 11px; color: var(--on-soft); }
+  .st-head .r, .st-row .r { text-align: right; }
+  .st-row { min-height: 64px; text-align: left; color: var(--on); border: 0; border-radius: 4px; background: var(--desk); overflow: hidden; }
+  .st-row:hover { background: #232940; }
+  .st-row.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  .st-row > i { align-self: stretch; background: var(--c); }
+  .st-row .big { font-family: var(--font-pixel); font-size: 18px; }
+  .st-row .big small { font-size: 12px; }
 
-  /* the 進行表 (spreadsheet) */
-  .xls-bg { padding: 2vh 2vw; }
-  .xls { background: #ffffff; color: #1a1e29; width: 100%; max-width: 1180px; height: 100%; max-height: 96vh; display: grid; grid-template-rows: auto auto auto 1fr auto; border-radius: 4px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,.5); font-family: var(--font-body); }
-  .xls-top { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: #1f6b45; color: #fff; flex-wrap: wrap; }
+  /* ---------- result ---------- */
+  .chart { background: var(--desk); border-radius: 6px; padding: 16px 16px 8px; display: flex; flex-direction: column; gap: 8px; }
+  .bars { position: relative; height: 240px; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; align-items: end; border-bottom: 1px solid #4a5370; }
+  .bars .line { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--on-soft); }
+  .bars .line span { position: absolute; right: 0; bottom: 2px; font-size: 11px; color: var(--on-soft); }
+  .bars button { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; height: 100%; background: transparent; border: 0; padding: 0; color: var(--on); }
+  .bars button span { font-family: var(--font-pixel); font-size: 13px; text-align: center; }
+  .bars button i { display: block; border-radius: 3px 3px 0 0; }
+  .bars-x { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; text-align: center; font-size: 11px; }
+  .bars-x b { display: block; font-family: var(--font-pixel); font-weight: 400; font-size: 13px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+  .stat { background: var(--desk); border-radius: 4px; padding: 10px 12px; }
+  .stat .l { font-size: 11px; color: var(--on-soft); }
+  .stat .v { font-family: var(--font-pixel); font-size: 22px; }
+  .stat .v small { font-size: 12px; }
+  .rank { height: 120px; display: grid; place-items: center; background: var(--card); border-radius: 4px; font-family: var(--font-pixel); font-size: 88px; line-height: 1; }
+  .share { background: var(--card); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; }
+  .share .sq { display: flex; gap: 3px; flex-wrap: wrap; }
+  .share .sq i { width: 20px; height: 20px; border-radius: 2px; }
+
+  /* ---------- dialogs: the same detail, on top ---------- */
+  .modal-bg { position: fixed; inset: 0; background: rgba(8, 10, 18, .78); display: grid; place-items: center; padding: 16px; z-index: 20; overflow-y: auto; }
+  .dlg { width: 100%; max-width: 600px; max-height: calc(100vh - 32px); overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, .6); }
+  .dlg ul { margin: 0; padding-left: 1.2em; font-size: 13px; display: grid; gap: 6px; }
+  .opt-head, .opt { display: grid; grid-template-columns: 160px minmax(0, 1fr) 104px; gap: 12px; align-items: center; padding: 0 12px; }
+  .opt-head { font-size: 11px; color: var(--ink-soft); }
+  .opt-head .wks { display: grid; text-align: center; font-family: var(--font-pixel); }
+  .opt-head .wks .air { color: var(--red); }
+  .opt { min-height: 48px; text-align: left; border: 0; border-radius: 4px; background: var(--card); box-shadow: inset 0 0 0 1px var(--chip); color: var(--ink); }
+  .opt.on { box-shadow: 0 0 0 2px var(--ink); }
+  .opt .t { display: block; font-size: 13px; font-weight: 700; }
+  .opt .s { display: block; font-size: 11px; color: var(--ink-soft); }
+  .opt .trk { position: relative; height: 24px; }
+  .opt .trk .airc { position: absolute; top: 0; bottom: 0; background: rgba(200, 50, 58, .12); }
+  .opt .trk i { position: absolute; left: 0; top: 8px; height: 8px; border-radius: 0 3px 3px 0; }
+  .verdict { margin: 4px 0 0; font-size: 13px; font-weight: 700; }
+  .verdict.bad { color: var(--red); } .verdict.good { color: var(--green); }
+
+  /* the 進行表 keeps its spreadsheet look */
+  .xls-wrap { width: 100%; max-width: 1392px; display: grid; grid-template-columns: minmax(0, 1fr) 488px; gap: 24px; align-items: start; }
+  .xls { background: #ffffff; color: #1a1e29; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; max-height: calc(100vh - 32px); box-shadow: 0 10px 40px rgba(0, 0, 0, .5); }
+  .xls-top { display: flex; align-items: center; gap: 12px; padding: 0 4px 0 16px; min-height: 48px; background: #1f6b45; color: #fff; flex-wrap: wrap; }
   .xls-file { font-weight: 700; font-size: 14px; }
-  .xls-file::before { content: ""; display: inline-block; width: 12px; height: 14px; margin-right: 6px; vertical-align: -2px; background: #fff; clip-path: polygon(0 0, 70% 0, 100% 30%, 100% 100%, 0 100%); }
   .xls-who { font-size: 12px; opacity: .95; }
-  .xls-x { margin-left: auto; background: transparent; border: 0; color: #fff; font-size: 22px; line-height: 1; padding: 0 6px; }
-  .xls-tools { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 10px; background: #f3f5f8; border-bottom: 1px solid #d5dbe5; align-items: center; }
-  .xls-tools .btn { font-family: var(--font-body); background: #ffffff; color: #1a1e29; box-shadow: inset 0 0 0 1px #c3cad6; display: inline-grid; line-height: 1.2; text-align: left; }
-  .xls-tools .btn:hover:not(:disabled) { box-shadow: inset 0 0 0 1.5px #1f6b45; }
-  .xls-tools .pv { font-size: 10.5px; color: #5b6478; }
-  .xls-tools .xls-sep { font-size: 11px; font-weight: 700; color: #a3262b; margin-left: 6px; }
-  .xls-tools .btn.rush { box-shadow: inset 0 0 0 1px #e5a3a6; }
-  .rushrow { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
-  .rushrow .xls-sep { font-size: 11px; font-weight: 700; color: var(--red); }
-  .rushrow .btn { display: inline-grid; text-align: left; line-height: 1.2; }
-  .rushrow .pv { font-size: 10px; opacity: .75; }
-  .xls-fx { display: flex; gap: 8px; align-items: center; padding: 4px 10px; border-bottom: 1px solid #d5dbe5; font-size: 12px; font-family: ui-monospace, "IPAGothic", monospace; color: #33394a; }
-  .xls-fx .fxl { font-style: italic; color: #8a93ab; border-right: 1px solid #d5dbe5; padding-right: 8px; }
+  .xls-x { margin-left: auto; width: 44px; height: 44px; background: transparent; border: 0; color: #fff; font-size: 22px; line-height: 1; }
+  .xls-fx { display: flex; gap: 10px; align-items: center; padding: 6px 16px; border-bottom: 1px solid #d5dbe5; font-size: 12px; font-family: ui-monospace, "IPAGothic", monospace; color: #33394a; }
+  .xls-fx .fxl { font-style: italic; color: #8a93ab; border-right: 1px solid #d5dbe5; padding-right: 10px; }
+  .xls-fx b { color: #a3262b; }
   .xls-grid { overflow: auto; }
   .xls-grid table { border-collapse: collapse; font-size: 12.5px; min-width: 100%; }
-  .xls-grid th, .xls-grid td { border: 1px solid #e1e5ec; padding: 3px 8px; white-space: nowrap; height: 22px; }
-  .xls-grid thead th { background: #f3f5f8; color: #5b6478; font-weight: 400; font-size: 11px; text-align: center; position: sticky; top: 0; z-index: 1; }
-  .xls-grid th.rn { background: #f3f5f8; color: #8a93ab; font-weight: 400; font-size: 11px; text-align: right; width: 2.6em; position: sticky; left: 0; }
-  .xls-grid td.k { color: #5b6478; background: #fafbfd; }
-  .xls-grid td.v.bad { color: var(--red); font-weight: 700; }
-  .xls-grid td.blank { height: 10px; padding: 0; }
-  .xls-grid tr.hd td { background: #e9f3ee; font-weight: 700; color: #1f6b45; }
+  .xls-grid th, .xls-grid td { border: 1px solid #e1e5ec; padding: 3px 8px; white-space: nowrap; height: 26px; }
+  .xls-grid thead th { background: #e9f3ee; color: #1f6b45; font-weight: 700; text-align: left; position: sticky; top: 0; z-index: 1; }
+  .xls-grid th.rn { background: #f3f5f8; color: #8a93ab; font-weight: 400; font-size: 11px; text-align: right; width: 2.4em; }
   .xls-grid td.n { text-align: right; font-variant-numeric: tabular-nums; }
-  .xls-grid td.ok { background: #d6f2e4; color: #11633c; }
-  .xls-grid td.wip { background: #fff3b0; }
+  .xls-grid td.db { min-width: 150px; }
+  .xls-grid .dbar { display: flex; align-items: center; gap: 8px; }
+  .xls-grid .dbar span { flex: 1; height: 10px; background: #eef1f5; }
+  .xls-grid .dbar i { display: block; height: 100%; background: #5bbf8a; }
+  .xls-grid .dbar.r i { background: #9fd7b9; }
+  .xls-grid .dbar.bad i { background: #f0a3a6; }
+  .xls-grid .dbar em { font-style: normal; width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
   .xls-grid tr.held td { background: #fde4e4; }
+  .xls-grid tr.held td.st { color: #a3262b; font-weight: 700; }
   .xls-grid tr.out td { color: #9aa3ba; }
-  .xls-grid tr.tot td, .xls-grid td.tot { font-weight: 700; border-top: 2px solid #1f6b45; }
-  .xls-grid td.hd { background: #e9f3ee; font-weight: 700; color: #1f6b45; }
-  .xls-grid td.badc { background: #fde4e4; color: #a3262b; }
-  .xls-grid td.outc { color: #9aa3ba; text-decoration: line-through; }
-  .xls-grid td.sub { color: #5b6478; font-size: 11.5px; }
+  .xls-grid tr.tot td { font-weight: 700; border-top: 2px solid #1f6b45; }
+  .xls-grid td.st { color: #5a6072; }
+  .xls-post { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid #d5dbe5; background: #fafbfd; }
+  .xls-post div { padding: 8px 16px; border-right: 1px solid #e1e5ec; font-size: 12px; }
+  .xls-post div:last-child { border-right: 0; }
+  .xls-post .l { font-size: 11px; color: #5a6072; }
+  .xls-post .v { font-family: var(--font-pixel); font-size: 14px; }
+  .xls-post .ok { background: #d6f2e4; } .xls-post .wip { background: #fff3b0; }
+  .xls-msg { padding: 16px; font-size: 13px; color: #33394a; }
   .xls-tabs { display: flex; gap: 2px; padding: 0 8px; background: #f3f5f8; border-top: 1px solid #d5dbe5; overflow-x: auto; }
-  .xls-tabs button { border: 0; background: transparent; padding: 6px 12px; font-size: 12px; color: #33394a; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .xls-tabs button { border: 0; background: transparent; min-height: 40px; padding: 0 16px; font-size: 12px; color: #33394a; border-bottom: 3px solid transparent; white-space: nowrap; }
   .xls-tabs button.on { background: #ffffff; color: #1f6b45; border-bottom-color: #1f6b45; font-weight: 700; }
+  .gantt-dlg { width: 100%; max-width: 1392px; display: grid; grid-template-columns: minmax(0, 1fr) 488px; gap: 24px; align-items: start; }
+  .gantt-dlg .col { background: var(--night); border-radius: 6px; padding: 16px; box-shadow: 0 0 0 1px var(--line); }
 
-  /* modal */
-  .modal-bg { position: fixed; inset: 0; background: rgba(8, 10, 18, .72); display: grid; place-items: center; padding: 16px; z-index: 10; }
-  .modal { max-width: 560px; width: 100%; max-height: calc(100% - 32px); overflow-y: auto; box-sizing: border-box; }
-  .modal .who { margin: 4px 0 10px; }
-  .modal .choices { display: grid; gap: 8px; margin-top: 12px; }
-  .modal .choices .btn { text-align: left; }
-  .modal .bigkv { display: grid; grid-template-columns: 112px 1fr; gap: 12px; align-items: center; }
-  .modal .bigkv canvas { width: 112px; height: 112px; background: #dfe5ee; }
-
-  .result { display: grid; gap: 14px; }
-  .rank { font-family: var(--font-pixel); font-size: 64px; line-height: 1; }
-  .score { font-family: var(--font-pixel); font-size: 34px; }
-
-  @media (max-width: 980px) {
-    .studio { grid-template-columns: minmax(0, 1fr); }
-    .officecol { position: static; }
+  /* ---------- narrower screens: one column, the week bar at the bottom ---------- */
+  @media (max-width: 1180px) {
+    .main, .xls-wrap, .gantt-dlg { grid-template-columns: minmax(0, 1fr) 400px; }
+  }
+  @media (max-width: 920px) {
+    .main, .xls-wrap, .gantt-dlg { grid-template-columns: minmax(0, 1fr); }
+    .brand { width: auto; }
+    .wk { border-left: 0; padding-left: 0; }
+    .eps { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .st-head { display: none; }
+    .st-row { grid-template-columns: 4px minmax(0, 1fr) auto 12px; padding-top: 8px; padding-bottom: 8px; }
+    .st-row .hide-n { display: none; }
+    .tl-head, .tl-row { grid-template-columns: 32px 84px minmax(0, 1fr); gap: 0 8px; }
+    .tl-weeks { font-size: 9px; }
   }
   @media (max-width: 640px) {
-    #app { padding-bottom: 100px; }
-    .deskline .endweek { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,.55); }
+    #app { padding-bottom: 96px; }
+    .hdr { padding: 8px 16px; gap: 8px; }
+    .main { padding: 12px 16px 24px; }
+    .hdr .wk.wk-fix { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--night); border-top: 1px solid var(--line); padding: 10px 16px calc(env(safe-area-inset-bottom, 0px) + 10px); gap: 10px; justify-content: space-between; }
+    .hdr .wk.wk-fix .wk-n { font-size: 20px; }
+    .hdr .wk.wk-fix .ap, .hdr .wk.wk-fix .wk-t { font-size: 11px; }
+    .hdr .wk.wk-fix .btn-main { height: 52px; margin-left: auto; }
+    .eps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid2, .acts { grid-template-columns: minmax(0, 1fr); }
+    .logo h1 { font-size: 44px; }
+    .opt-head, .opt { grid-template-columns: 112px minmax(0, 1fr) 84px; gap: 8px; padding: 0 8px; }
     .kvs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .stages { font-size: 10px; }
-    .hud .vl { font-size: 15px; }
-    .sheet { padding: 12px; }
-    .officewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .office { width: 720px; }
+    .xls-post { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .bars, .bars-x { gap: 4px; }
+    .bars button span { font-size: 10px; }
   }
-  @media (max-width: 420px) { h1 { font-size: 24px; } .actions { grid-template-columns: minmax(0, 1fr); } }
   @media (prefers-reduced-motion: no-preference) {
-    .flashin { animation: flashin .3s ease-out; }
+    .flashin { animation: flashin .25s ease-out; }
     @keyframes flashin { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   }
 </style>
@@ -1384,6 +1476,8 @@ if (typeof module !== "undefined") module.exports = Engine;
 </script>
 <script>
 /* ===================== 画面 ===================== */
+// Every screen is "collections on the left, the selected object's detail on the right".
+// You pick a thing (episode, team, person, company…) first; what you can do to it sits at the bottom of its detail.
 (() => {
   "use strict";
   const E = Engine;
@@ -1393,7 +1487,8 @@ if (typeof module !== "undefined") module.exports = Engine;
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let s = null;
   let modal = null;
-  let panel = "desk";      // which sheet is open next to the office
+  let sel = null;          // the selected object: { k: "studio" | "ep" | "team" | "shinko" | "dir" | "post" | "gross" | "tv", id }
+  let pickTier = "mid";    // the studio selected on the title screen
   let officeCanvas = null, raf = 0;
 
   const store = {
@@ -1635,100 +1730,115 @@ if (typeof module !== "undefined") module.exports = Engine;
   }
   function loop(t) { drawOffice(t); raf = requestAnimationFrame(loop); }
 
-  function hotspots() {
-    const h = [];
-    const box = (seat, extra = 16) => ({ x: seat.x, y: seat.y - extra, w: seat.w, h: seat.h + extra });
-    h.push({ ...box(SEAT.desk), act: "panel", v: "desk", label: "あなたの席（制作デスク）" });
-    s.teams.forEach((tm, i) => {
-      const p = E.shinkoBy(s, tm.shinko);
-      if (SEAT.shinko[i]) h.push({ ...box(SEAT.shinko[i]), act: "xls", v: tm.key, label: `${tm.label} 制作進行 ${p.name}${p.gone ? "（連絡が取れない）" : ""}・進行表を開く` });
-      if (SEAT.sakkan[i]) h.push({ ...box(SEAT.sakkan[i]), act: "xls", v: tm.key, label: `${tm.label} 作画監督 ${tm.sakkan.name}` });
-    });
-    h.push({ ...box(SEAT.dir), act: "panel", v: "dir", label: `監督 ${s.staff.dir.name}` });
-    h.push({ ...SEAT.post, act: "panel", v: "post", label: "動画・仕上げ・撮影・美術・CG" });
-    h.push({ ...SEAT.room, act: "xls", v: "all", label: `作画部屋（原画マン ${activeAnims()}人）` });
-    h.push({ x: SEAT.phone.x - 1, y: SEAT.phone.y - 2, w: 12, h: 12, act: "panel", v: "gross", label: "電話（協力会社・グロス）" });
-    h.push({ ...SEAT.board, act: "panel", v: "board", label: "グランドスケジュール" });
-    h.push({ ...SEAT.tv, act: "panel", v: "tv", label: "テレビ（放送・SNS）" });
-    return h;
-  }
-  const pct = (v, total) => `${(v / total) * 100}%`;
-  function officeHtml() {
-    const zones = [["デスク（あなた）", 14, 82], ["監督", 150, 50], ["撮影・仕上げ・美術・CG", 146, 96], ["作監", 214, 50], ["作画部屋", 216, 94]];
-    s.teams.forEach((tm, i) => { const st = SEAT.shinko[i]; if (st) zones.push([tm.label, st.x, st.y + 15]); });
-    return `<div class="officewrap"><div class="office" id="office">
-      <canvas class="px" width="${OW}" height="${OH}" id="officeCanvas" aria-hidden="true"></canvas>
-      ${zones.map(([t, x, y]) => `<span class="zone" style="left:${pct(x, OW)};top:${pct(y, OH)}">${esc(t)}</span>`).join("")}
-      ${hotspots().map((h) => `<button class="hot ${panel === h.v ? "on" : ""}" style="left:${pct(h.x, OW)};top:${pct(h.y, OH)};width:${pct(h.w, OW)};height:${pct(h.h, OH)}" data-act="${h.act}" data-v="${esc(h.v)}" aria-label="${esc(h.label)}"><span class="tag">${esc(h.label)}</span></button>`).join("")}
-    </div></div>`;
-  }
 
-  // ---------- screens ----------
-  function weekSpan() {
-    const last = Math.max(...s.eps.map((e) => (e.plan ? e.plan.start + e.plan.dur - 1 : 0)), s.pre + E.EPISODES, s.phase === "prod" ? s.nextAir + E.unaired(s).length : 0);
-    return Math.min(40, last + 1);
+  const pct = (v, total) => `${(v / total) * 100}%`;
+  const YOU = 424242;      // the desk's own face seed (same as in the office)
+  const prod = () => !!s && s.phase === "prod";
+  const narrow = () => matchMedia("(max-width: 920px)").matches;
+  const stars = (v) => { const n = Math.max(1, Math.min(5, Math.round((v - 20) / 13))); return "★".repeat(n) + "☆".repeat(5 - n); };
+  const isSel = (k, id) => !!sel && sel.k === k && String(sel.id ?? "") === String(id ?? "");
+  const selAttrs = (k, id) => `data-act="sel" data-k="${k}" data-v="${esc(id ?? "")}"`;
+  const grossShort = (key) => E.grossBy(s, +key.slice(1)).name.replace(/^有限会社\s*/, "");
+  const whoShort = (key) => (key && key.startsWith("g") ? `グロス ${grossShort(key)}` : `${key}班`);
+
+  // what the desk can see: hidden trouble stays hidden (the same view the 進行 reports)
+  function viewed(ep, fn) { const real = ep.anims; ep.anims = real.map((a) => E.viewAnim(s, a)); try { return fn(); } finally { ep.anims = real; } }
+  const stageV = (ep) => (ep.anims ? viewed(ep, () => E.stageOf(ep)) : E.stageOf(ep));
+  const totalsV = (ep) => viewed(ep, () => E.epTotals(ep));
+  const progV = (ep) => (ep.anims ? viewed(ep, () => E.progress(ep)) : E.progress(ep));
+  const airOf = (ep) => (ep.aired ? ep.airWeek : prod() ? E.airWeekOf(s, ep) : E.planAir(s, ep.n));
+  const fcOf = (ep) => (prod() ? E.epForecast(s, ep) : ep.plan.start + ep.plan.dur - 1);
+  const qOf = (ep) => Math.round(E.epQuality(s, ep));
+
+  // ---------- your own read of the drawing: words, never a number ----------
+  const WORD = {
+    late: ["bad", "このままじゃ放送に間に合わない・・・", "間に合わない"],
+    line: ["bad", "これは局に突き返されるぞ・・・", "突き返される"],
+    shoot: ["bad", "撮影にものが入ってない", "撮影が空"],
+    tight: ["worry", "スケジュールが無い・・・", "余裕なし"],
+    rough: ["worry", "ちょっと作画厳しいか・・・？", "厳しいか…？"],
+    good: ["good", "良い感じだ", "良い感じ"],
+    ok: ["ok", "まあ、なんとかなるか", "なんとか"],
+    wait: ["mute", "まだ手を付けていない。様子見だ", "様子見"],
+    done: ["good", "納品済み。あとは放送を待つだけ", "納品済"],
+  };
+  const word = (k) => ({ tone: WORD[k][0], t: WORD[k][1], short: WORD[k][2] });
+  function judge({ q = null, fc = null, air = null, emptyShoot = false }) {
+    if (fc != null && air != null && fc > air) return word("late");
+    if (q != null && q < E.LINE) return word("line");
+    if (emptyShoot) return word("shoot");
+    if (fc != null && air != null && fc === air) return word("tight");
+    if (q == null) return word("ok");
+    if (q < E.LINE + 8) return word("rough");
+    if (q >= E.LINE + 20) return word("good");
+    return word("ok");
   }
-  function teamOptions(ep) {
-    return s.teams.map((t) => `<option value="${t.key}" ${ep.plan.team === t.key ? "selected" : ""}>${t.label}（社内）</option>`).join("")
-      + s.gross.map((c) => `<option value="g${c.id}" ${ep.plan.team === "g" + c.id ? "selected" : ""}>グロス：${esc(c.name)}</option>`).join("");
+  const qWord = (q) => judge({ q }).short;
+  function mutterOf(ep) {
+    if (ep.aired) return null;
+    if (ep.delivered) return word("done");
+    const gross = E.isGross(ep.plan), air = airOf(ep), fc = fcOf(ep);
+    if (!prod()) return judge({ q: gross ? E.grossOf(s, ep.plan).quality : null, fc, air });
+    if (!ep.started && !gross) return fc > air ? word("late") : word("wait");
+    return judge({ q: qOf(ep), fc, air, emptyShoot: !gross && ep.satsuei < 1 && air - s.week <= 1 });
   }
-  function ganttHtml() {
-    const W = weekSpan(), prod = s.phase === "prod";
-    const issues = E.planIssues(s);
-    const bad = new Set(issues.filter((i) => !i.soft).map((i) => i.n));
-    const head = Array.from({ length: W }, (_, i) => `<th class="wk ${prod && i + 1 === s.week ? "now" : ""}">${i + 1}</th>`).join("");
-    const rows = s.eps.map((ep) => {
-      const p = ep.plan, end = p.start + p.dur - 1;
-      const air = prod ? (ep.aired ? null : E.airWeekOf(s, ep)) : E.planAir(s, ep.n);
-      const editable = !ep.started && !ep.aired;
-      const fc = prod && !ep.aired && !ep.delivered ? E.epForecast(s, ep) : null;
-      const actualFrom = prod && ep.started ? ep.startWeek : null;
-      const actualTo = prod && ep.started ? (ep.delivered ? ep.deliveredWeek : ep.aired ? null : s.week - 1) : null;
-      const cells = Array.from({ length: W }, (_, i) => {
-        const w = i + 1;
-        const inPlan = w >= p.start && w <= end;
-        const inAct = actualFrom != null && actualTo != null && w >= actualFrom && w <= actualTo;
-        let cls = "c", inner = "";
-        if (inPlan) cls += " pl";
-        if (inAct) cls += " ac";
-        const fcFrom = ep.started ? s.week : Math.max(s.week, fc - p.dur + 1);
-        if (fc && w >= fcFrom && w <= fc) cls += " fc";
-        if (air === w) inner = `<span class="air ${fc && fc > air ? "late" : ""}">▼</span>`;
-        if (prod && ep.aired && ep.airWeek === w) inner = `<span class="air done">●</span>`;
-        if (prod && w === s.week) cls += " now";
-        return `<td class="${cls}" style="--tc:${teamColor(p.team)}">${inner}</td>`;
-      }).join("");
-      const status = prod ? (ep.aired ? `放送済 ${ep.airQ}` : ep.delivered ? "納品済" : ep.started ? `予測 W${fc}` : `W${p.start}着手予定`) : "";
-      return `<tr class="${bad.has(ep.n) ? "bad" : ""}">
-        <th class="ep">#${ep.n}</th>
-        <td class="ctl">${editable ? `<select data-act="planTeam" data-v="${ep.n}" aria-label="第${ep.n}話の担当">${teamOptions(ep)}</select>` : `<span class="tm" style="--tc:${teamColor(p.team)}">${esc(teamLabel(p.team))}</span>`}</td>
-        <td class="ctl num">${editable ? `<button class="mini" data-act="planStart" data-v="${ep.n}" data-d="-1" aria-label="着手を1週早める">◀</button>W${p.start}<button class="mini" data-act="planStart" data-v="${ep.n}" data-d="1" aria-label="着手を1週遅らせる">▶</button>` : `W${ep.startWeek ?? p.start}`}</td>
-        <td class="ctl num">${editable ? `<button class="mini" data-act="planDur" data-v="${ep.n}" data-d="-1" aria-label="期間を1週短く" ${p.dur <= E.MIN_DUR ? "disabled" : ""}>−</button>${p.dur}週<button class="mini" data-act="planDur" data-v="${ep.n}" data-d="1" aria-label="期間を1週長く">＋</button>` : `${p.dur}週`}</td>
-        ${prod ? `<td class="ctl st">${status}</td>` : ""}
-        ${cells}</tr>`;
-    }).join("");
-    return `<div class="gantt-wrap"><table class="gantt">
-      <thead><tr><th class="ep">話</th><th>担当</th><th>着手</th><th>期間</th>${prod ? "<th>状況</th>" : ""}${head}</tr></thead>
-      <tbody>${rows}</tbody></table></div>`;
+  const face = (seed, cls = "") => `<span data-face="${seed}" data-cls="${cls}"></span>`;
+  const mutHtml = (m, label = "あなたの見立て（作画）") => (m ? `<div class="mut">${face(YOU)}<div class="mut-b tone-${m.tone}"><div class="l">${label}</div><div class="t">${esc(m.t)}</div></div></div>` : "");
+
+  // ---------- the parts every screen reuses ----------
+  const tile = (l, v, cls = "") => `<div class="tile ${cls}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  const tagHtml = (t, cls = "") => (t ? `<span class="tag ${cls}">${esc(t)}</span>` : "");
+  function oh(type, name, sub, tag = "", faceSeed = null, pre = "", id = "") {
+    return `<div class="oh"><div class="oh-top"><span class="typ">${esc(type)}</span>${pre}${tag}</div>
+      <div class="oh-name">${faceSeed != null ? face(faceSeed) : ""}<h2 ${id ? `id="${id}"` : ""}>${esc(name)}</h2></div>${sub ? `<span class="oh-sub">${sub}</span>` : ""}</div>`;
   }
-  function issuesHtml() {
-    const issues = E.planIssues(s);
-    if (!issues.length) return `<p class="pos" style="margin:0">問題はありません。</p>`;
-    return `<ul class="issues">${issues.map((i) => `<li class="${i.soft ? "soft" : ""}">${esc(i.msg)}</li>`).join("")}</ul>`;
+  function li({ c, t, sub = "", r = "", on = false, attrs = "" }) {
+    const tagName = attrs ? "button" : "div";
+    return `<${tagName} class="li ${on ? "on" : ""} ${attrs ? "" : "static"}" style="--c:${c}" ${attrs}><i></i><span><span class="t">${t}</span>${sub ? `<span class="s">${sub}</span>` : ""}</span><span class="r">${r}</span>${attrs ? `<span class="chev" aria-hidden="true">›</span>` : "<span></span>"}</${tagName}>`;
   }
-  function dirPanel() {
-    const d = s.staff.dir, w = s.staff.wri;
+  function rel({ ico = "", c = "", faceSeed = null, t, sub, attrs }) {
+    return `<button class="rel" ${attrs}>${faceSeed != null ? face(faceSeed, "sm") : `<span class="ico" style="--c:${c}">${esc(ico)}</span>`}<span><span class="t">${t}</span><span class="s">${sub}</span></span><span class="chev" aria-hidden="true">›</span></button>`;
+  }
+  function act({ label, sub = "", cost = null, attrs = "", pri = false, disabled = false }) {
+    const c = cost == null ? "" : `<span class="cost ${/^行動\d/.test(cost) ? "ap" : ""}">${esc(cost)}</span>`;
+    return `<button class="act ${pri ? "pri" : ""}" ${attrs} ${disabled ? "disabled" : ""}><span class="m"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>${c}</button>`;
+  }
+  // a desk action from the engine (uses this week's 行動)
+  function actFor(id, arg, opt = {}) {
+    const a = E.ACTIONS[id], ok = E.canAct(s, id, arg);
+    let why = "";
+    if (!ok) {
+      if (s.ap < a.ap) why = "今週の行動が足りない";
+      else if (id === "help") why = "今週はヘルプ済み";
+      else if (id === "dirTalk") why = "監督の機嫌は悪くない";
+      else if (id === "extConte") why = "もう頼んでいる／コンテ待ちがない";
+      else if (id === "grossPush") why = "今週は催促済み";
+    }
+    return act({ label: opt.label || a.label, sub: why || opt.sub || "", cost: `行動${a.ap}`, attrs: `data-act="do" data-v="${id}" ${arg != null ? `data-arg="${arg}"` : ""}`, pri: opt.pri, disabled: !ok });
+  }
+  function paneFoot(name, acts, note = "", one = false) {
+    return `<div class="pane-f"><span class="lbl">${esc(name)} にできること</span>${acts ? `<div class="acts ${one ? "one" : ""}">${acts}</div>` : ""}${note ? `<p class="note" style="color:var(--ink-soft)">${note}</p>` : ""}</div>`;
+  }
+  const pane = (label, body, foot) => `<aside class="pane" aria-label="選択中：${esc(label)}"><div class="pane-b">${body}</div>${foot}</aside>`;
+  function seg(label, key, opts) {
+    return `<div class="field"><span>${label}</span><div class="seg">${opts.map(([v, t]) => `<button class="${s.policy[key] === v ? "on" : ""}" data-act="policy" data-k="${key}" data-v="${v}" aria-pressed="${s.policy[key] === v}">${t}</button>`).join("")}</div></div>`;
+  }
+  function capRow(label, have, need, unit, digitsN = 0) {
+    if (need <= 0.001) return `<span>${label}</span><span class="g"><i style="width:100%;background:var(--rule)"></i></span><span class="n" style="color:var(--ink-soft)">完了</span>`;
+    const scale = Math.max(have, need) * 1.1, ok = have >= need;
+    return `<span>${label}</span><span class="g"><i style="width:${(have / scale) * 100}%;background:${ok ? "var(--green)" : "var(--red)"}"></i><b style="left:${(need / scale) * 100}%"></b></span><span class="n ${ok ? "" : "bad"}">${have.toFixed(digitsN)} / ${need.toFixed(digitsN)}${unit}</span>`;
+  }
+  function capHtml(withConte) {
     const f = s.stat || E.forecast(s);
-    const inh = s.eps.filter((e) => !E.isGross(e.plan));
-    return `<section class="sheet">
-      ${who(d.seed, "監督", d.name, `<br><span class="sub">実力 ${d.skill + s.dirMood}${s.dirMood ? `（機嫌で${s.dirMood}）` : ""} ／ コンテの速さ ${d.speed}</span>`)}
-      <p class="speech" style="margin:10px 0 0">${f.conte < f.needConte ? "コンテ、もうちょっと待って。妥協はしたくない。" : "いい画になってきてる。"}</p>
-      <dl class="kv" style="margin-top:10px">
-        <dt>コンテ</dt><dd>社内の回 ${inh.filter((e) => e.conte >= 1).length}/${inh.length}話 上がり（週 ${f.conte.toFixed(2)} 話）。グロスの回は協力会社が描きます</dd>
-        <dt>脚本</dt><dd>${s.eps.filter((e) => e.script >= 1).length}/12話 上がり（シリーズ構成 ${esc(w.name)}・速さ ${w.speed}）</dd>
-      </dl>
-      <div class="actions" style="margin-top:10px">${actBtn("extConte")}${actBtn("dirTalk")}</div>
-    </section>`;
+    return `<div class="cap">${withConte ? capRow("コンテ", f.conte, f.needConte, " 話", 2) : ""}${capRow("動画", f.douga, f.need.douga, " カット")}${capRow("仕上げ", f.shiage, f.need.shiage, " カット")}${capRow("撮影", f.satsuei, f.need.satsuei, " カット")}</div><p>黒い線＝放送に間に合わせるのに必要な、週あたりの量</p>`;
+  }
+  function epRow(e) {
+    const end = e.plan.start + e.plan.dur - 1;
+    let st = "着手前", cls = "mute";
+    if (e.aired) st = "放送済";
+    else if (e.delivered) { st = "納品済"; cls = ""; }
+    else if (e.started) { st = prod() && danger(e) ? "遅れ" : E.isGross(e.plan) ? `${Math.round(e.gprog * 100)}%` : E.STAGE_LABEL[stageV(e)]; cls = prod() && danger(e) ? "bad" : ""; }
+    return `<button class="row" ${selAttrs("ep", e.n)}><span>第${e.n}話（W${e.plan.start}–W${end}）</span><span class="v ${cls}">${esc(st)}</span></button>`;
   }
   function artState(ep) {
     if (E.isGross(ep.plan)) return "協力会社";
@@ -1737,278 +1847,9 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (s.week < ep.art.start + E.ART_WEEKS) return `作業中（W${ep.art.start + E.ART_WEEKS - 1}まで）`;
     return "完了";
   }
-  function postPanel() {
-    const f = s.stat || E.forecast(s);
-    const act = s.eps.filter((e) => e.started && !e.aired && !e.delivered && !E.isGross(e.plan));
-    return `<section class="sheet">
-      <h3>動画・仕上げ・撮影</h3>
-      <div class="cap">
-        ${capRow("動画", f.douga, f.need.douga, " カット/週")}
-        ${capRow("仕上げ", f.shiage, f.need.shiage, " カット/週")}
-        ${capRow("撮影", f.satsuei, f.need.satsuei, " カット/週")}
-      </div>
-      <div class="policy" style="margin-top:10px">${seg("動画・仕上げの発注先", "douga", [["inhouse", "社内のみ"], ["overseas", "海外も可"]])}</div>
-    </section>
-    <section class="sheet">
-      <h3>美術・CG</h3>
-      <p class="sub" style="margin:0 0 6px">各話のラフ原が全部上がると、美術とCGが作業に入り、${E.ART_WEEKS}週間で上がります。撮影は美術とCGが上がってからです。</p>
-      <table class="pl"><thead><tr><th>話</th><th>美術</th><th>CG</th></tr></thead><tbody>
-      ${act.length ? act.map((e) => `<tr><td>#${e.n}</td><td>${artState(e)}</td><td>${artState(e)}</td></tr>`).join("") : `<tr><td colspan="3" class="sub">作業中の話数はありません</td></tr>`}
-      </tbody></table>
-    </section>`;
-  }
-  function tvPanel() {
-    return `<section class="sheet">
-        <h3>放送済みの1枚絵</h3>
-        <div class="kvs">${Array.from({ length: E.EPISODES }, (_, i) => `<div class="kvbox"><span data-kv="${i + 1}"></span><span>#${i + 1}${s.eps[i].airQ != null ? ` ${s.eps[i].airQ}` : ""}</span></div>`).join("")}</div>
-      </section>
-      <section class="sheet">
-        <h3>SNSの反応</h3>
-        ${s.sns.length ? `<div class="sns">${s.sns.slice(0, 14).map((p) => `<div class="post ${["god", "good"].includes(p.kind) ? "good" : ["bad", "collapse", "recap", "delay"].includes(p.kind) ? "bad" : ""}"><span class="h">${esc(p.h)} ・ 第${p.n}話</span><br>${esc(p.t)}</div>`).join("")}</div>` : `<p class="sub" style="margin:0">放送が始まると、ここに反応が流れます。</p>`}
-      </section>
-      <section class="sheet"><h3>現場ログ</h3>${logHtml()}</section>`;
-  }
-  function logHtml() { return `<div class="log">${s.log.slice(-24).reverse().map((l) => `<p><span class="w">W${l.w}</span>${esc(l.text)}</p>`).join("")}</div>`; }
-
-
-  // ---------- screens ----------
-  function render() {
-    cancelAnimationFrame(raf); officeCanvas = null;
-    if (!s) return renderTitle();
-    if (s.phase === "schedule") return renderSchedule();
-    if (s.phase === "prod") return renderProd();
-    if (s.phase === "end") return renderEnd();
-  }
-  const stars = (v) => "★".repeat(Math.max(1, Math.min(5, Math.round((v - 20) / 13)))) + "☆".repeat(Math.max(0, 5 - Math.max(1, Math.min(5, Math.round((v - 20) / 13)))));
-
-  function renderTitle() {
-    const best = store.get("animep.best4") || {};
-    // preview each studio with a fixed seed so the card matches what you get
-    app.innerHTML = `
-      <div class="title-wrap">
-        <div class="logo"><h1>深夜アニメP</h1><span class="stamp" style="color:var(--pink)">制作デスク篇</span></div>
-        <p class="lead">あなたは制作デスク。グランドスケジュールを引き、各班の進行から上がってくる報告を受け、原画マンを足し、協力会社を急かし、全12話を放送まで落とさずに届けます。ただし、進行の報告がいつも本当とは限りません。</p>
-        <h2>どのスタジオのデスクをやりますか</h2>
-        <div class="cards">
-          ${Object.values(E.TIERS).map((t) => { return `
-            <button class="sheet card" data-act="tier" data-v="${t.key}">
-              <span class="sub">${esc(t.name)}</span>
-              <span class="name">${esc(t.studio)}</span>
-              <span style="font-size:13px">${esc(t.blurb)}</span>
-              <dl class="kv">
-                <dt>作品</dt><dd>${esc(E.SOURCES[t.source].label)}</dd>
-                <dt>班</dt><dd>${t.teams}班（1班につき同時に1話）</dd>
-                <dt>監督</dt><dd>実力 ${stars(t.dir.skill)}／コンテの速さ ${stars(t.dir.speed)}</dd>
-                <dt>進行の段取り</dt><dd>${t.shinkoSkill.map((r) => stars((r[0] + r[1]) / 2)).join(" ")}</dd>
-                <dt>放送前の制作期間</dt><dd>${t.pre}週</dd>
-              </dl>
-              ${best[t.key] ? `<span class="sub">ベスト ${esc(best[t.key])}</span>` : ""}
-            </button>`; }).join("")}
-        </div>
-        <p class="sub" style="color:var(--on-desk-soft)">1プレイ15〜25分。制作中の進行状況はこのブラウザに保存されます。</p>
-      </div>`;
-  }
-
-  function renderSchedule() {
-    const T = E.TIERS[s.tier];
-    const hard = E.planIssues(s).filter((i) => !i.soft).length;
-    const gross = s.eps.filter((e) => E.isGross(e.plan)).length;
-    app.innerHTML = `
-      <p class="step">${esc(T.studio)} ／「${esc(s.src.title)}」（${esc(E.SOURCES[s.src.type].label)}）／ グランドスケジュール</p>
-      <h2>グランドスケジュールを引く</h2>
-      <div class="grid">
-        <section class="sheet">
-          <div class="row" style="justify-content:space-between">
-            <p class="sub" style="margin:0;max-width:70ch">各話をどの班で、いつから作るかを決めます。1話は標準${E.DEF_DUR}週（最短${E.MIN_DUR}週）、1班は同時に1話まで。▼が放送週です。社内の班で間に合わない話数は、協力会社にグロス（1話まるごと）で出します。社内の班はコンテが上がってから着手します。</p>
-            <button class="btn" data-act="autoPlan">おまかせで組み直す</button>
-          </div>
-          <div class="legend" style="margin:8px 0">${s.teams.map((t) => { const sh = E.shinkoBy(s, t.shinko); return `<span style="--c:${TEAM_COL[t.key]}">${t.label}（進行 ${esc(sh.name)}・段取り${stars(sh.skill)}／作監 実力${t.sakkan.skill}）</span>`; }).join("")}<span style="--c:#8a93ab">グロス</span></div>
-          ${ganttHtml()}
-        </section>
-        <div class="split">
-          <section class="sheet"><h3>チェック</h3>${issuesHtml()}</section>
-          <section class="sheet"><h3>協力会社（グロス先）</h3>
-            <table class="pl"><thead><tr><th>会社</th><th class="r">品質</th><th class="r">同時</th><th>メモ</th></tr></thead><tbody>
-            ${s.gross.map((c) => `<tr><td>${esc(c.name)}</td><td class="r ${c.quality < E.LINE + 3 ? "neg" : ""}">${c.quality}</td><td class="r">${c.cap}話</td><td class="sub">${esc(c.note)}</td></tr>`).join("")}
-            </tbody></table>
-            <p class="sub" style="margin:6px 0 0">局の納品基準は品質${E.LINE}。下回ると納品拒否されてリテイクになります（グロスなら約2週）。巻くと品質が下がるので、基準ぎりぎりの会社は早めに着手させると安全です。</p></section>
-        </div>
-        <section class="sheet"><h3>座組</h3>
-          <dl class="kv">
-            <dt>監督</dt><dd>${esc(s.staff.dir.name)}（実力${s.staff.dir.skill}・コンテの速さ${s.staff.dir.speed}${s.staff.dir.quirk >= 0.3 ? "・こだわり強" : ""}）</dd>
-            <dt>シリーズ構成</dt><dd>${esc(s.staff.wri.name)}（実力${s.staff.wri.skill}・速さ${s.staff.wri.speed}）</dd>
-            <dt>制作デスク</dt><dd>あなた</dd>
-          </dl></section>
-      </div>
-      <div class="footerbar">
-        <div class="sheet row" style="justify-content:space-between">
-          <div class="summary"><span>社内 <b>${12 - gross}話</b></span><span>グロス <b>${gross}話</b></span></div>
-          <div class="row"><button class="btn ghost" data-act="title">スタジオを選び直す</button><button class="btn primary" data-act="start" ${hard ? "disabled" : ""}>${hard ? "問題を直してください" : "制作開始"}</button></div>
-        </div>
-      </div>`;
-  }
-
-  // ---------- production ----------
-  function hudItem(lb, vl, extra = "") { return `<div class="it"><span class="lb">${lb}</span><span class="vl num">${vl}</span>${extra}</div>`; }
-  function meter(v, max, col) { return `<div class="meter"><i style="width:${Math.max(0, Math.min(100, (v / max) * 100))}%;background:${col}"></i></div>`; }
-  function phaseLabel() {
-    const next = E.unaired(s)[0];
-    if (!next) return "放送終了";
-    const w = s.nextAir - s.week;
-    if (w === 0) return `第${next.n}話 放送週`;
-    return s.aired === 0 ? `放送まであと${w}週` : `次は第${next.n}話（あと${w}週）`;
-  }
-  function renderProd() {
-    const T = E.TIERS[s.tier];
-    app.innerHTML = `
-      <div class="hud">
-        <div class="it"><span class="lb">${esc(T.studio)}「${esc(s.src.title)}」</span><span class="vl week">第${s.week}週 ／ ${phaseLabel()}</span></div>
-        ${hudItem("放送済み", `${s.aired}/12話`)}
-        ${s.aired > 0 ? hudItem("評判", Math.round(s.R), meter(s.R, 100, "var(--black)")) : ""}
-        ${hudItem("行動", `<span class="ap" aria-label="残り${s.ap}回">${"●".repeat(s.ap)}${"○".repeat(Math.max(0, 3 - s.ap))}</span>`)}
-        <div class="tools"><button class="btn small" data-act="howto">遊び方</button><button class="btn small" data-act="quit">やめる</button></div>
-      </div>
-      <div class="studio">
-        <div class="officecol">
-          ${officeHtml()}
-          <div class="deskline">
-            <span data-face="424242"></span>
-            <span class="say"><b>あなた</b>${esc(E.deskNote(s))}</span>
-            <button class="btn primary endweek" data-act="endWeek">今週を締める</button>
-          </div>
-        </div>
-        <div class="panel" id="panel">${panelHtml()}</div>
-      </div>`;
-    officeCanvas = document.getElementById("officeCanvas");
-    app.querySelectorAll("[data-face]").forEach((el) => el.appendChild(faceCanvas(+el.dataset.face, el.dataset.sm ? "sm" : "")));
-    app.querySelectorAll("[data-kv]").forEach((el) => { const k = s.kv.find((x) => x.n === +el.dataset.kv && !x.recap); if (k) { el.innerHTML = ""; el.appendChild(kvCanvas(k)); } });
-    raf = requestAnimationFrame(loop);
-  }
-
-  const TABS = [["desk", "全体"], ["board", "グランドスケジュール"], ["gross", "グロス"], ["tv", "放送・SNS"]];
-  function panelHtml() {
-    const tabs = `<div class="tabs" role="tablist">${TABS.map(([k, t]) => `<button role="tab" aria-selected="${panel === k}" class="${panel === k ? "on" : ""}" data-act="panel" data-v="${k}">${t}</button>`).join("")}</div>`;
-    let body = "";
-    if (panel === "desk") body = deskPanel();
-    else if (panel === "board") body = boardPanel();
-    else if (panel === "dir") body = dirPanel();
-    else if (panel === "post") body = postPanel();
-    else if (panel === "gross") body = grossPanel();
-    else if (panel === "tv") body = tvPanel();
-    if (!body) { panel = "desk"; body = deskPanel(); }
-    return tabs + body;
-  }
-  function who(seed, role, name, extra = "") {
-    return `<div class="who"><span data-face="${seed}"></span><div><span class="sub">${esc(role)}</span><br><span class="nm">${esc(name)}</span>${extra}</div></div>`;
-  }
-  function seg(label, key, opts) {
-    return `<div><div class="plab">${label}</div><div class="seg">${opts.map(([v, t]) => `<button class="${s.policy[key] === v ? "on" : ""}" data-act="policy" data-k="${key}" data-v="${v}" aria-pressed="${s.policy[key] === v}">${t}</button>`).join("")}</div></div>`;
-  }
-  function capRow(label, have, need, unit, digitsN = 0) {
-    if (need <= 0.001) return `<span>${label}</span><span class="bar2"><i style="width:100%;background:var(--paper-line)"></i></span><span class="num sub">完了</span>`;
-    const ratio = have / need;
-    const col = ratio >= 1.05 ? "var(--black)" : ratio >= 1 ? "var(--marker)" : "var(--red)";
-    return `<span>${label}</span><span class="bar2"><i style="width:${Math.min(100, ratio * 50)}%;background:${col}"></i></span><span class="num ${ratio < 1 ? "neg" : ""}">${have.toFixed(digitsN)} / ${need.toFixed(digitsN)}${unit}</span>`;
-  }
-  function stamBar(v) { return `<span class="stam"><i style="width:${v}%;background:${v < 30 ? "var(--red)" : v < 55 ? "var(--marker)" : "var(--black)"}"></i></span>`; }
-  function actBtn(id, arg) {
-    const a = E.ACTIONS[id];
-    return `<button class="act" data-act="do" data-v="${id}" ${arg != null ? `data-arg="${arg}"` : ""} ${E.canAct(s, id, arg) ? "" : "disabled"}>
-      <span class="an">${esc(a.label)}</span><span class="ac">行動${a.ap}</span><span class="ac">${esc(a.desc)}</span></button>`;
-  }
-  function rushBtns(ep, cls = "btn small rush") {
-    const late = !ep.aired && !ep.delivered && E.epForecast(s, ep) > E.airWeekOf(s, ep);
-    const modes = ["24h", "12h", "2gen", "short"].filter((m) => E.canRush(s, ep, m));
-    if (!late || !modes.length) return "";
-    return `<span class="xls-sep">巻き</span>` + modes.map((m) => { const x = E.previewRush(s, ep.n, m); return `<button class="${cls}" data-act="rush" data-v="${ep.n}" data-k="${m}">${m === "short" ? "撮影スケジュール短縮" : E.RUSH[m].label}<span class="pv">W${x.fc}・品質${x.q0}→${x.q}${x.q < E.LINE ? "（基準割れ）" : ""}</span></button>`; }).join("");
-  }
-  function deskPanel() {
-    const f = s.stat || E.forecast(s);
-    const rows = s.teams.map((t) => {
-      const sh = E.shinkoBy(s, t.shinko), ep = activeEpOf(t.key);
-      const next = s.eps.find((e) => e.plan.team === t.key && !e.started && !e.aired);
-      return `<tr class="click" data-act="xls" data-v="${t.key}">
-        <td><span class="tm" style="--tc:${TEAM_COL[t.key]}">${t.label}</span></td>
-        <td>${esc(sh.name)}${sh.gone ? ' <span class="tagx t-bad">不在</span>' : ""}<br><span class="sub">段取り${stars(sh.skill)}</span> ${stamBar(sh.stamina)}</td>
-        <td>${ep ? `第${ep.n}話 ${E.STAGE_LABEL[E.stageOf(ep)]}` : "手が空いている"}</td>
-        <td class="num">${ep ? `W${E.epForecast(s, ep)}${danger(ep) ? ' <span class="tagx t-bad">遅れ</span>' : ""}${Math.round(E.epQuality(s, ep)) < E.LINE ? ' <span class="tagx t-bad">基準割れ</span>' : ""}` : next ? `次 #${next.n}` : "—"}</td></tr>`;
-    }).join("");
-    return `
-      <section class="sheet">
-        ${who(424242, "制作デスク", "あなた")}
-        <p class="speech" style="margin:10px 0 0">${esc(E.deskNote(s))}</p>
-      </section>
-      <section class="sheet">
-        <h3>班の状況（進行の報告）</h3>
-        <div class="kohyo-wrap"><table class="kohyo"><thead><tr><th>班</th><th>進行</th><th>作業中</th><th>完パケ予測</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <p class="sub" style="margin:6px 0 0">行を押すと進行表を開きます。段取りの悪い進行は、トラブルを報告せずに抱え込むことがあります。ヘルプに入れば現場の本当の状況が分かります。</p>
-      </section>
-      <section class="sheet">
-        <h3>部署の処理能力と、必要なペース</h3>
-        <div class="cap">
-          ${capRow("コンテ", f.conte, f.needConte, " 話/週", 2)}
-          ${capRow("動画", f.douga, f.need.douga, " カット/週")}
-          ${capRow("仕上げ", f.shiage, f.need.shiage, " カット/週")}
-          ${capRow("撮影", f.satsuei, f.need.satsuei, " カット/週")}
-        </div>
-      </section>
-      <section class="sheet">
-        <h3>現場への指示</h3>
-        <div class="policy">
-          ${seg("動画・仕上げの発注先", "douga", [["inhouse", "社内のみ"], ["overseas", "海外も可"]])}
-          ${seg("進め方", "mode", [["stock", "作り置き優先"], ["quality", "品質優先"]])}
-          ${seg("残業", "ot", [[false, "させない"], [true, "させる"]])}
-        </div>
-        <p class="sub" style="margin:8px 0 0">海外は量をこなせますが品質は落ちます。品質優先は丁寧なぶん遅くなります。残業は2割速くなりますが、人が倒れ、進行が飛びやすくなります。</p>
-      </section>`;
-  }
-  function boardPanel() {
-    return `<section class="sheet">
-        <div class="row" style="justify-content:space-between"><h3 style="margin:0">グランドスケジュール</h3>
-          <div class="legend">${s.teams.map((t) => `<span style="--c:${TEAM_COL[t.key]}">${t.label}</span>`).join("")}<span style="--c:#8a93ab">グロス</span></div></div>
-        <p class="sub" style="margin:4px 0 8px">薄い色が予定、濃い色が実際に作業した週、斜線が完パケまでの予測（進行の報告ベース）、▼が放送週。着手前の話数は担当や日程を組み替えられます（グロスへの切り替えも）。</p>
-        <button class="btn small" data-act="ganttBig" style="margin-bottom:8px">大きく開く</button>
-        ${ganttHtml()}
-      </section>
-      <section class="sheet"><h3>チェック</h3>${issuesHtml()}</section>`;
-  }
-  function grossPanel() {
-    return s.gross.map((c) => {
-      const eps = s.eps.filter((e) => e.plan.team === "g" + c.id);
-      return `<section class="sheet">
-        <div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(c.name)}</h3><span class="sub ${c.quality < E.LINE + 3 ? "neg" : ""}">品質 ${c.quality}（基準${E.LINE}） ／ 同時${c.cap}話</span></div>
-        <p class="sub" style="margin:4px 0 6px">${esc(c.note)}</p>
-        ${eps.length ? `<table class="pl"><thead><tr><th>話</th><th>予定</th><th>進み</th><th>完パケ予測</th><th></th></tr></thead><tbody>
-          ${eps.map((e) => `<tr><td>#${e.n}</td><td>W${e.plan.start}–W${e.plan.start + e.plan.dur - 1}</td>
-            <td>${e.aired ? `放送済 ${e.airQ}` : e.delivered ? "納品済" : e.started ? `${Math.round(e.gprog * 100)}%${e.gslip ? `（遅れ${e.gslip}週）` : ""}` : "着手前"}</td>
-            <td>${!e.aired && !e.delivered ? `W${E.epForecast(s, e)}${danger(e) ? ' <span class="tagx t-bad">遅れ</span>' : ""}` : "—"}</td>
-            <td>${e.started && !e.delivered && !e.aired ? `<button class="btn small" data-act="do" data-v="grossPush" data-arg="${e.n}" ${E.canAct(s, "grossPush", e.n) ? "" : "disabled"}>催促（行動1）</button>${e.rush ? `<span class="tagx t-bad">${E.RUSH[e.rush].label}</span>` : ""}<div class="rushrow">${rushBtns(e, "btn small")}</div>` : ""}</td></tr>`).join("")}
-          </tbody></table>` : `<p class="sub" style="margin:0">発注している話数はありません。グランドスケジュールで担当を切り替えると発注できます。</p>`}
-      </section>`;
-    }).join("");
-  }
-
-  // ---------- the 進行表 (spreadsheet) ----------
-  let xls = null;   // { key: team key or "all", n: episode on the open tab }
-  function xlsTabs() {
-    if (xls.key === "all") return s.eps.filter((e) => e.started && !e.aired && !e.delivered && !E.isGross(e.plan));
-    return s.eps.filter((e) => e.plan.team === xls.key);
-  }
-  function openXls(key) {
-    xls = { key, n: null };
-    const tabs = xlsTabs();
-    const cur = tabs.find((e) => e.started && !e.delivered && !e.aired) || tabs.find((e) => !e.aired) || tabs[0];
-    xls.n = cur ? cur.n : null;
-    showModal({ kind: "xls" });
-  }
-  const COLS = "ABCDEFGHIJKL".split("");
-  function cell(v, total) {
-    const cls = v >= total - 0.5 ? "ok" : v > 0.05 ? "wip" : "";
-    return `<td class="n ${cls}">${Math.floor(v + 0.001)}/${Math.round(total)}</td>`;
-  }
-  function pctCell(v, total) {
-    const p = Math.min(100, Math.floor((v / total) * 100 + 0.001));
-    return `<td class="n ${p >= 100 ? "ok" : p > 0 ? "wip" : ""}">${p}%</td>`;
+  function teamOptions(ep) {
+    return s.teams.map((t) => `<option value="${t.key}" ${ep.plan.team === t.key ? "selected" : ""}>${t.label}（社内）</option>`).join("")
+      + s.gross.map((c) => `<option value="g${c.id}" ${ep.plan.team === "g" + c.id ? "selected" : ""}>グロス：${esc(c.name)}</option>`).join("");
   }
   // what adding k animators would do: forecast and quality on a throwaway copy
   function previewAdd(ep, k) {
@@ -2017,120 +1858,384 @@ if (typeof module !== "undefined") module.exports = Engine;
     const e2 = E.epBy(c, ep.n);
     return { fc: E.epForecast(c, e2), q: Math.round(E.epQuality(c, e2)) };
   }
-  function artState(ep) {
-    if (E.isGross(ep.plan)) return "協力会社";
-    if (!ep.art) return ep.started ? "ラフ原待ち" : "—";
-    if (s.week < ep.art.start) return `W${ep.art.start}から`;
-    if (s.week < ep.art.start + E.ART_WEEKS) return `作業中（W${ep.art.start + E.ART_WEEKS - 1}まで）`;
-    return "完了";
+  const rushModes = (ep) => ["24h", "12h", "2gen", "short"].filter((m) => E.canRush(s, ep, m));
+
+  // ---------- header: brand | the week and its one main action | system ----------
+  function hdr(sub, wk, right) {
+    return `<header class="hdr"><div class="brand"><b>深夜アニメP</b><span>${esc(sub)}</span></div>${wk}<div class="hdr-r">${right}</div></header>`;
   }
-  function xlsHtml() {
-    const tabs = xlsTabs();
-    const ep = xls.n ? E.epBy(s, xls.n) : null;
-    const team = xls.key !== "all" ? E.teamBy(s, xls.key) : ep && !E.isGross(ep.plan) ? E.teamBy(s, ep.plan.team) : null;
-    const sh = team ? E.shinkoBy(s, team.shinko) : null;
-    const title = xls.key === "all" ? "作画部屋_原画マン一覧" : `進行表_${team.label}`;
-    let rows = [], tools = "";
-    const row = (k, v, cls = "") => rows.push(`<td class="k" colspan="2">${k}</td><td class="v ${cls}" colspan="5">${esc(v)}</td>`);
-    if (!ep) rows.push(`<td colspan="7">この班にはまだ話数が割り当てられていません。</td>`);
+  const studioSub = () => `${E.TIERS[s.tier].studio} ／ ${s.src.title}`;
+  const apHtml = () => `<span class="ap" aria-label="今週の行動 残り${s.ap}回（3回中）">行動 ${[0, 1, 2].map((i) => `<i class="${i < s.ap ? "on" : ""}"></i>`).join("")} 残り${s.ap}</span>`;
+  function phaseLabel() {
+    const next = E.unaired(s)[0];
+    if (!next) return "放送終了";
+    const w = s.nextAir - s.week;
+    if (w === 0) return `第${next.n}話 <b>放送週</b>`;
+    return `第${next.n}話 放送まで <b>あと${w}週</b>`;
+  }
+
+  // ---------- the office: a map of the people (pick one) ----------
+  function hotspots() {
+    const h = [];
+    const box = (seat, extra = 16) => ({ x: seat.x, y: seat.y - extra, w: seat.w, h: seat.h + extra });
+    h.push({ ...box(SEAT.desk), attrs: selAttrs("studio", ""), on: isSel("studio", ""), label: "あなたの席（スタジオ・現場の方針）" });
+    s.teams.forEach((tm, i) => {
+      const p = E.shinkoBy(s, tm.shinko);
+      if (SEAT.shinko[i]) h.push({ ...box(SEAT.shinko[i]), attrs: selAttrs("shinko", p.id), on: isSel("shinko", p.id), label: `${tm.label} 制作進行 ${p.name}${p.gone ? "（連絡が取れない）" : ""}` });
+      if (SEAT.sakkan[i]) h.push({ ...box(SEAT.sakkan[i]), attrs: selAttrs("team", tm.key), on: isSel("team", tm.key), label: `${tm.label}（作画監督 ${tm.sakkan.name}）` });
+    });
+    h.push({ ...box(SEAT.dir), attrs: selAttrs("dir", ""), on: isSel("dir", ""), label: `監督 ${s.staff.dir.name}` });
+    h.push({ ...SEAT.post, attrs: selAttrs("post", ""), on: isSel("post", ""), label: "動画・仕上げ・撮影・美術・CG" });
+    h.push({ ...SEAT.room, attrs: `data-act="xls" data-v="all"`, on: false, label: `作画部屋（原画マン ${activeAnims()}人）・一覧を開く` });
+    const g = s.gross.find((c) => s.eps.some((e) => e.plan.team === "g" + c.id && e.started && !e.aired && !e.delivered)) || s.gross[0];
+    h.push({ x: SEAT.phone.x - 1, y: SEAT.phone.y - 2, w: 12, h: 12, attrs: selAttrs("gross", g.id), on: sel && sel.k === "gross", label: "電話（協力会社）" });
+    h.push({ ...SEAT.board, attrs: `data-act="ganttBig"`, on: false, label: "ホワイトボード（グランドスケジュール）" });
+    h.push({ ...SEAT.tv, attrs: selAttrs("tv", ""), on: isSel("tv", ""), label: "テレビ（放送・SNS）" });
+    return h;
+  }
+  function officeHtml() {
+    const chip = (t, x, y, c = "", on = false) => `<span class="ochip ${on ? "on" : ""}" style="${c ? `--c:${c};` : ""}left:${pct(x, OW)};top:${pct(y, OH)}">${esc(t)}</span>`;
+    const chips = [chip("あなた", 14, 80, "var(--on)", isSel("studio", "")), chip("監督", 150, 48, "var(--red-d)", isSel("dir", "")), chip("撮影・仕上げ・美術・CG", 146, 94, "", isSel("post", "")), chip("作監", 214, 48), chip("作画部屋", 216, 94)];
+    s.teams.forEach((tm, i) => {
+      const st = SEAT.shinko[i]; if (!st) return;
+      const ep = activeEpOf(tm.key), sh = E.shinkoBy(s, tm.shinko);
+      chips.push(chip(`${tm.label}${sh.gone ? " 不在" : ep ? ` #${ep.n}` : ""}`, st.x, st.y + 15, TEAM_COL[tm.key], isSel("shinko", tm.shinko) || isSel("team", tm.key)));
+    });
+    return `<div class="office" id="office"><canvas class="px" width="${OW}" height="${OH}" id="officeCanvas" aria-hidden="true"></canvas>${chips.join("")}
+      ${hotspots().map((h) => `<button class="hot ${h.on ? "on" : ""}" style="left:${pct(h.x, OW)};top:${pct(h.y, OH)};width:${pct(h.w, OW)};height:${pct(h.h, OH)}" ${h.attrs} aria-label="${esc(h.label)}" title="${esc(h.label)}"></button>`).join("")}</div>`;
+  }
+
+  // ---------- the 12 episodes ----------
+  function epsHtml() {
+    return `<div class="eps">${s.eps.map((ep) => {
+      const c = ep.aired ? (ep.collapse ? "var(--red-d)" : "var(--gross)") : ep.delivered ? "var(--green-d)" : ep.started ? teamColor(ep.plan.team) : "var(--line-2)";
+      const air = ep.aired ? null : E.airWeekOf(s, ep), fc = ep.aired || ep.delivered ? null : E.epForecast(s, ep);
+      const late = fc != null && fc > air;
+      const sub = ep.aired ? `放送済 ${ep.airQ}` : ep.delivered ? "納品済" : late ? `遅れ${fc - air}週` : ep.started ? (E.isGross(ep.plan) ? `グロス ${Math.round(ep.gprog * 100)}%` : E.STAGE_LABEL[stageV(ep)]) : `着手W${ep.plan.start}`;
+      const p = ep.aired || ep.delivered ? 1 : progV(ep);
+      return `<button class="epc ${ep.started || ep.aired ? "" : "pre"} ${isSel("ep", ep.n) ? "on" : ""}" style="--c:${c}" ${selAttrs("ep", ep.n)} aria-label="第${ep.n}話 ${esc(sub)}">
+        <span class="n">#${ep.n}<small>${esc(teamShort(ep.plan.team))}</small></span><span class="s ${late ? "bad" : ""}">${esc(sub)}</span><span class="b"><i style="width:${Math.round(p * 100)}%"></i></span></button>`;
+    }).join("")}</div>`;
+  }
+
+  // ---------- things to look at (each points at an object) ----------
+  function concerns() {
+    const f = s.stat || E.forecast(s), out = [];
+    for (const sh of s.shinkos.filter((x) => x.gone)) {
+      const t = E.teamOfShinko(s, sh.id); if (!t) continue;
+      out.push({ c: "var(--red-d)", t: `${t.label}の進行と連絡が取れない`, sub: `${esc(sh.name)} ・ 担当話数が止まりかけている`, k: "shinko", id: sh.id });
+    }
+    for (const n of f.late) {
+      const ep = E.epBy(s, n);
+      out.push({ c: "var(--red-d)", t: `第${n}話が放送に間に合わない`, sub: `${esc(whoShort(ep.plan.team))} ・ 完パケ予測 W${E.epForecast(s, ep)} ／ 放送 W${E.airWeekOf(s, ep)}`, k: "ep", id: n });
+    }
+    for (const ep of E.unaired(s)) {
+      if (ep.started && !ep.delivered && !f.late.includes(ep.n) && qOf(ep) < E.LINE) out.push({ c: "var(--red-d)", t: `第${ep.n}話、局に突き返されそう`, sub: "あなたの見立て：作画が基準に届かない", k: "ep", id: ep.n });
+    }
+    if (f.conte < f.needConte) out.push({ c: "var(--amber)", t: "コンテが上がってこない", sub: "監督 ・ 着手が遅れる話数が出る", k: "dir", id: "" });
+    [["douga", "動画が追いついていない"], ["shiage", "仕上げが詰まりそう"], ["satsuei", "撮影がパンクしそう"]].forEach(([k, t]) => { if (f[k] < f.need[k]) out.push({ c: "var(--amber)", t, sub: "動画・仕上げ・撮影", k: "post", id: "" }); });
+    for (const sh of s.shinkos.filter((x) => !x.gone && x.stamina < 30)) {
+      const t = E.teamOfShinko(s, sh.id); if (!t) continue;
+      out.push({ c: "var(--amber)", t: `${sh.name}がかなり疲れている`, sub: `${t.label} 制作進行 ・ そろそろ飛ぶかもしれない`, k: "shinko", id: sh.id });
+    }
+    return out;
+  }
+  function concernsHtml(list) {
+    if (!list.length) return li({ c: "var(--green-d)", t: "進行の報告では、全話グランドスケジュールどおり", sub: "あなた ・ ただし、報告がいつも本当とは限らない" });
+    return list.slice(0, 6).map((x) => li({ c: x.c, t: esc(x.t), sub: x.sub, on: isSel(x.k, x.id), attrs: selAttrs(x.k, x.id) })).join("");
+  }
+
+  // ---------- details (one per kind of object, all the same shape) ----------
+  function paneEp(ep, ctx) {
+    const P = prod(), gross = E.isGross(ep.plan), p = ep.plan, end = p.start + p.dur - 1;
+    const air = airOf(ep), fc = ep.aired || ep.delivered ? null : fcOf(ep);
+    const late = fc != null && air != null && fc > air;
+    const editable = !ep.started && !ep.aired;
+    const st = P ? stageV(ep) : "wait";
+    const tag = ep.aired ? tagHtml("放送済", "ink") : ep.delivered ? tagHtml("納品済", "ok") : late ? tagHtml(`遅れ ${fc - air}週`, "bad")
+      : !ep.started ? tagHtml(P && !gross && ep.conte < 1 ? "コンテ待ち" : "着手前") : tagHtml(E.STAGE_LABEL[st]);
+    const who = gross ? `グロス：${esc(E.grossOf(s, p).name)}` : `${p.team}班（社内）`;
+    let body = oh("話数", `第${ep.n}話`, `${who} ・ ${ep.cuts}カット ・ 予定 W${p.start}–W${end}`, tag);
+    if (ep.aired) body += `<div class="tiles">${tile("作画の出来", ep.airQ, ep.collapse ? "bad" : "")}${tile("放送", `W${ep.airWeek}`)}${tile("担当", esc(whoShort(p.team)))}</div>`;
+    else if (!P) body += `<div class="tiles">${tile("予定", `W${p.start}–${end}`)}${tile("放送", `W${air}`)}${tile("余裕", `${air - end}週`, air - end <= 0 ? "bad" : "")}</div>`;
+    else body += `<div class="tiles">${tile("工程", ep.delivered ? "納品済" : gross ? (ep.started ? `${Math.round(ep.gprog * 100)}%` : "着手前") : esc(E.STAGE_LABEL[st]))}${tile("完パケ予測", ep.delivered ? `W${ep.deliveredWeek}` : `W${fc}`, late ? "bad" : "")}${tile("放送", `W${air}`)}</div>`;
+    body += mutHtml(mutterOf(ep));
+
+    // 工程
+    if (P && !ep.aired && !ep.delivered) {
+      let inner = "";
+      if (gross && ep.started) inner = `<div class="bar"><i style="width:${Math.round(ep.gprog * 100)}%;background:var(--gross)"></i></div><p>協力会社が1話まるごと制作中 ・ ${Math.round(ep.gprog * 100)}%${ep.gslip ? ` ・ 遅れ ${ep.gslip}週` : ""}。原画マンの内訳は先方の管理です。</p>`;
+      else if (ep.started) {
+        const t = totalsV(ep), L = { rough: "ラフ原", genga: "原画", douga: "動画", shiage: "仕上げ", satsuei: "撮影" };
+        inner = `<div class="stages">${Object.keys(L).map((k) => { const v = Math.min(1, t[k] / ep.cuts); const cls = k === st ? "now" : t[k] >= ep.cuts - 0.5 ? "done" : ""; return `<span class="${cls}"><i></i>${L[k]}${cls === "now" ? ` ${Math.floor(v * 100)}%` : ""}</span>`; }).join("")}</div>
+          <p>美術・CG：${artState(ep)}${ep.rush || ep.short ? ` ・ 巻き：${[ep.rush ? E.RUSH[ep.rush].label : "", ep.short ? "撮影短縮" : ""].filter(Boolean).join("＋")}` : ""}</p>`;
+        const sh = E.shinkoOfTeam(s, p.team);
+        if (sh && sh.skill < 45) inner += `<p>数字は進行の報告ベース。${esc(p.team)}班の進行は段取りが悪いので、実態はずれているかもしれない。</p>`;
+      } else inner = `<p>${!gross && ep.conte < 1 ? `コンテ ${Math.round(ep.conte * 100)}%。` : ""}予定 W${p.start} から。${gross ? "" : `前の話数の原画が上がり次第、班が入ります（原画マン${E.recommendAnims(s, ep)}人の予定）。`}</p>`;
+      body += `<section class="psec"><h3>工程</h3>${inner}</section>`;
+    }
+    if (!P) {
+      const iss = E.planIssues(s).filter((i) => i.n === ep.n);
+      if (iss.length) body += `<section class="psec"><h3>チェック</h3>${iss.map((i) => `<p style="color:${i.soft ? "var(--ink-soft)" : "var(--red)"}">${esc(i.msg)}</p>`).join("")}</section>`;
+    }
+
+    // 関係するもの
+    let rels = "";
+    if (gross) { const c = E.grossOf(s, p); rels += rel({ ico: "G", c: "var(--gross)", t: esc(c.name), sub: `協力会社 ・ 同時に${c.cap}話`, attrs: selAttrs("gross", c.id) }); }
     else {
-      const p = ep.plan, end = p.start + p.dur - 1;
-      const air = ep.aired ? null : E.airWeekOf(s, ep);
-      const fc = !ep.aired && !ep.delivered ? E.epForecast(s, ep) : ep.deliveredWeek;
-      const late = air != null && fc > air;
-      row("話数", `第${ep.n}話（${ep.cuts}カット）`);
-      row("担当", E.isGross(p) ? teamLabel(p.team) : `${team.label}／進行 ${sh.name}／作画監督 ${team.sakkan.name}（実力${team.sakkan.skill}）`);
-      row("予定", `W${p.start}〜W${end}（${p.dur}週）${ep.started ? `／実際の着手 W${ep.startWeek}` : ""}`);
-      row("放送", ep.aired ? `放送済（出来 ${ep.airQ}）` : `W${air}`);
-      row("完パケ", ep.aired ? "—" : ep.delivered ? `W${ep.deliveredWeek} 納品済` : `予測 W${fc}${late ? "　※放送に間に合いません" : ""}`, late ? "bad" : "");
-      if (ep.rush || ep.short) row("巻き", [ep.rush ? E.RUSH[ep.rush].label : "", ep.short ? "撮影短縮" : ""].filter(Boolean).join("＋") + (E.isGross(p) ? `（品質 −${ep.penFix}）` : `（品質 −${((ep.pen || 0) / ep.cuts + (ep.penFix || 0)).toFixed(1)}。巻いたカットが増えるほど下がる）`), "bad");
-      if (E.isGross(p)) {
-        row("進み", `${Math.round(ep.gprog * 100)}%${ep.gslip ? `（遅れ ${ep.gslip}週）` : ""}／品質見込み ${Math.round(E.epQuality(s, ep))}（局の基準 ${E.LINE}）`, Math.round(E.epQuality(s, ep)) < E.LINE ? "bad" : "");
-        rows.push(`<td colspan="7" class="blank"></td>`);
-        row("グロス", "1話まるごと協力会社に発注しています。原画マンの内訳は先方の管理です。");
-        tools = ep.started && !ep.delivered && !ep.aired ? `<button class="btn small" data-act="do" data-v="grossPush" data-arg="${ep.n}" ${E.canAct(s, "grossPush", ep.n) ? "" : "disabled"}>協力会社を催促（行動1）</button>` + rushBtns(ep) : "";
-      } else if (!ep.started) {
-        rows.push(`<td colspan="7" class="blank"></td>`);
-        row("着手前", `${ep.conte < 1 ? `コンテ待ち（${Math.round(ep.conte * 100)}%）。` : ""}予定 W${p.start} から。前の話数の原画が上がり次第、班が入ります（原画マン${E.recommendAnims(s, ep)}人の予定）。`);
-      } else {
-        const view = ep.anims.map((a) => E.viewAnim(s, a));
-        const live = view.filter((a) => !a.out);
-        const q = Math.round(E.epQuality(s, ep));
-        row("原画マン", `${live.length}人${E.dilution(ep) > 0 ? `（${E.BASE_ANIMS}人を超えたぶん品質 −${E.dilution(ep).toFixed(1)}）` : ""}／品質見込み ${q}（局の基準 ${E.LINE}）${q < E.LINE ? "　※このままだと納品拒否" : ""}`, q < E.LINE ? "bad" : "");
-        rows.push(`<td colspan="7" class="blank"></td>`);
-        rows.push(`<td class="hd">No.</td><td class="hd">原画マン</td><td class="hd n">実力</td><td class="hd n">持ち</td><td class="hd n">ラフ原</td><td class="hd n">原画</td><td class="hd">状態</td>`);
-        view.forEach((a, i) => {
-          const state = a.out ? "外れた" : a.hold > 0 ? "連絡待ち" : a.slow < 1 ? "他社優先" : a.genga >= a.cuts - 0.5 ? "上がり" : a.rough >= a.cuts - 0.5 ? "原画中" : a.rough > 0 ? "ラフ原中" : "未着手";
-          rows.push(`<td class="n ${a.hold > 0 || a.slow < 1 ? "badc" : ""}">${i + 1}</td><td class="${a.hold > 0 || a.slow < 1 ? "badc" : a.out ? "outc" : ""}">${esc(a.name)}</td><td class="n">${a.skill}</td><td class="n">${Math.round(a.cuts)}</td>${cell(a.rough, a.cuts)}${cell(a.genga, a.cuts)}<td class="${a.hold > 0 || a.slow < 1 ? "badc" : ""}">${state}</td>`);
-        });
-        const tr = live.reduce((x, a) => x + a.rough, 0) + view.filter((a) => a.out).reduce((x, a) => x + a.rough, 0);
-        const tg = view.reduce((x, a) => x + a.genga, 0);
-        rows.push(`<td class="tot"></td><td class="tot">合計</td><td class="tot n">${Math.round(live.reduce((x, a) => x + a.skill, 0) / Math.max(1, live.length))}</td><td class="tot n">${ep.cuts}</td>${cell(tr, ep.cuts).replace('class="n', 'class="tot n')}${cell(tg, ep.cuts).replace('class="n', 'class="tot n')}<td class="tot"></td>`);
-        rows.push(`<td colspan="7" class="blank"></td>`);
-        rows.push(`<td class="hd" colspan="2">後工程（各部署）</td><td class="hd n" colspan="2">進捗</td><td class="hd" colspan="3"></td>`);
-        rows.push(`<td colspan="2">動画</td>${pctCell(ep.douga, ep.cuts).replace("<td", '<td colspan="2"')}<td colspan="3" class="sub">${ep.rush ? `${E.RUSH[ep.rush].label}（外の動仕に直接）` : s.policy.douga === "overseas" ? "社内＋海外" : "社内"}</td>`);
-        rows.push(`<td colspan="2">仕上げ</td>${pctCell(ep.shiage, ep.cuts).replace("<td", '<td colspan="2"')}<td colspan="3"></td>`);
-        rows.push(`<td colspan="2">撮影</td>${pctCell(ep.satsuei, ep.cuts).replace("<td", '<td colspan="2"')}<td colspan="3" class="sub">${ep.short ? "撮影短縮（上がった端から撮って出す）" : ep.art && s.week >= ep.art.start + E.ART_WEEKS - 1 ? "" : "美術・CG待ち"}</td>`);
-        rows.push(`<td colspan="2">美術</td><td colspan="2" class="n ${artState(ep) === "完了" ? "ok" : ep.art ? "wip" : ""}">${artState(ep)}</td><td colspan="3"></td>`);
-        rows.push(`<td colspan="2">CG</td><td colspan="2" class="n ${artState(ep) === "完了" ? "ok" : ep.art ? "wip" : ""}">${artState(ep)}</td><td colspan="3"></td>`);
-        if (E.canAddAnim(s, ep)) {
-          tools = [1, 3, 5].map((k) => { const x = previewAdd(ep, k); return `<button class="btn small" data-act="addAnim" data-v="${ep.n}" data-k="${k}">原画マン ＋${k}人<span class="pv">W${x.fc}・品質${x.q}</span></button>`; }).join("");
-        } else tools = `<span class="sub">原画はほぼ上がったので、もう人は足せません。</span>`;
-        // 間に合わないときだけ、巻きの手を出す
-        tools += rushBtns(ep);
+      const t = E.teamBy(s, p.team), sh = E.shinkoBy(s, t.shinko);
+      rels += rel({ ico: p.team, c: TEAM_COL[p.team], t: t.label, sub: `班 ・ 作監 ${esc(t.sakkan.name)}`, attrs: selAttrs("team", p.team) });
+      rels += rel({ faceSeed: sh.seed, t: esc(sh.name), sub: `制作進行 ・ 段取り${stars(sh.skill)}${sh.gone ? " ・ 連絡が取れない" : sh.stamina < 30 ? " ・ 体力 低" : ""}`, attrs: selAttrs("shinko", sh.id) });
+    }
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rels}</div></section>`;
+
+    // できること
+    const name = `第${ep.n}話`;
+    if (editable) {
+      const minStart = P ? s.week : 1;
+      const form = `<label class="field"><span>担当</span><select data-act="planTeam" data-v="${ep.n}" aria-label="第${ep.n}話の担当">${teamOptions(ep)}</select></label>
+        <div class="field"><span>着手</span><div class="step"><button data-act="planStart" data-v="${ep.n}" data-d="-1" aria-label="着手を1週早める" ${p.start <= minStart ? "disabled" : ""}>−</button><span>W${p.start}</span><button data-act="planStart" data-v="${ep.n}" data-d="1" aria-label="着手を1週遅らせる">＋</button></div></div>
+        <div class="field"><span>期間</span><div class="step"><button data-act="planDur" data-v="${ep.n}" data-d="-1" aria-label="期間を1週短く" ${p.dur <= E.MIN_DUR ? "disabled" : ""}>−</button><span>${p.dur}週</span><button data-act="planDur" data-v="${ep.n}" data-d="1" aria-label="期間を1週長く">＋</button></div></div>`;
+      return pane(name, body, `<div class="pane-f"><span class="lbl">${name} にできること（着手前なので担当と日程を変えられる・行動なし）</span>${form}</div>`);
+    }
+    const acts = [];
+    if (P && ep.started && !ep.delivered && !ep.aired) {
+      const modes = rushModes(ep);
+      if (modes.length) acts.push(act({ label: "巻く…", sub: late ? "放送に間に合わせる手を選ぶ" : "急がせると絵が荒れる", cost: "行動なし", attrs: `data-act="rushOpen" data-v="${ep.n}"`, pri: late }));
+      if (gross) acts.push(actFor("grossPush", ep.n, { label: "協力会社を催促", sub: "1週ぶん巻いてもらう", pri: !late }));
+      else {
+        if (E.canAddAnim(s, ep)) [3, 1].forEach((k) => { const x = previewAdd(ep, k); acts.push(act({ label: `原画マンを足す ＋${k}`, sub: `予測 W${x.fc} ・ 作画：${judge({ q: x.q, fc: x.fc, air }).short}`, cost: "行動なし", attrs: `data-act="addAnim" data-v="${ep.n}" data-k="${k}"`, pri: !late && k === 3 && !acts.length })); });
+        if (ctx === "xls") { const sh = E.shinkoOfTeam(s, p.team); if (sh) acts.push(sh.gone ? actFor("hireShinko", sh.id) : actFor("help", sh.id, { label: `${sh.name}のヘルプに入る`, sub: "現場の本当の状況が分かる" })); }
+        else acts.push(act({ label: "進行表を開く", sub: "原画マンごとの進み", attrs: `data-act="xls" data-v="${p.team}" data-n="${ep.n}"` }));
       }
     }
-    const helpBtn = sh ? (sh.gone ? `<button class="btn small" data-act="do" data-v="hireShinko" data-arg="${sh.id}" ${E.canAct(s, "hireShinko", sh.id) ? "" : "disabled"}>新しい進行を入れる（行動1）</button>`
-      : `<button class="btn small" data-act="do" data-v="help" data-arg="${sh.id}" ${E.canAct(s, "help", sh.id) ? "" : "disabled"}>${sh.helped ? "今週はヘルプ済み" : `${sh.name}のヘルプに入る（行動1）`}<span class="pv">現場の本当の状況が分かる</span></button>`) : "";
-    const fx = ep ? `=第${ep.n}話!完パケ予測 → ${ep.aired ? "放送済" : ep.delivered ? `W${ep.deliveredWeek}` : `W${E.epForecast(s, ep)}`}　（${sh ? `進行 ${sh.name} の報告` : "現場の数字"}）` : "";
-    return `<div class="xls" role="dialog" aria-modal="true" aria-label="${esc(title)}">
-      <div class="xls-top"><span class="xls-file">${esc(title)}</span>
-        ${sh ? `<span class="xls-who">進行 ${esc(sh.name)}　段取り ${stars(sh.skill)}　体力 ${stamBar(sh.stamina)} ${Math.round(sh.stamina)}${sh.gone ? '　<span class="tagx t-bad">連絡が取れない</span>' : ""}</span>` : ""}
-        <button class="xls-x" data-act="closeModal" aria-label="閉じる">×</button></div>
-      <div class="xls-tools">${tools}${helpBtn}</div>
-      <div class="xls-fx"><span class="fxl">fx</span><span>${esc(fx)}</span></div>
-      <div class="xls-grid"><table>
-        <thead><tr><th class="rn"></th>${COLS.slice(0, 7).map((c) => `<th>${c}</th>`).join("")}</tr></thead>
-        <tbody>${rows.map((r, i) => `<tr><th class="rn">${i + 1}</th>${r}</tr>`).join("")}</tbody>
-      </table></div>
-      <div class="xls-tabs">${tabs.map((e) => `<button class="${e.n === xls.n ? "on" : ""}" data-act="xlsTab" data-v="${e.n}">#${e.n}${e.aired ? "（済）" : e.delivered ? "（納品）" : e.started ? "" : "（前）"}</button>`).join("") || `<span class="sub">シートがありません</span>`}</div>
-    </div>`;
+    if (ep.aired) acts.push(act({ label: "放送・SNSを見る", attrs: selAttrs("tv", "") }));
+    return pane(name, body, paneFoot(name, acts.join(""), acts.length ? "" : ep.delivered ? "納品済み。放送を待つだけです。" : ""));
+  }
+
+  function shinkoTag(sh) {
+    return sh.gone ? tagHtml("連絡が取れない", "bad") : sh.stamina < 30 ? tagHtml("体力 低", "bad") : sh.helped ? tagHtml("今週ヘルプ済み", "ok") : "";
+  }
+  function paneTeam(key) {
+    const t = E.teamBy(s, key); if (!t) return paneStudio();
+    const sh = E.shinkoBy(s, t.shinko), ep = activeEpOf(key), eps = teamEps(key);
+    const tag = sh.gone ? tagHtml("進行と連絡が取れない", "bad") : eps.some(danger) ? tagHtml("遅れ", "bad") : tagHtml("報告ベース");
+    let body = oh("班", t.label, `社内 ・ 同時に1話 ・ 担当 ${eps.map((e) => `#${e.n}`).join(" ") || "なし"}`, tag);
+    body += `<div class="tiles">${tile("作業中", ep ? `#${ep.n} ${esc(E.STAGE_LABEL[stageV(ep)])}` : "空き")}${tile("完パケ予測", ep ? `W${E.epForecast(s, ep)}` : "—", ep && danger(ep) ? "bad" : "")}${tile("作監 実力", t.sakkan.skill)}</div>`;
+    if (ep) body += mutHtml(mutterOf(ep), `あなたの見立て（第${ep.n}話の作画）`);
+    body += `<section class="psec"><h3>担当する話数</h3><div class="rows">${eps.map(epRow).join("")}</div><p>段取りの悪い進行は、トラブルを報告せずに抱え込むことがある。ヘルプに入れば現場の本当の状況が分かる。</p></section>`;
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ faceSeed: sh.seed, t: esc(sh.name), sub: `制作進行 ・ 段取り${stars(sh.skill)}`, attrs: selAttrs("shinko", sh.id) })}</div></section>`;
+    const acts = act({ label: "進行表を開く", sub: "原画マンごとの進み", attrs: `data-act="xls" data-v="${key}"`, pri: true }) + (sh.gone ? actFor("hireShinko", sh.id) : actFor("help", sh.id, { label: "進行のヘルプに入る", sub: "隠れていたトラブルも見つかる" }));
+    return pane(t.label, body, paneFoot(t.label, acts));
+  }
+  function paneShinko(id) {
+    const sh = E.shinkoBy(s, id), t = sh && E.teamOfShinko(s, id);
+    if (!sh || !t) return paneStudio();
+    let body = oh("人", sh.name, `${t.label} 制作進行${sh.skill < 45 ? " ・ 新人" : ""}`, shinkoTag(sh), sh.seed);
+    body += `<div class="tiles">${tile("段取り", stars(sh.skill))}${tile("体力", Math.round(sh.stamina), sh.stamina < 30 ? "bad" : "")}${tile("担当", t.label)}</div>`;
+    body += `<section class="psec"><h3>担当する話数</h3><div class="rows">${teamEps(t.key).map(epRow).join("")}</div><p>${sh.skill < 45 ? "段取りが悪い。トラブルを報告せずに抱え込み、放送直前まで黙っていることがある。" : "段取りは悪くない。報告はおおむね信用できる。"}</p></section>`;
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ ico: t.key, c: TEAM_COL[t.key], t: t.label, sub: `班 ・ 作監 ${esc(t.sakkan.name)}`, attrs: selAttrs("team", t.key) })}</div></section>`;
+    const acts = (sh.gone ? actFor("hireShinko", sh.id, { pri: true }) : actFor("help", sh.id, { pri: true, sub: "現場の本当の状況が分かる" })) + act({ label: "進行表を開く", attrs: `data-act="xls" data-v="${t.key}"` });
+    return pane(sh.name, body, paneFoot(sh.name, acts));
+  }
+  function paneDir() {
+    const d = s.staff.dir, w = s.staff.wri, f = s.stat || E.forecast(s), inh = s.eps.filter((e) => !E.isGross(e.plan));
+    const short = f.conte < f.needConte;
+    let body = oh("人", d.name, `監督${d.quirk >= 0.3 ? " ・ こだわり強" : ""}`, s.dirMood < 0 ? tagHtml("機嫌が悪い", "warn") : "", d.seed);
+    body += `<div class="tiles">${tile("実力", d.skill + s.dirMood, s.dirMood < 0 ? "bad" : "")}${tile("コンテの速さ", d.speed)}${tile("コンテ", `${f.conte.toFixed(2)}話/週`, short ? "bad" : "")}</div>`;
+    body += `<p class="speech">${short ? "コンテ、もうちょっと待って。妥協はしたくない。" : "いい画になってきてる。"}</p>`;
+    body += `<section class="psec"><h3>上がり</h3><div class="rows">
+      <div class="row"><span>コンテ（社内の回）</span><span class="v">${inh.filter((e) => e.conte >= 1).length} / ${inh.length}話</span></div>
+      <div class="row"><span>脚本（シリーズ構成 ${esc(w.name)}）</span><span class="v">${s.eps.filter((e) => e.script >= 1).length} / 12話</span></div></div>
+      <p>必要なコンテのペースは 週${f.needConte.toFixed(2)}話。グロスの回は協力会社が描きます。</p></section>`;
+    return pane(d.name, body, paneFoot("監督", actFor("extConte", undefined, { pri: short }) + actFor("dirTalk")));
+  }
+  function panePost() {
+    const f = s.stat || E.forecast(s);
+    const shortK = ["douga", "shiage", "satsuei"].filter((k) => f[k] < f.need[k]);
+    const act2 = s.eps.filter((e) => e.started && !e.aired && !e.delivered && !E.isGross(e.plan));
+    let body = oh("部署", "動画・仕上げ・撮影", "美術・CG も同じ部屋 ・ 社内の回だけを受け持つ", shortK.length ? tagHtml("手が足りない", "warn") : "");
+    body += `<section class="psec" style="border-top:0;padding-top:0"><h3>処理能力と必要なペース（週あたり）</h3>${capHtml(false)}</section>`;
+    body += `<section class="psec"><h3>美術・CG</h3><div class="rows">${act2.length ? act2.map((e) => `<button class="row" ${selAttrs("ep", e.n)}><span>第${e.n}話</span><span class="v ${artState(e) === "完了" ? "" : "mute"}">${esc(artState(e))}</span></button>`).join("") : `<div class="row"><span>作業中の話数はありません</span><span></span></div>`}</div><p>ラフ原が全部上がると美術とCGが入り、${E.ART_WEEKS}週間で上がる。撮影は美術とCGが上がってから。</p></section>`;
+    return pane("動画・仕上げ・撮影", body, `<div class="pane-f"><span class="lbl">部署 にできること（行動なし）</span>${seg("発注先", "douga", [["inhouse", "社内のみ"], ["overseas", "海外も可"]])}<p class="note" style="color:var(--ink-soft)">海外は量をこなせるが、品質は落ちる。</p></div>`);
+  }
+  function paneStudio() {
+    const T = E.TIERS[s.tier], list = concerns();
+    const m = list.some((x) => x.c.includes("red")) ? { tone: "bad", t: "やばい話数がある・・・" } : list.length ? { tone: "worry", t: "ちょっと気になるところがある" } : { tone: "good", t: "今のところ、良い感じだ" };
+    let body = oh("スタジオ", T.studio, `あなたの会社 ・ 社内${s.teams.length}班 ・「${esc(s.src.title)}」`, "", YOU);
+    body += `<div class="tiles">${tile("放送済み", `${s.aired}/12`)}${tile("評判", s.aired ? Math.round(s.R) : "—")}${tile("今週の行動", `${s.ap}/3`)}</div>`;
+    body += mutHtml(m, "あなたの見立て（全体）");
+    body += `<section class="psec"><h3>処理能力と必要なペース（週あたり）</h3>${capHtml(true)}</section>`;
+    body += `<section class="psec"><h3>関係するもの</h3><div>${rel({ faceSeed: s.staff.dir.seed, t: esc(s.staff.dir.name), sub: "監督", attrs: selAttrs("dir", "") })}${rel({ ico: "部", c: "var(--teal)", t: "動画・仕上げ・撮影", sub: "部署", attrs: selAttrs("post", "") })}${rel({ ico: "TV", c: "var(--pink)", t: "放送・SNS", sub: `次の放送 W${s.nextAir}`, attrs: selAttrs("tv", "") })}</div></section>`;
+    const foot = `<div class="pane-f"><span class="lbl">スタジオ にできること（現場の方針・行動なし）</span>
+      ${seg("発注先", "douga", [["inhouse", "社内のみ"], ["overseas", "海外も可"]])}${seg("進め方", "mode", [["stock", "作り置き優先"], ["quality", "品質優先"]])}${seg("残業", "ot", [[false, "させない"], [true, "させる"]])}
+      <p class="note" style="color:var(--ink-soft)">品質優先は丁寧なぶん遅い。残業は2割速いが、人が倒れ、進行が飛びやすくなる。</p></div>`;
+    return pane(T.studio, body, foot);
+  }
+  function paneGross(id) {
+    const c = E.grossBy(s, id); if (!c) return paneStudio();
+    const eps = s.eps.filter((e) => e.plan.team === "g" + id);
+    const m = c.quality < E.LINE + 3 ? { tone: "bad", t: "ここに出すと基準ぎりぎりだ・・・" } : c.quality < E.LINE + 12 ? { tone: "worry", t: "ちょっと作画厳しいか・・・？" } : { tone: "good", t: "ここなら安心だ" };
+    let body = oh("協力会社", c.name, esc(c.note), c.quality < E.LINE + 3 ? tagHtml("基準ぎりぎり", "warn") : "");
+    body += `<div class="tiles">${tile("同時に", `${c.cap}話`)}${tile("受けている", eps.length ? eps.map((e) => `#${e.n}`).join(" ") : "なし")}${tile("局の基準", E.LINE)}</div>`;
+    body += mutHtml(m, "あなたの見立て（この会社の作画）");
+    body += `<section class="psec"><h3>受けている話数</h3><div class="rows">${eps.length ? eps.map(epRow).join("") : `<div class="row"><span>発注している話数はありません</span><span></span></div>`}</div><p>グランドスケジュールで話数の担当を切り替えると発注できる。</p></section>`;
+    const acts = prod() ? eps.filter((e) => e.started && !e.delivered && !e.aired).map((e) => actFor("grossPush", e.n, { label: `第${e.n}話を催促`, sub: "1週ぶん巻いてもらう" })).join("") : "";
+    return pane(c.name, body, paneFoot(c.name, acts, acts ? "" : "いま制作中の話数はありません。"));
+  }
+  function paneTV() {
+    let body = oh("放送", "放送・SNS", `放送済み ${s.aired}/12 ・ 次の放送 W${s.nextAir}`);
+    body += `<div class="tiles">${tile("放送済み", `${s.aired}/12`)}${tile("評判", s.aired ? Math.round(s.R) : "—")}${tile("次の放送", `W${s.nextAir}`)}</div>`;
+    body += `<section class="psec"><h3>放送済みの1枚絵</h3><div class="kvs">${s.eps.map((e) => `<div class="kvbox"><span data-kv="${e.n}"></span><span>#${e.n}${e.airQ != null ? ` ${e.airQ}` : ""}</span></div>`).join("")}</div></section>`;
+    body += `<section class="psec"><h3>SNSの反応</h3>${s.sns.length ? s.sns.slice(0, 8).map(postHtml).join("") : "<p>放送が始まると、ここに反応が流れます。</p>"}</section>`;
+    body += `<section class="psec"><h3>現場ログ</h3><div class="log">${s.log.slice(-24).reverse().map((l) => `<p><span class="w">W${l.w}</span>${esc(l.text)}</p>`).join("")}</div></section>`;
+    return pane("放送・SNS", body, paneFoot("放送", "", "放送は毎週自動で進みます。間に合わない話数があると、放送日に判断を求められます。"));
+  }
+  const postHtml = (p) => `<div class="post ${["god", "good"].includes(p.kind) ? "good" : ["bad", "collapse", "recap", "delay"].includes(p.kind) ? "bad" : ""}"><i></i><span><small>${esc(p.h)} ・ 第${p.n}話</small>${esc(p.t)}</span></div>`;
+  function paneFor() {
+    const k = sel.k;
+    if (k === "ep") return paneEp(E.epBy(s, +sel.id), "prod");
+    if (k === "team") return paneTeam(sel.id);
+    if (k === "shinko") return paneShinko(+sel.id);
+    if (k === "dir") return paneDir();
+    if (k === "post") return panePost();
+    if (k === "gross") return paneGross(+sel.id);
+    if (k === "tv") return paneTV();
+    return paneStudio();
+  }
+
+  // ---------- the schedule (timeline of episodes) ----------
+  function weekSpan() {
+    const last = Math.max(...s.eps.map((e) => (e.plan ? e.plan.start + e.plan.dur - 1 : 0)), s.pre + E.EPISODES, prod() ? s.nextAir + E.unaired(s).length : 0);
+    return Math.min(40, last + 1);
+  }
+  function timelineHtml() {
+    const W = weekSpan(), P = prod(), now = P ? s.week : 1;
+    const left = (w) => ((w - 1) / W) * 100, width = (n) => (n / W) * 100;
+    const bad = new Set(E.planIssues(s).filter((i) => !i.soft).map((i) => i.n));
+    const head = `<div class="tl-head"><span>話</span><span>担当</span><span class="tl-weeks" style="grid-template-columns:repeat(${W},minmax(0,1fr))">${Array.from({ length: W }, (_, i) => `<span class="${i + 1 === now ? "now" : ""}">${i + 1}</span>`).join("")}</span></div>`;
+    const rows = s.eps.map((ep) => {
+      const p = ep.plan, c = teamColor(p.team), air = airOf(ep);
+      const fc = P && !ep.aired && !ep.delivered ? E.epForecast(s, ep) : null;
+      const late = fc != null && air != null && fc > air;
+      let bars = `<span class="plan" style="left:${left(p.start)}%;width:${width(p.dur)}%"></span>`;
+      if (P && ep.started) {
+        const to = ep.delivered ? ep.deliveredWeek : ep.aired ? ep.airWeek : s.week - 1;
+        if (to >= ep.startWeek) bars += `<span class="act2" style="left:${left(ep.startWeek)}%;width:${width(to - ep.startWeek + 1)}%"></span>`;
+      }
+      if (fc != null) { const from = ep.started ? s.week : Math.max(s.week, fc - p.dur + 1); if (fc >= from) bars += `<span class="fc" style="left:${left(from)}%;width:${width(fc - from + 1)}%"></span>`; }
+      const mark = air ? `<span class="air ${ep.aired ? "done" : late ? "late" : ""}" style="left:${left(air)}%;width:${width(1)}%">${ep.aired ? "●" : "▼"}</span>` : "";
+      return `<button class="tl-row ${isSel("ep", ep.n) ? "on" : ""} ${bad.has(ep.n) || late ? "bad" : ""}" style="--c:${c}" ${selAttrs("ep", ep.n)} aria-label="第${ep.n}話 ${esc(whoShort(p.team))}">
+        <span class="n">#${ep.n}</span><span class="w"><i></i>${esc(whoShort(p.team))}</span>
+        <span class="tl-track"><span class="grid" style="background-size:${100 / W}% 100%"></span><span class="nowc" style="left:${left(now)}%;width:${width(1)}%"></span>${bars}${mark}</span></button>`;
+    }).join("");
+    return `${head}<div style="display:flex;flex-direction:column;gap:4px">${rows}</div>
+      <div class="legend"><span>薄いバー＝予定</span>${P ? "<span>濃いバー＝作業した週</span><span>斜線＝完パケまでの予測（進行の報告）</span>" : ""}<span>▼＝放送週</span><span>黄＝今週</span><span>1話は標準${E.DEF_DUR}週（最短${E.MIN_DUR}週）・1班は同時に1話まで</span></div>`;
+  }
+  function checksHtml() {
+    const issues = E.planIssues(s);
+    if (!issues.length) return li({ c: "var(--green-d)", t: "問題はありません", sub: "全話が放送週までに終わる予定 ・ 班の重なりなし" });
+    return issues.map((i) => li({ c: i.soft ? "var(--amber)" : "var(--red-d)", t: esc(i.msg), on: isSel("ep", i.n), attrs: selAttrs("ep", i.n) })).join("");
+  }
+
+  // ---------- screens ----------
+  function render() {
+    cancelAnimationFrame(raf); officeCanvas = null;
+    if (!s) renderTitle();
+    else if (s.phase === "schedule") renderSchedule();
+    else if (s.phase === "prod") renderProd();
+    else renderEnd();
+    mountFaces(app); mountKV(app);
+    if (prod()) { officeCanvas = document.getElementById("officeCanvas"); raf = requestAnimationFrame(loop); }
+  }
+  function mountFaces(root) { root.querySelectorAll("[data-face]").forEach((el) => el.replaceWith(faceCanvas(+el.dataset.face, el.dataset.cls || ""))); }
+  function mountKV(root) { if (!s) return; root.querySelectorAll("[data-kv]").forEach((el) => { const k = s.kv.find((x) => x.n === +el.dataset.kv && !x.recap); if (k) { el.innerHTML = ""; el.appendChild(kvCanvas(k)); } }); }
+
+  const DIFF = { top: ["やさしい", "ok", "var(--green-d)"], mid: ["ふつう", "warn", "var(--amber)"], low: ["むずかしい", "bad", "var(--red-d)"] };
+  function renderTitle() {
+    const best = store.get("animep.best4") || {};
+    const T = E.TIERS[pickTier];
+    const rows = Object.values(E.TIERS).map((t) => `<button class="st-row ${t.key === pickTier ? "on" : ""}" style="--c:${DIFF[t.key][2]}" data-act="pickTier" data-v="${t.key}" aria-pressed="${t.key === pickTier}">
+        <i></i><span><span style="display:block;font-weight:700">${esc(t.studio)}</span><span style="display:block;font-size:12px;color:var(--on-soft)">${esc(t.name)}</span></span>
+        <span class="tag dark ${DIFF[t.key][1]}" style="justify-self:start">${DIFF[t.key][0]}</span>
+        <span class="big r hide-n">${t.teams}</span><span class="big r hide-n">${t.pre}<small>週</small></span><span class="hide-n" style="font-size:13px">${esc(E.SOURCES[t.source].label)}</span>
+        <span class="big r hide-n" style="color:${best[t.key] ? "var(--pink)" : "var(--on-soft)"}">${esc(best[t.key] || "—")}</span><span style="color:var(--on-soft)" aria-hidden="true">›</span></button>`).join("");
+    let body = oh("スタジオ", T.studio, `${esc(T.name)} ・ ${esc(E.SOURCES[T.source].label)}`, tagHtml(DIFF[T.key][0], DIFF[T.key][1]));
+    body += `<div class="tiles">${tile("社内の班", T.teams)}${tile("放送前", `${T.pre}週`)}${tile("ベスト", esc(best[T.key] || "—"))}</div>`;
+    body += `<p style="margin:0;font-size:13.5px">${esc(T.blurb)}</p>`;
+    body += `<section class="psec"><h3>座組（スタジオで決まっている）</h3><div class="rows">
+      <div class="row"><span>監督 実力 ／ コンテの速さ</span><span class="v">${stars(T.dir.skill)} ／ ${stars(T.dir.speed)}</span></div>
+      ${T.shinkoSkill.map((r, i) => { const v = (r[0] + r[1]) / 2; return `<div class="row"><span>${"ABCDEF"[i]}班 進行の段取り${v < 45 ? "（新人）" : ""}</span><span class="v ${v < 45 ? "bad" : ""}">${stars(v)}</span></div>`; }).join("")}</div></section>`;
+    const foot = paneFoot(T.studio, act({ label: "このスタジオで始める", sub: "グランドスケジュールを引くところから", attrs: `data-act="tier" data-v="${T.key}"`, pri: true, cost: "→" }), "", true);
+    app.innerHTML = hdr("制作デスク篇", `<div class="wk"><span class="wk-n mute">放送前</span><span class="wk-t">スタジオを選ぶと、グランドスケジュールに進みます</span></div>`, `<button class="btn-sys" data-act="howto">遊び方</button>`)
+      + `<div class="main"><div class="col">
+          <div class="logo"><div class="logo-t"><h1>深夜アニメP</h1><span class="stamp">制作デスク篇</span></div>
+            <p>グランドスケジュールを引き、進行の報告を受け、原画マンを足し、協力会社を急かす。TVアニメ1クール全12話を、放送まで落とさずに届ける。<b>ただし、進行の報告がいつも本当とは限らない。</b></p></div>
+          <section class="sec"><div class="sec-h"><h2>スタジオ 3</h2></div>
+            <div class="st-head"><span></span><span>名前</span><span>難しさ</span><span class="r">社内の班</span><span class="r">放送前</span><span>作品</span><span class="r">ベスト</span><span></span></div>
+            ${rows}</section>
+          <p class="note">1プレイ15〜25分。制作中の進行状況はこのブラウザに保存されます。</p>
+        </div>${pane(T.studio, body, foot)}</div>`;
+  }
+
+  function renderSchedule() {
+    const issues = E.planIssues(s), hard = issues.filter((i) => !i.soft);
+    if (!sel || !["ep", "gross"].includes(sel.k)) sel = { k: "ep", id: (hard[0] || issues[0] || { n: 1 }).n };
+    const gross = s.eps.filter((e) => E.isGross(e.plan)).length;
+    const first = E.planAir(s, 1);
+    app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">放送前</span><span class="wk-t">第1話 放送 <b>W${first}</b> ・ 準備 ${first - 1}週</span><button class="btn-main" data-act="start" ${hard.length ? "disabled" : ""}>${hard.length ? "問題を直すと制作開始" : "制作開始"}</button></div>`, `<button class="btn-sys" data-act="title">スタジオを選び直す</button>`)
+      + `<div class="main"><div class="col">
+          <section class="sec"><div class="sec-h"><h2>話数 12 ・ 社内${12 - gross} ・ グロス${gross}</h2><button class="btn-sys" data-act="autoPlan">おまかせで組み直す</button></div>${timelineHtml()}</section>
+          <section class="sec"><div class="sec-h"><h2>チェック${issues.length ? ` ${issues.length}件` : ""}</h2></div><div class="grid2">${checksHtml()}</div></section>
+          <section class="sec"><div class="sec-h"><h2>協力会社（グロス先） ${s.gross.length}</h2></div><div class="grid2">${s.gross.map((c) => li({ c: "var(--gross)", t: esc(c.name), sub: `同時に${c.cap}話 ・ ${esc(c.note)}`, on: isSel("gross", c.id), attrs: selAttrs("gross", c.id) })).join("")}</div></section>
+        </div>${sel.k === "gross" ? paneGross(+sel.id) : paneEp(E.epBy(s, +sel.id), "sched")}</div>`;
+  }
+
+  function renderProd() {
+    if (!sel) sel = { k: "studio" };
+    const list = concerns();
+    app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">第${s.week}週</span><span class="wk-t">${phaseLabel()}</span>${apHtml()}<button class="btn-main" data-act="endWeek">今週を締める</button></div>`, `<button class="btn-sys" data-act="howto">遊び方</button><button class="btn-sys" data-act="quit">やめる</button>`)
+      + `<div class="main"><div class="col">
+          <section class="sec"><div class="sec-h"><h2>スタジオ　人・班・協力会社</h2></div>${officeHtml()}</section>
+          <section class="sec"><div class="sec-h"><h2>話数 12 ・ 放送済み ${s.aired}</h2><button class="btn-sys" data-act="ganttBig">グランドスケジュール</button></div>${epsHtml()}</section>
+          <section class="sec"><div class="sec-h"><h2>気になること${list.length ? ` ${list.length}` : ""}</h2></div><div class="grid2">${concernsHtml(list)}</div></section>
+        </div>${paneFor()}</div>`;
   }
 
   // ---------- result ----------
+  const GRADE = { god: ["神回", "pink", "var(--pink)"], good: ["良", "ok", "var(--green-d)"], mid: ["並", "", "var(--amber)"], bad: ["不安", "warn", "#d9731a"], collapse: ["作画崩壊", "bad", "var(--red-d)"] };
   function renderEnd() {
     const r = s.result, T = E.TIERS[s.tier];
     const best = store.get("animep.best4") || {};
     const order = "DCBAS";
-    if (!s.savedBest && (!best[s.tier] || order.indexOf(r.rank) > order.indexOf(best[s.tier]))) { best[s.tier] = r.rank; store.set("animep.best4", best); }
-    s.savedBest = true;
-    app.innerHTML = `
-      <p class="step">${esc(T.studio)} ／「${esc(s.src.title)}」／ 最終回放送</p>
-      <div class="result">
-        <section class="sheet row" style="justify-content:space-between;align-items:center">
-          <div><h2>制作デスクの評価</h2>
-            <div class="score">平均の出来 ${r.avgQ.toFixed(1)}</div>
-            <p class="sub">作画崩壊 ${r.collapses}回 ／ 総集編 ${s.recaps}回 ／ 放送延期 ${s.delays}回 ／ 放送1週前までに納品 ${r.early}話</p></div>
-          <div class="rank" style="color:${r.rank === "S" || r.rank === "A" ? "var(--pink)" : "var(--ink)"}">${r.rank}</div>
-        </section>
-        <section class="sheet"><h3>全12話</h3>
-          <div class="kvs">${Array.from({ length: E.EPISODES }, (_, i) => `<div class="kvbox"><span data-kv="${i + 1}"></span><span>#${i + 1} ${s.eps[i].airQ ?? ""}${E.isGross(s.eps[i].plan) ? " G" : ""}</span></div>`).join("")}</div>
-          <p class="sub" style="margin-top:8px">G＝グロス回</p></section>
-        <section class="sheet"><h3>現場の記録</h3>
-          <dl class="kv">
-            <dt>起きたトラブル</dt><dd>${s.incidents.length}件</dd>
-            <dt>進行が抱え込んでいたトラブル</dt><dd>${s.lateReports}件（ぎりぎりで報告）／ ヘルプで見つけた ${s.hiddenFound}件</dd>
-            <dt>ヘルプに入った回数</dt><dd>${s.helpCount}回</dd>
-            <dt>途中で足した原画マン</dt><dd>${s.added}人</dd>
-            <dt>納品拒否</dt><dd>${s.rejects}回</dd>
-            <dt>グロスに出した話数</dt><dd>${s.eps.filter((e) => E.isGross(e.plan)).length}話</dd>
-          </dl></section>
-        <section class="sheet"><h3>結果をシェア</h3>
-          <p id="shareText" style="white-space:pre-wrap;margin:0 0 8px;user-select:all">${esc(shareText())}</p>
-          <div class="row"><button class="btn" data-act="copy">コピー</button><span class="sub" id="copyMsg"></span></div></section>
-        <div class="row"><button class="btn primary" data-act="again">同じスタジオでもう一度</button><button class="btn" data-act="title">スタジオを選び直す</button></div>
-      </div>`;
-    app.querySelectorAll("[data-kv]").forEach((el) => { const k = s.kv.find((x) => x.n === +el.dataset.kv && !x.recap); if (k) { el.innerHTML = ""; el.appendChild(kvCanvas(k)); } });
+    if (!s.savedBest) {
+      s.newBest = !best[s.tier] || order.indexOf(r.rank) > order.indexOf(best[s.tier]);
+      if (s.newBest) { best[s.tier] = r.rank; store.set("animep.best4", best); }
+      s.savedBest = true;
+    }
+    const H = 240;
+    const bars = s.eps.map((e) => { const g = GRADE[e.grade || (e.collapse ? "collapse" : "mid")]; return `<div style="display:flex;flex-direction:column;justify-content:flex-end;gap:4px;height:100%"><span class="pix" style="font-size:13px;text-align:center">${e.airQ ?? "—"}</span><i style="display:block;border-radius:3px 3px 0 0;height:${Math.round(((e.airQ || 0) / 100) * (H - 24))}px;background:${g[2]}"></i></div>`; }).join("");
+    const xs = s.eps.map((e) => { const g = GRADE[e.grade || (e.collapse ? "collapse" : "mid")]; return `<span><b>#${e.n}</b><span style="color:var(--on-soft)">${g[0]}${E.isGross(e.plan) ? "・G" : ""}</span></span>`; }).join("");
+    let body = oh("シリーズ", s.src.title, `${esc(T.studio)} ・ 全12話 ・ ${esc(E.SOURCES[s.src.type].label)}`, s.newBest ? tagHtml("ベスト更新", "pink") : "");
+    body += `<div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:center"><div class="rank" style="color:${r.rank === "S" || r.rank === "A" ? "#ff2f87" : r.rank === "D" ? "var(--red)" : "var(--ink)"}">${r.rank}</div>
+      <div class="tiles" style="grid-template-columns:repeat(2,minmax(0,1fr))">${tile("平均の出来", r.avgQ.toFixed(1))}${tile("作画崩壊", `${r.collapses}回`, r.collapses ? "bad" : "")}${tile("総集編", `${s.recaps}回`, s.recaps ? "bad" : "")}${tile("放送延期", `${s.delays}回`, s.delays ? "bad" : "")}</div></div>`;
+    body += `<section class="psec"><h3>シェア用の結果</h3><div class="share"><p id="shareText" style="white-space:pre-wrap;margin:0;user-select:all">${esc(shareText())}</p></div></section>`;
+    const foot = `<div class="pane-f"><span class="lbl">シリーズ にできること</span><div class="acts">${act({ label: "結果をコピー", attrs: `data-act="copy"`, pri: true })}${act({ label: "スタジオを選び直す", attrs: `data-act="title"` })}</div><span class="note" id="copyMsg" style="color:var(--ink-soft)"></span></div>`;
+    app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">第${s.week}週</span><span class="wk-t">最終回 放送 ・ <b>12 / 12話</b></span><button class="btn-main" data-act="again">同じスタジオでもう一度</button></div>`, "")
+      + `<div class="main"><div class="col">
+          <section class="sec"><div class="sec-h"><h2>話数 12 ・ 作画の出来（線＝局の基準${E.LINE}）</h2></div>
+            <div class="chart"><div class="bars" style="height:${H}px"><span class="line" style="bottom:${Math.round((E.LINE / 100) * (H - 24))}px"><span>基準${E.LINE}</span></span>${bars}</div><div class="bars-x">${xs}</div></div></section>
+          <section class="sec"><div class="sec-h"><h2>放送した1枚絵</h2></div><div class="kvs" style="grid-template-columns:repeat(12,minmax(0,1fr))">${s.eps.map((e) => `<div class="kvbox"><span data-kv="${e.n}"></span></div>`).join("")}</div></section>
+          <section class="sec"><div class="sec-h"><h2>現場の記録</h2></div><div class="stats">
+            <div class="stat"><div class="l">起きたトラブル</div><div class="v">${s.incidents.length}<small>件</small></div></div>
+            <div class="stat"><div class="l">抱え込まれていた</div><div class="v">${s.lateReports}<small>件</small></div></div>
+            <div class="stat"><div class="l">ヘルプで発見</div><div class="v">${s.hiddenFound}<small>件</small></div></div>
+            <div class="stat"><div class="l">ヘルプに入った</div><div class="v">${s.helpCount}<small>回</small></div></div>
+            <div class="stat"><div class="l">足した原画マン</div><div class="v">${s.added}<small>人</small></div></div>
+            <div class="stat"><div class="l">納品拒否</div><div class="v">${s.rejects}<small>回</small></div></div>
+            <div class="stat"><div class="l">グロスに出した</div><div class="v">${s.eps.filter((e) => E.isGross(e.plan)).length}<small>話</small></div></div>
+          </div></section>
+        </div>${pane(s.src.title, body, foot)}</div>`;
   }
   function shareText() {
     const r = s.result;
@@ -2138,83 +2243,183 @@ if (typeof module !== "undefined") module.exports = Engine;
     return `深夜アニメP 制作デスク篇 ${E.TIERS[s.tier].name}「${s.src.title}」\n${row}${s.recaps ? ` 総集編${s.recaps}` : ""}\n評価 ${r.rank}（平均の出来 ${r.avgQ.toFixed(1)}）`;
   }
 
-  // ---------- modals ----------
+  // ---------- the 進行表 (spreadsheet) ----------
+  let xls = null;   // { key: team key or "all", n: episode on the open tab }
+  function xlsTabs() {
+    if (xls.key === "all") return s.eps.filter((e) => e.started && !e.aired && !e.delivered && !E.isGross(e.plan));
+    return s.eps.filter((e) => e.plan.team === xls.key);
+  }
+  function openXls(key, n) {
+    xls = { key, n: null };
+    const tabs = xlsTabs();
+    const cur = (n && tabs.find((e) => e.n === n)) || tabs.find((e) => e.started && !e.delivered && !e.aired) || tabs.find((e) => !e.aired) || tabs[0];
+    xls.n = cur ? cur.n : null;
+    showModal({ kind: "xls" });
+  }
+  function dbar(v, total, cls = "") {
+    const p = Math.max(0, Math.min(1, v / Math.max(1, total)));
+    return `<td class="db"><div class="dbar ${cls}"><span><i style="width:${p * 100}%"></i></span><em>${Math.floor(v + 0.001)}/${Math.round(total)}</em></div></td>`;
+  }
+  function xlsSheet() {
+    const tabs = xlsTabs();
+    const ep = xls.n ? E.epBy(s, xls.n) : null;
+    const team = xls.key !== "all" ? E.teamBy(s, xls.key) : ep && !E.isGross(ep.plan) ? E.teamBy(s, ep.plan.team) : null;
+    const sh = team ? E.shinkoBy(s, team.shinko) : null;
+    const title = xls.key === "all" ? "作画部屋_原画マン一覧.xlsx" : `進行表_${team.label}.xlsx`;
+    let grid = "", post = "";
+    if (!ep) grid = `<div class="xls-msg">この班にはまだ話数が割り当てられていません。</div>`;
+    else if (E.isGross(ep.plan)) grid = `<div class="xls-msg">第${ep.n}話は協力会社に1話まるごと発注しています。原画マンの内訳は先方の管理です。</div>`;
+    else if (!ep.started) grid = `<div class="xls-msg">第${ep.n}話は着手前です。${ep.conte < 1 ? `コンテ待ち（${Math.round(ep.conte * 100)}%）。` : ""}予定 W${ep.plan.start} から（原画マン${E.recommendAnims(s, ep)}人の予定）。</div>`;
+    else {
+      const view = ep.anims.map((a) => E.viewAnim(s, a));
+      const live = view.filter((a) => !a.out);
+      const rows = view.map((a, i) => {
+        const held = a.hold > 0 || a.slow < 1;
+        const state = a.out ? "外れた" : a.hold > 0 ? "連絡待ち" : a.slow < 1 ? "他社優先" : a.genga >= a.cuts - 0.5 ? "上がり" : a.rough >= a.cuts - 0.5 ? "原画中" : a.rough > 0 ? "ラフ原中" : "未着手";
+        return `<tr class="${held ? "held" : a.out ? "out" : ""}"><th class="rn">${i + 1}</th><td>${esc(a.name)}</td><td class="n">${a.skill}</td><td class="n">${Math.round(a.cuts)}</td>${dbar(a.rough, a.cuts, "r")}${dbar(a.genga, a.cuts, held ? "bad" : "")}<td class="st">${state}</td></tr>`;
+      }).join("");
+      const tr = view.reduce((x, a) => x + a.rough, 0), tg = view.reduce((x, a) => x + a.genga, 0);
+      grid = `<div class="xls-grid"><table><thead><tr><th class="rn"></th><th>原画マン</th><th style="text-align:right">実力</th><th style="text-align:right">持ち</th><th>ラフ原</th><th>原画</th><th>状態</th></tr></thead>
+        <tbody>${rows}<tr class="tot"><th class="rn"></th><td>合計 ${live.length}人${E.dilution(ep) > 0 ? `（${E.BASE_ANIMS}人を超えたぶん絵がばらつく）` : ""}</td><td class="n">${Math.round(live.reduce((x, a) => x + a.skill, 0) / Math.max(1, live.length))}</td><td class="n">${ep.cuts}</td>${dbar(tr, ep.cuts, "r")}${dbar(tg, ep.cuts)}<td></td></tr></tbody></table></div>`;
+      const pc = (v) => `${Math.min(100, Math.floor((v / ep.cuts) * 100 + 0.001))}%`;
+      const cls = (v) => (v >= ep.cuts - 0.5 ? "ok" : v > 0.05 ? "wip" : "");
+      const art = artState(ep);
+      post = `<div class="xls-post"><div class="${cls(ep.douga)}"><div class="l">動画</div><div class="v">${pc(ep.douga)}</div></div><div class="${cls(ep.shiage)}"><div class="l">仕上げ</div><div class="v">${pc(ep.shiage)}</div></div><div class="${cls(ep.satsuei)}"><div class="l">撮影</div><div class="v">${pc(ep.satsuei)}</div></div><div class="${art === "完了" ? "ok" : ep.art ? "wip" : ""}"><div class="l">美術</div><div class="v">${esc(art)}</div></div><div class="${art === "完了" ? "ok" : ep.art ? "wip" : ""}"><div class="l">CG</div><div class="v">${esc(art)}</div></div></div>`;
+    }
+    const fx = ep ? `=第${ep.n}話!完パケ予測 → <b>${ep.aired ? "放送済" : ep.delivered ? `W${ep.deliveredWeek}` : `W${E.epForecast(s, ep)}`}</b>　（${sh ? `進行 ${esc(sh.name)} の報告` : "現場の数字"}）` : "";
+    return `<section class="xls" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="xls-top"><span class="xls-file">${esc(title)}</span>
+        ${sh ? `<span class="xls-who">進行 ${esc(sh.name)} ・ 段取り ${stars(sh.skill)} ・ 体力 ${Math.round(sh.stamina)}${sh.gone ? " ・ 連絡が取れない" : sh.helped ? " ・ 今週ヘルプ済み（実態）" : ""}</span>` : ""}
+        <button class="xls-x" data-act="closeModal" aria-label="閉じる">×</button></div>
+      <div class="xls-fx"><span class="fxl">fx</span><span>${fx}</span></div>
+      ${grid}${post}
+      <div class="xls-tabs">${tabs.map((e) => `<button class="${e.n === xls.n ? "on" : ""}" data-act="xlsTab" data-v="${e.n}">#${e.n}${e.aired ? "（済）" : e.delivered ? "（納品）" : e.started ? " 制作中" : "（前）"}</button>`).join("") || `<span style="padding:10px;font-size:12px">シートがありません</span>`}</div>
+    </section>`;
+  }
+
+  // ---------- dialogs: the same detail, on top ----------
   function showModal(m) { modal = m; renderModal(); }
   function closeModal() { modal = null; xls = null; modalRoot.innerHTML = ""; }
-  function reporterHtml(rep) {
-    if (!rep) return "";
-    if (rep.kind === "shinko") { const sh = E.shinkoOfTeam(s, rep.team); return sh ? who(sh.seed, `${rep.team}班 制作進行`, sh.name, `<span class="sub">　段取り${stars(sh.skill)}</span>`) : ""; }
-    if (rep.kind === "sakkan") { const t = E.teamBy(s, rep.team); return who(t.sakkan.seed, `${t.label} 作画監督`, t.sakkan.name); }
-    if (rep.kind === "dir") return who(s.staff.dir.seed, "監督", s.staff.dir.name);
-    if (rep.kind === "gross") { const c = E.grossBy(s, rep.id); return who(7000 + rep.id, "協力会社", c.name); }
-    if (rep.kind === "post") return who(5150, "仕上げ担当", "海外窓口");
-    if (rep.kind === "kyoku") return who(s.staff.kp.seed, "製作委員会・局プロデューサー", s.staff.kp.name);
-    return who(424242, "制作デスク", "あなた（気づいたこと）");
+  function reporter(rep) {
+    if (!rep) return null;
+    if (rep.kind === "shinko") { const sh = E.shinkoOfTeam(s, rep.team); return sh ? { seed: sh.seed, w: `<b>${esc(sh.name)}</b> ・ ${rep.team}班 制作進行 ・ 段取り${stars(sh.skill)}` } : null; }
+    if (rep.kind === "sakkan") { const t = E.teamBy(s, rep.team); return { seed: t.sakkan.seed, w: `<b>${esc(t.sakkan.name)}</b> ・ ${t.label} 作画監督` }; }
+    if (rep.kind === "dir") return { seed: s.staff.dir.seed, w: `<b>${esc(s.staff.dir.name)}</b> ・ 監督` };
+    if (rep.kind === "gross") { const c = E.grossBy(s, rep.id); return { seed: 7000 + rep.id, w: `<b>${esc(c.name)}</b> ・ 協力会社` }; }
+    if (rep.kind === "post") return { seed: 5150, w: "<b>海外窓口</b> ・ 仕上げ担当" };
+    if (rep.kind === "kyoku") return { seed: s.staff.kp.seed, w: `<b>${esc(s.staff.kp.name)}</b> ・ 製作委員会・局プロデューサー` };
+    return { seed: YOU, w: "<b>あなた</b> ・ 気づいたこと" };
   }
+  // an event choice reads "label（行動−1・effect・品質 66→58）": split it into the verb, its cost and its effect
+  function choiceAct(label, attrs, disabled, pri) {
+    let main = label, inner = "";
+    const m = label.match(/^(.*?)（(.*)）$/);
+    if (m) { main = m[1]; inner = m[2]; }
+    let cost = "行動なし";
+    const rest = [];
+    for (const part of inner ? inner.split("・") : []) {
+      const a = part.match(/^行動−(\d)/);
+      if (a) { cost = `行動${a[1]}`; const tail = part.slice(a[0].length).trim(); if (tail) rest.push(tail); } else rest.push(part);
+    }
+    const sub = rest.join(" ・ ").replace(/品質\s*(\d+)\s*→\s*(\d+)/g, (_, a, b) => `作画：${qWord(+b)}`);
+    return act({ label: main, sub, cost, attrs, pri, disabled });
+  }
+  const dlg = (body, foot, label = "") => `<div class="modal-bg"><div class="pane dlg flashin" role="dialog" aria-modal="true" ${label ? `aria-label="${esc(label)}"` : `aria-labelledby="dlgT"`}><div class="pane-b">${body}</div>${foot}</div></div>`;
   function renderModal() {
     if (!modal) { modalRoot.innerHTML = ""; return; }
-    if (modal.kind === "xls") { modalRoot.innerHTML = `<div class="modal-bg xls-bg">${xlsHtml()}</div>`; modalRoot.querySelector(".xls-x")?.focus({ preventScroll: true }); return; }
-    if (modal.kind === "gantt") {
-      modalRoot.innerHTML = `<div class="modal-bg xls-bg"><div class="xls" role="dialog" aria-modal="true" aria-label="グランドスケジュール" style="grid-template-rows:auto auto 1fr">
-        <div class="xls-top"><span class="xls-file">グランドスケジュール</span><span class="xls-who">第${s.week}週</span><button class="xls-x" data-act="closeModal" aria-label="閉じる">×</button></div>
-        <div class="xls-tools"><div class="legend">${s.teams.map((t) => `<span style="--c:${TEAM_COL[t.key]}">${t.label}</span>`).join("")}<span style="--c:#8a93ab">グロス</span></div><span class="sub">薄い色＝予定、濃い色＝作業した週、斜線＝完パケまでの予測、▼＝放送週</span></div>
-        <div style="overflow:auto;padding:10px">${ganttHtml()}<div style="margin-top:10px">${issuesHtml()}</div></div></div></div>`;
-      modalRoot.querySelector(".xls-x")?.focus({ preventScroll: true });
-      return;
-    }
-    let body = "";
-    if (modal.kind === "event") {
+    let html = "";
+    if (modal.kind === "xls") {
+      const ep = xls.n ? E.epBy(s, xls.n) : null;
+      html = `<div class="modal-bg"><div class="xls-wrap">${xlsSheet()}${ep ? paneEp(ep, "xls") : ""}</div></div>`;
+    } else if (modal.kind === "gantt") {
+      const ep = sel && sel.k === "ep" ? E.epBy(s, +sel.id) : E.unaired(s)[0] || s.eps[0];
+      const issues = E.planIssues(s);
+      html = `<div class="modal-bg"><div class="gantt-dlg" role="dialog" aria-modal="true" aria-label="グランドスケジュール"><div class="col">
+        <div class="sec-h"><h2>グランドスケジュール ・ 第${s.week}週</h2><button class="btn-sys" data-act="closeModal">閉じる</button></div>${timelineHtml()}
+        ${issues.length ? `<div class="grid2">${checksHtml()}</div>` : ""}</div>${paneEp(ep, "prod")}</div></div>`;
+    } else if (modal.kind === "rush") html = rushHtml();
+    else if (modal.kind === "event") {
       const v = E.eventView(s);
       if (!v) return closeModal();
-      const note = v.found ? `<p class="tagx t-warn" style="display:inline-block">ヘルプに入って見つけた（${v.weeksHidden > 0 ? `${v.weeksHidden}週間、報告がなかった` : "まだ報告されていなかった"}）</p>` : v.late ? `<p class="tagx t-bad" style="display:inline-block">報告が${v.weeksHidden}週間遅れた</p>` : "";
-      body = `<h2>${esc(v.title)}</h2>${reporterHtml(v.reporter)}${note}<p class="speech">${esc(v.text)}</p>
-        <div class="choices">${v.choices.map((c) => `<button class="btn" data-act="evChoice" data-v="${c.i}" ${c.ok ? "" : "disabled"}>${esc(c.label)}</button>`).join("")}</div>`;
+      const rp = reporter(v.reporter);
+      const pre = v.found ? tagHtml("ヘルプで発見", "warn") : v.late ? tagHtml("報告が遅れた", "warn") : "";
+      let body = oh("報告", v.title, `第${s.week}週${v.found && v.weeksHidden > 0 ? ` ・ ${v.weeksHidden}週間、報告がなかった` : v.found ? " ・ まだ報告されていなかった" : v.late ? " ・ 進行が抱え込んでいた" : ""}`, tagHtml("トラブル", "bad"), null, pre, "dlgT");
+      body += `<div class="who">${face(rp ? rp.seed : YOU)}<div><div class="w">${rp ? rp.w : ""}</div><p class="speech">${esc(v.text)}</p></div></div>`;
+      const foot = `<div class="pane-f"><span class="lbl">この報告にできること ・ 今週の行動 残り${s.ap}</span><div class="acts one">${v.choices.map((c, i) => choiceAct(c.label, `data-act="evChoice" data-v="${c.i}"`, !c.ok, i === 0)).join("")}</div></div>`;
+      html = dlg(body, foot);
     } else if (modal.kind === "air") {
-      const pa = s.pendingAir, pct = Math.round(pa.prog * 100);
-      body = `<h2>第${pa.n}話が間に合わない</h2>
-        <p>放送日なのに、第${pa.n}話は撮影まで終わったカットが${pct}%しかありません。</p>
-        <div class="choices">
-          <button class="btn" data-act="airChoice" data-v="air" ${E.canAirAsIs(s) ? "" : "disabled"}>${E.canAirAsIs(s) ? `このまま放送する（${pct < 85 ? "作画崩壊は確実" : "品質が落ちる"}・出来 ${Math.round(E.airAsIsQ(s))}）` : `このまま放送する（局が受け取らない：${E.epBy(s, pa.n).rejectPending ? "納品拒否中" : `出来 ${Math.round(E.airAsIsQ(s))}／基準${E.LINE}`}）`}</button>
-          <button class="btn" data-act="airChoice" data-v="recap" ${s.recaps >= 2 ? "disabled" : ""}>総集編を挟む（残り${2 - s.recaps}回）</button>
-          <button class="btn" data-act="airChoice" data-v="delay">万策尽きた。放送を2週延期</button>
-        </div>`;
+      const pa = s.pendingAir, pctv = Math.round(pa.prog * 100);
+      const can = E.canAirAsIs(s), q = Math.round(E.airAsIsQ(s));
+      const m = !can ? { tone: "bad", t: "局の基準を割っている。このままは出せない" } : pctv < 85 ? { tone: "bad", t: "このまま出したら作画崩壊だ・・・" } : judge({ q });
+      let body = oh("放送", `第${pa.n}話が間に合わない`, `第${s.week}週 ・ 今週が放送日`, tagHtml("放送日", "bad"), null, "", "dlgT");
+      body += `<div class="tiles">${tile("撮影まで上がったカット", `${pctv}%`, "bad")}${tile("総集編 残り", `${Math.max(0, 2 - s.recaps)}回`)}</div>`;
+      body += mutHtml(m, "あなたの見立て（このまま放送したら）");
+      const foot = `<div class="pane-f"><span class="lbl">第${pa.n}話 にできること</span><div class="acts one">
+        ${act({ label: "このまま放送する", sub: !can ? "局の基準を割っているので出せない" : pctv < 85 ? "作画崩壊は確実" : `作画：${qWord(q)}`, attrs: `data-act="airChoice" data-v="air"`, disabled: !can })}
+        ${act({ label: "総集編を挟む", sub: `第${pa.n}話は翌週へ ・ 残り${Math.max(0, 2 - s.recaps)}回`, attrs: `data-act="airChoice" data-v="recap"`, disabled: s.recaps >= 2 })}
+        ${act({ label: "放送を2週延期する", sub: "万策尽きた", attrs: `data-act="airChoice" data-v="delay"` })}</div></div>`;
+      html = dlg(body, foot);
     } else if (modal.kind === "aired") {
       const a = s.lastAir;
       if (!a || !a.ep || a.recap || a.delay) { const next = modal.next; closeModal(); return afterTurn(next); }
+      const g = GRADE[a.ep.collapse ? "collapse" : a.grade] || GRADE.mid;
       const posts = s.sns.filter((p) => p.n === a.ep.n).slice(0, 2);
-      body = `<h2>第${a.ep.n}話 放送${E.isGross(a.ep.plan) ? `<span class="sub">　グロス回（${esc(E.grossOf(s, a.ep.plan).name)}）</span>` : ""}</h2>
-        <div class="bigkv"><span data-bigkv></span>
-          <div><p style="margin:0">作画の出来 <b class="num" style="font-size:22px">${a.ep.airQ}</b> ${a.ep.collapse ? '<span class="tagx t-bad">作画崩壊</span>' : a.grade === "god" ? '<span class="tagx t-ok">神回</span>' : ""}</p>
-          ${posts.map((p) => `<div class="post ${["god", "good"].includes(p.kind) ? "good" : ["bad", "collapse"].includes(p.kind) ? "bad" : ""}" style="margin-top:6px"><span class="h">${esc(p.h)}</span><br>${esc(p.t)}</div>`).join("")}</div>
-        </div>
-        <div class="choices"><button class="btn primary" data-act="airedOk">次へ</button></div>`;
+      const gross = E.isGross(a.ep.plan);
+      let body = oh("放送", `第${a.ep.n}話 放送`, `第${a.ep.airWeek}週 深夜 ・ ${gross ? `グロス（${esc(E.grossOf(s, a.ep.plan).name)}）` : `${a.ep.plan.team}班（社内）`}${a.ep.rush ? ` ・ 巻き：${E.RUSH[a.ep.rush].label}` : ""}`, tagHtml(g[0], g[1]), null, tagHtml("ON AIR", "bad"), "dlgT");
+      body += `<div class="tiles">${tile("作画の出来", a.ep.airQ, a.ep.collapse ? "bad" : "")}${tile("評判", Math.round(s.R))}${tile("放送済み", `${s.aired}/12`)}</div>`;
+      body += `<section class="psec" style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:start"><span data-bigkv style="display:block;width:120px;height:120px;background:var(--chip);border-radius:4px;overflow:hidden"></span><div style="display:flex;flex-direction:column;gap:6px"><h3>放送後のSNS</h3>${posts.map(postHtml).join("")}</div></section>`;
+      const next = E.unaired(s)[0];
+      html = dlg(body, `<div class="pane-f"><span class="lbl">${next ? `次の放送：第${next.n}話（${esc(whoShort(next.plan.team))}）W${E.airWeekOf(s, next)}` : "全話の放送が終わりました"}</span><div class="acts one">${act({ label: "次へ", attrs: `data-act="airedOk"`, pri: true, cost: "→" })}</div></div>`);
     } else if (modal.kind === "quit") {
-      body = `<h2>やめますか</h2><p>進行中のデータは消え、スタジオ選びに戻ります。</p>
-        <div class="choices"><button class="btn" data-act="quitYes">やめてスタジオ選びに戻る</button><button class="btn primary" data-act="closeModal">続ける</button></div>`;
+      html = dlg(oh("メニュー", "やめますか", "進行中のデータは消え、スタジオ選びに戻ります。", "", null, "", "dlgT"),
+        `<div class="pane-f"><div class="acts">${act({ label: "続ける", attrs: `data-act="closeModal"`, pri: true })}${act({ label: "やめてスタジオ選びに戻る", attrs: `data-act="quitYes"` })}</div></div>`);
     } else if (modal.kind === "help") {
-      body = `<h2>遊び方</h2>
-        <p>あなたは制作デスク。夜のスタジオで、人や物を押すと詳しい様子が出ます。</p>
-        <ul>
-          <li><b>制作進行</b>（各班の席）を押すと、その班の<b>進行表</b>が開きます。原画マンごとのラフ原・原画の進みと、動画・仕上げ・撮影・美術・CGの進捗が並びます。遅れていたら原画マンを足します。${E.BASE_ANIMS}人を超えると、腕がよくても絵がばらつき、品質が下がります。</li>
-          <li>トラブルは進行が報告してきます。<b>段取りの悪い進行はトラブルを抱え込み、放送直前まで報告しません</b>。そのあいだ進行表の数字は順調に見えます。怪しい班には<b>ヘルプに入る</b>と、本当の状況が分かります。</li>
-          <li>トラブルはシリーズの後半ほど増えます。</li>
-          <li><b>ホワイトボード</b>はグランドスケジュール。着手前の話数は組み替えたり、グロスに切り替えたりできます。<b>電話</b>は協力会社（グロス）です。</li>
-          <li>放送に間に合わない話数が出ると、進行が報告してきます。原画中なら<b>24時間動仕・12時間動仕・2原動仕</b>（下ほど速く上がるが、カットの仕上がりが悪くなる）、撮影に入ってからなら<b>撮影スケジュールの短縮</b>（品質が大きく落ちる）で巻けます。進行表からも指示できます。</li>
-          <li>局・製作委員会の<b>納品基準は品質${E.LINE}</b>。完パケの品質がこれを下回ると<b>納品拒否</b>され、リテイクになります。基準を下回る話数は、放送日に「このまま放送」もできません（総集編か延期）。</li>
-          <li>行動は週3回。最後に「今週を締める」。放送日までに撮影が終わらないと、作画崩壊か総集編です。</li>
-        </ul>
-        <div class="choices"><button class="btn primary" data-act="closeModal">閉じる</button></div>`;
+      const body = oh("遊び方", "制作デスクの仕事", "夜のスタジオで、人や物を選ぶと右に詳しい様子が出ます。できることは、いつもその下にあります。", "", YOU, "", "dlgT")
+        + `<ul>
+          <li><b>選ぶ → 詳しく見る → できること</b>。オフィスの人、話数の帯、気になることのどれを押しても、右側にその詳細と「できること」が出ます。</li>
+          <li><b>制作進行</b>（各班の席）を選ぶと、進行の様子と<b>ヘルプに入る</b>が出ます。<b>段取りの悪い進行はトラブルを抱え込み、放送直前まで報告しません</b>。そのあいだ進行表の数字は順調に見えます。</li>
+          <li><b>話数</b>を選ぶと、工程・完パケ予測・放送週と、<b>あなたの見立て</b>が出ます。遅れていたら、原画マンを足すか、<b>巻く</b>（24時間動仕・12時間動仕・2原動仕・撮影短縮）。速いほど絵が荒れます。</li>
+          <li>局・製作委員会の納品基準を下回ると<b>納品拒否</b>でリテイク。基準を割った話数は、放送日に「このまま放送」もできません。</li>
+          <li>行動は週3回（ヘルプ、新しい進行、外部コンテ、監督と打ち合わせ、協力会社の催促）。原画マンの追加・巻き・方針の変更は行動を使いません。最後に<b>今週を締める</b>。</li>
+          <li>ホワイトボードはグランドスケジュール、電話は協力会社、テレビは放送とSNSです。</li></ul>`;
+      html = dlg(body, `<div class="pane-f"><div class="acts one">${act({ label: "閉じる", attrs: `data-act="closeModal"`, pri: true })}</div></div>`);
     }
-    modalRoot.innerHTML = `<div class="modal-bg"><div class="sheet modal flashin" role="dialog" aria-modal="true">${body}</div></div>`;
-    modalRoot.querySelectorAll("[data-face]").forEach((el) => el.appendChild(faceCanvas(+el.dataset.face)));
+    modalRoot.innerHTML = html;
+    mountFaces(modalRoot); mountKV(modalRoot);
     const big = modalRoot.querySelector("[data-bigkv]");
-    if (big && s.lastAir?.ep) { const k = s.kv.find((x) => x.n === s.lastAir.ep.n && !x.recap); if (k) big.appendChild(kvCanvas(k)); }
-    const first = modalRoot.querySelector("button:not(:disabled)");
+    if (big && s.lastAir?.ep) { const k = s.kv.find((x) => x.n === s.lastAir.ep.n && !x.recap); if (k) { const c = kvCanvas(k); c.style.width = c.style.height = "100%"; big.appendChild(c); } }
+    const first = modalRoot.querySelector(".opt.on, button:not(:disabled)");
     if (first) first.focus({ preventScroll: true });
   }
+
+  // 巻く: compare each way of rushing by week and by your read of the drawing
+  const RUSH_DESC = { "24h": "動画・仕上げを急がせる", "12h": "さらに速いが粗くなる", "2gen": "原画から仕上げまで飛ばす", short: "上がった端から撮って出す" };
+  function rushHtml() {
+    const ep = E.epBy(s, modal.n);
+    if (!ep || ep.aired || ep.delivered) return "";
+    const air = E.airWeekOf(s, ep), fc0 = E.epForecast(s, ep), q0 = qOf(ep);
+    const opts = rushModes(ep).map((m) => { const x = E.previewRush(s, ep.n, m); return { m, label: m === "short" ? "撮影スケジュール短縮" : E.RUSH[m].label, desc: RUSH_DESC[m], fc: x.fc, q: x.q }; });
+    opts.push({ m: "stay", label: "このまま粘る", desc: "何もしない", fc: fc0, q: q0 });
+    opts.forEach((o) => { o.j = judge({ q: o.q, fc: o.fc, air }); });
+    const pick = opts.find((o) => o.m === modal.pick) || opts[0];
+    const W0 = s.week, W1 = Math.max(air, ...opts.map((o) => o.fc)), cols = W1 - W0 + 1;
+    const toneC = { good: "var(--green)", ok: "var(--teal)", worry: "var(--amber)", bad: "var(--red)", mute: "var(--gross)" };
+    let body = oh("話数", `第${ep.n}話を巻く`, `${esc(whoShort(ep.plan.team))} ・ いま${esc(E.STAGE_LABEL[stageV(ep)])} ・ 放送 W${air}`, fc0 > air ? tagHtml(`遅れ ${fc0 - air}週`, "bad") : "", null, "", "dlgT");
+    body += `<div class="tiles">${tile("完パケ予測", `W${fc0} → W${pick.fc}`, pick.fc > air ? "bad" : "good")}${tile("放送", `W${air}`)}</div>`;
+    body += mutHtml(pick.j);
+    body += `<section class="psec"><div class="opt-head"><span>巻き方</span><span class="wks" style="grid-template-columns:repeat(${cols},minmax(0,1fr))">${Array.from({ length: cols }, (_, i) => `<span class="${W0 + i === air ? "air" : ""}">W${W0 + i}${W0 + i === air ? "▼" : ""}</span>`).join("")}</span><span>あなたの見立て</span></div>
+      <div role="radiogroup" aria-label="巻き方" style="display:flex;flex-direction:column;gap:4px">${opts.map((o) => `<button class="opt ${o === pick ? "on" : ""}" role="radio" aria-checked="${o === pick}" data-act="rushPick" data-v="${o.m}">
+        <span><span class="t">${esc(o.label)}</span><span class="s">${esc(o.desc)}</span></span>
+        <span class="trk"><span class="airc" style="left:${((air - W0) / cols) * 100}%;width:${100 / cols}%"></span><i style="width:${(Math.max(1, o.fc - W0 + 1) / cols) * 100}%;background:${toneC[o.j.tone]}"></i></span>
+        <span class="word tone-${o.j.tone}" style="color:${toneC[o.j.tone]}">${esc(o.j.short)}</span></button>`).join("")}</div>
+      <p class="verdict ${pick.fc > air || pick.q < E.LINE ? "bad" : "good"}">${pick.fc > air ? "放送に間に合わない。放送日に「総集編」か「延期」を選ぶことになる。" : pick.q < E.LINE ? "間に合うが、局の基準を割りそう。納品拒否されたらリテイクになる。" : `W${pick.fc}に完パケ。放送には間に合う。`}</p></section>`;
+    const foot = `<div class="pane-f"><span class="lbl">第${ep.n}話 にできること</span><div class="acts">${act({ label: pick.m === "stay" ? "このまま粘る" : `「${pick.label}」で指示する`, cost: "行動なし", attrs: `data-act="rushGo" data-v="${ep.n}" data-k="${pick.m}"`, pri: true })}${act({ label: "やめる", attrs: `data-act="closeModal"` })}</div></div>`;
+    return dlg(body, foot);
+  }
+
   function afterTurn(res) {
     save();
-    if (res === "end") { closeModal(); render(); window.scrollTo(0, 0); return; }
+    if (res === "end") { closeModal(); sel = null; render(); window.scrollTo(0, 0); return; }
     render();
     if (s.event) showModal({ kind: "event" }); else closeModal();
   }
@@ -2227,47 +2432,57 @@ if (typeof module !== "undefined") module.exports = Engine;
     afterTurn(res);
   }
   // after an action, a newly surfaced trouble takes over the screen
-  const rerender = () => { save(); render(); if (s.event) showModal({ kind: "event" }); else if (modal && modal.kind === "xls") renderModal(); };
+  const rerender = () => { save(); render(); if (s.event) showModal({ kind: "event" }); else if (modal && ["xls", "gantt", "rush"].includes(modal.kind)) renderModal(); };
 
   // ---------- input ----------
   document.addEventListener("click", (ev) => {
     const b = ev.target.closest("[data-act]");
     if (!b || b.disabled) return;
-    const act = b.dataset.act, v = b.dataset.v;
+    const what = b.dataset.act, v = b.dataset.v;
     if (b.tagName === "INPUT" || b.tagName === "SELECT") return;
-    switch (act) {
-      case "tier": s = E.newGame(v, (Math.random() * 2 ** 31) | 0); render(); window.scrollTo(0, 0); break;
-      case "title": s = null; clearSave(); render(); break;
-      case "again": { const t = s.tier; s = E.newGame(t, (Math.random() * 2 ** 31) | 0); render(); window.scrollTo(0, 0); break; }
+    switch (what) {
+      case "sel": {
+        sel = { k: b.dataset.k, id: v === "" ? undefined : v };
+        if (modal && modal.kind === "gantt") { render(); renderModal(); break; }
+        if (modal) closeModal();
+        render();
+        if (narrow()) app.querySelector(".pane")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        break;
+      }
+      case "pickTier": pickTier = v; render(); if (narrow()) app.querySelector(".pane")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); break;
+      case "tier": s = E.newGame(v, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break;
+      case "title": s = null; sel = null; closeModal(); clearSave(); render(); break;
+      case "again": { const t = s.tier; s = E.newGame(t, (Math.random() * 2 ** 31) | 0); sel = null; render(); window.scrollTo(0, 0); break; }
       case "autoPlan": E.autoPlan(s); render(); break;
       case "planStart": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { start: ep.plan.start + +b.dataset.d }); rerender(); break; }
       case "planDur": { const ep = E.epBy(s, +v); E.setPlan(s, +v, { dur: ep.plan.dur + +b.dataset.d }); rerender(); break; }
-      case "start": if (E.planIssues(s).some((i) => !i.soft)) break; E.startProduction(s); panel = "desk"; save(); render(); window.scrollTo(0, 0); showModal({ kind: "help" }); break;
+      case "start": if (E.planIssues(s).some((i) => !i.soft)) break; E.startProduction(s); sel = { k: "studio" }; save(); render(); window.scrollTo(0, 0); showModal({ kind: "help" }); break;
       case "howto": showModal({ kind: "help" }); break;
-      case "closeModal": closeModal(); break;
-      case "panel": panel = v; render(); if (matchMedia("(max-width: 980px)").matches) document.getElementById("panel")?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" }); break;
-      case "xls": openXls(v); break;
+      case "closeModal": closeModal(); render(); break;
+      case "xls": openXls(v, b.dataset.n ? +b.dataset.n : null); break;
       case "ganttBig": showModal({ kind: "gantt" }); break;
       case "xlsTab": xls.n = +v; renderModal(); break;
       case "addAnim": E.addAnimators(s, +v, +b.dataset.k); rerender(); break;
-      case "rush": E.setRush(s, +v, b.dataset.k); rerender(); break;
+      case "rushOpen": showModal({ kind: "rush", n: +v }); break;
+      case "rushPick": modal.pick = v; renderModal(); break;
+      case "rushGo": { const k = b.dataset.k; if (k !== "stay") E.setRush(s, +v, k); closeModal(); sel = { k: "ep", id: v }; rerender(); break; }
       case "policy": { const k = b.dataset.k; const val = v === "true" ? true : v === "false" ? false : v; E.setPolicy(s, k, val); rerender(); break; }
       case "do": { const arg = b.dataset.arg != null ? +b.dataset.arg : undefined; const keep = modal && modal.kind === "xls" ? { ...xls } : null; E.doAction(s, v, arg); if (s.event) { modal = null; xls = null; } else if (keep) xls = keep; rerender(); break; }
-      case "endWeek": runTurn(() => E.endWeek(s)); break;
+      case "endWeek": closeModal(); runTurn(() => E.endWeek(s)); break;
       case "airChoice": runTurn(() => E.resolveAir(s, v)); break;
       case "airedOk": { const next = modal.next; closeModal(); afterTurn(next); break; }
       case "evChoice": { if (E.resolveEvent(s, +v) != null) { closeModal(); save(); render(); if (s.event) showModal({ kind: "event" }); } break; }
       case "quit": showModal({ kind: "quit" }); break;
-      case "quitYes": closeModal(); s = null; clearSave(); render(); window.scrollTo(0, 0); break;
+      case "quitYes": closeModal(); s = null; sel = null; clearSave(); render(); window.scrollTo(0, 0); break;
       case "copy": {
         const text = shareText(), msg = document.getElementById("copyMsg");
-        const fallback = () => { const r = document.createRange(); r.selectNodeContents(document.getElementById("shareText")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); msg.textContent = "選択しました。コピーしてください。"; };
+        const fallback = () => { const r = document.createRange(); r.selectNodeContents(document.getElementById("shareText")); const selection = getSelection(); selection.removeAllRanges(); selection.addRange(r); msg.textContent = "選択しました。コピーしてください。"; };
         try { navigator.clipboard.writeText(text).then(() => { msg.textContent = "コピーしました"; }, fallback); } catch (e) { fallback(); }
         break;
       }
     }
   });
-  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && modal && ["xls", "gantt", "help", "quit"].includes(modal.kind)) closeModal(); });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && modal && ["xls", "gantt", "help", "quit", "rush"].includes(modal.kind)) { closeModal(); render(); } });
   document.addEventListener("change", (ev) => {
     const b = ev.target.closest("[data-act]");
     if (!b || !s) return;
@@ -2280,11 +2495,11 @@ if (typeof module !== "undefined") module.exports = Engine;
   function start(hotData) {
     const saved = hotData && hotData.s ? hotData.s : store.get("animep.save");
     if (saved && saved.v === 6 && saved.phase) s = saved;
-    if (hotData && hotData.panel) panel = hotData.panel;
+    if (hotData && hotData.sel) sel = hotData.sel;
     render();
     if (s && s.phase === "prod") { if (s.pendingAir) showModal({ kind: "air" }); else if (s.event) showModal({ kind: "event" }); }
   }
-  window.claude?.hot?.snapshot?.(() => ({ s, panel }));
+  window.claude?.hot?.snapshot?.(() => ({ s, sel }));
   window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
 })();
 </script>
