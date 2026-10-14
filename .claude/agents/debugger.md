@@ -19,7 +19,9 @@ tools: Bash, Read, Grep, Glob, Write
    - 失敗があれば、`--seed` でその回だけ再実行して再現を確かめる。
 3. ルート確認（本番）
    - `tools/qa/routes.md` の項目を**上から全部**、Playwright のスクリプトで実際に操作して確かめる。スクリプトは `tools/qa/out/` に書く（コミットしない）。
-   - 押す要素は `[data-act="..."]` で探せる。選択は `data-act="sel" data-k="ep|team|shinko|dir|post|gross|tv|studio" data-v="..."`。
+   - 押す要素は `[data-act="..."]` で探せる。`data-v` の値は必ず引用符で囲む（`[data-v="24h"]`。`24h` `12h` `2gen` のような数字始まりの値は、引用符なしだと無効なセレクタになり、押せないまま「変化しない」と誤判定する）。
+   - 選択は `data-act="sel" data-k="ep|team|shinko|dir|post|gross|tv|studio" data-v="..."`。
+   - スクロール・アニメーションの結果は、1秒ほど待ってから測る。
    - ゲームの状態は、制作中なら `localStorage.getItem("animep.save")` で読める。特定の状況（進行が飛ぶ、納品拒否、放送日に間に合わない、行動0）は、ランダム操作の seed を変えるか、週を進め続けて作る。どうしても作れない項目は「未確認」と書く。
    - 各ルートで、routes.md 冒頭の「確かめること」をすべて確認する。気になった画面はスクリーンショットを `tools/qa/out/` に保存する。
 4. 報告（最後のメッセージ）

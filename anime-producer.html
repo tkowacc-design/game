@@ -2377,7 +2377,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       html = dlg(body, `<div class="pane-f"><span class="lbl">第${a.ep.n}話 放送 にできること</span><div class="acts one">${act({ label: "次へ", sub: next ? `次の放送：第${next.n}話（${whoShort(next.plan.team)}）W${E.airWeekOf(s, next)}` : "全話の放送が終わりました", attrs: `data-act="airedOk"`, pri: true, cost: "→" })}</div></div>`);
     } else if (modal.kind === "quit") {
       html = dlg(oh("メニュー", "やめますか", "進行中のデータは消え、スタジオ選びに戻ります。", "", null, "", "dlgT"),
-        `<div class="pane-f"><div class="acts">${act({ label: "続ける", attrs: `data-act="closeModal"`, pri: true })}${act({ label: "やめてスタジオ選びに戻る", attrs: `data-act="quitYes"` })}</div></div>`);
+        `<div class="pane-f"><span class="lbl">この画面でできること</span><div class="acts">${act({ label: "続ける", attrs: `data-act="closeModal"`, pri: true })}${act({ label: "やめてスタジオ選びに戻る", attrs: `data-act="quitYes"` })}</div></div>`);
     } else if (modal.kind === "help") {
       const body = oh("遊び方", "制作デスクの仕事", "夜のスタジオで、人や物を選ぶと右に詳しい様子が出ます。できることは、いつもその下にあります。", "", YOU, "", "dlgT")
         + `<ul>
@@ -2387,7 +2387,7 @@ if (typeof module !== "undefined") module.exports = Engine;
           <li>局・製作委員会の納品基準を下回ると<b>納品拒否</b>でリテイク。基準を割った話数は、放送日に「このまま放送」もできません。</li>
           <li>行動は週3回（ヘルプ、新しい進行、外部コンテ、監督と打ち合わせ、協力会社の催促）。原画マンの追加・巻き・方針の変更は行動を使いません。最後に<b>今週を締める</b>。</li>
           <li>ホワイトボードはグランドスケジュール、電話は協力会社、テレビは放送とSNSです。</li></ul>`;
-      html = dlg(body, `<div class="pane-f"><div class="acts one">${act({ label: "閉じる", attrs: `data-act="closeModal"`, pri: true })}</div></div>`);
+      html = dlg(body, `<div class="pane-f"><span class="lbl">この画面でできること</span><div class="acts one">${act({ label: "閉じる", attrs: `data-act="closeModal"`, pri: true })}</div></div>`);
     }
     modalRoot.innerHTML = html;
     mountFaces(modalRoot); mountKV(modalRoot);
@@ -2418,7 +2418,7 @@ if (typeof module !== "undefined") module.exports = Engine;
         <span><span class="t">${esc(o.label)}</span><span class="s">${esc(o.desc)}</span></span>
         <span class="trk"><span class="airc" style="left:${((air - W0) / cols) * 100}%;width:${100 / cols}%"></span><i style="width:${(Math.max(1, o.fc - W0 + 1) / cols) * 100}%;background:${toneC[o.j.tone]}"></i></span>
         <span class="word tone-${o.j.tone}" style="color:${toneT[o.j.tone]}">${esc(o.j.short)}</span></button>`).join("")}</div>
-      <p class="verdict ${pick.fc > air || pick.q < E.LINE ? "bad" : "good"}">${pick.fc > air ? `W${pick.fc}に完パケ。放送（W${air}）に${pick.fc - air}週間に合わない。放送日に「総集編」か「延期」を選ぶことになる。` : pick.q < E.LINE ? `W${pick.fc}に完パケ。間に合うが、局の基準を割りそう。納品拒否されたらリテイクになる。` : `W${pick.fc}に完パケ。放送（W${air}）には間に合う${air - pick.fc > 0 ? `（余裕${air - pick.fc}週）` : "（ぎりぎり）"}。`}</p></section>`;
+      <p class="verdict ${pick.fc > air || pick.q < E.LINE || (pick.m !== "stay" && pick.fc >= fc0) ? "bad" : "good"}">${pick.m !== "stay" && pick.fc >= fc0 ? `巻いても完パケは早まらない（W${pick.fc}のまま）。絵が荒れるだけになる。` : pick.fc > air ? `W${pick.fc}に完パケ。放送（W${air}）に${pick.fc - air}週間に合わない。放送日に「総集編」か「延期」を選ぶことになる。` : pick.q < E.LINE ? `W${pick.fc}に完パケ。間に合うが、局の基準を割りそう。納品拒否されたらリテイクになる。` : `W${pick.fc}に完パケ。放送（W${air}）には間に合う${air - pick.fc > 0 ? `（余裕${air - pick.fc}週）` : "（ぎりぎり）"}。`}</p></section>`;
     const foot = `<div class="pane-f"><span class="lbl">第${ep.n}話 にできること</span><div class="acts">${act({ label: pick.m === "stay" ? "このまま粘る" : `「${pick.label}」で指示する`, cost: "行動なし", attrs: `data-act="rushGo" data-v="${ep.n}" data-k="${pick.m}"`, pri: true })}${act({ label: "やめる", attrs: `data-act="closeModal"` })}</div></div>`;
     return dlg(body, foot);
   }
