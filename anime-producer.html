@@ -2478,7 +2478,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       <div class="row"><span>現場には途中の週から入る</span><span class="v">引き継ぎ</span></div>
       <div class="row"><span>前任が残した問題がある</span><span class="v">火消し</span></div>
       <div class="row"><span>人脈と評判が次の現場に残る</span><span class="v">積み重ね</span></div></div></section>`;
-    const acts = (c ? act({ label: "つづきから", sub: `${ch.name}「${ch.title}」`, attrs: `data-act="campCont"`, pri: true, cost: "→" }) : "")
+    const acts = (c ? act({ label: c.ending ? "結末を見る" : "つづきから", sub: c.ending ? `結末${c.ending} ・ これまでの仕事と人脈` : `${ch.name}「${ch.title}」`, attrs: `data-act="campCont"`, pri: true, cost: "→" }) : "")
       + act({ label: c ? "最初からやり直す" : "はじめる", sub: c ? "いまの進み具合は消える" : "第1章から", attrs: `data-act="campNew"`, pri: !c, cost: c ? null : "→" });
     return pane("流しのデスク", body, paneFoot("流しのデスク", acts, "", true));
   }
@@ -2499,8 +2499,8 @@ if (typeof module !== "undefined") module.exports = Engine;
       ${T.shinkoSkill.map((r, i) => { const v = (r[0] + r[1]) / 2; return `<div class="row"><span>${"ABCDEF"[i]}班 進行の段取り${v < 45 ? "（新人）" : ""}</span><span class="v ${v < 45 ? "bad" : ""}">${stars(v)}</span></div>`; }).join("")}</div></section>`;
     const foot = paneFoot(T.studio, act({ label: "このスタジオで始める", sub: "グランドスケジュールを引くところから", attrs: `data-act="tier" data-v="${T.key}"`, pri: true, cost: "→" }), "", true);
     const campRow = `<button class="st-row ${pickTier === "camp" ? "on" : ""}" style="--c:var(--pink)" data-act="pickTier" data-v="camp" aria-pressed="${pickTier === "camp"}">
-        <i></i><span><span style="display:block;font-weight:700">流しのデスク</span><span style="display:block;font-size:12px;color:var(--on-soft)">${camp ? `${chapterOf(Math.min(camp.chapter, CHAPTERS.length - 1)).name}まで ・ 評判 ${camp.rep} ・ 人脈 ${camp.contacts.length}人` : "物語 ・ 現場を渡り歩く"}</span></span>
-        <span class="tag dark" style="justify-self:start">物語</span><span class="big r hide-n">${camp ? `${Math.min(camp.chapter + 1, CHAPTERS.length)}<small>章</small>` : `<small>未開始</small>`}</span><span class="hide-n"></span><span class="hide-n" style="font-size:13px">${camp ? `評判 ${camp.rep}` : "はじめから"}</span><span class="hide-n"></span><span style="color:var(--on-soft)" aria-hidden="true">›</span></button>`;
+        <i></i><span><span style="display:block;font-weight:700">流しのデスク</span><span style="display:block;font-size:12px;color:var(--on-soft)">${camp ? `${camp.ending ? `完結（結末${camp.ending}）` : `${chapterOf(Math.min(camp.chapter, CHAPTERS.length - 1)).name}まで`} ・ 評判 ${camp.rep} ・ 人脈 ${camp.contacts.length}人` : "物語 ・ 現場を渡り歩く"}</span></span>
+        <span class="tag dark" style="justify-self:start">物語</span><span class="big r hide-n">${camp ? (camp.ending ? `<small>結末</small>${camp.ending}` : `${Math.min(camp.chapter + 1, CHAPTERS.length)}<small>章</small>`) : `<small>未開始</small>`}</span><span class="hide-n"></span><span class="hide-n" style="font-size:13px">${camp ? `評判 ${camp.rep}` : "はじめから"}</span><span class="hide-n"></span><span style="color:var(--on-soft)" aria-hidden="true">›</span></button>`;
     app.innerHTML = hdr("制作デスク篇", `<div class="wk"><span class="wk-n mute">放送前</span><span class="wk-t">スタジオを選ぶと、グランドスケジュールに進みます</span></div>`, `<button class="btn-sys" data-act="howto">遊び方</button>`)
       + `<div class="main"><div class="col">
           <div class="logo"><div class="logo-t"><h1>深夜アニメP</h1><span class="stamp">制作デスク篇</span></div>
@@ -2560,7 +2560,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">第${s.week}週</span><span class="wk-t">最終回 放送 ・ <b>12 / 12話</b></span><button class="btn-main" data-act="again">同じスタジオでもう一度</button></div>`, "")
       + `<div class="main"><div class="col">
           <section class="sec"><div class="sec-h"><h2>話数 12 ・ 作画の出来（線＝局の基準${E.LINE}）</h2></div>
-            <div class="chart"><div class="bars" style="height:${H}px"><span class="line" style="bottom:${Math.round((E.LINE / 100) * (H - 24))}px"><span>基準${E.LINE}</span></span>${bars}</div><div class="bars-x">${xs}</div></div></section>
+            <div class="chart"><div class="bars" style="height:${H}px"><span class="line" style="bottom:${Math.round((E.LINE / 100) * (H - 24))}px"></span>${bars}</div><div class="bars-x">${xs}</div></div></section>
           <section class="sec"><div class="sec-h"><h2>放送した1枚絵</h2></div><div class="kvs" style="grid-template-columns:repeat(12,minmax(0,1fr))">${s.eps.map((e) => `<div class="kvbox"><span data-kv="${e.n}"></span></div>`).join("")}</div></section>
           <section class="sec"><div class="sec-h"><h2>現場の記録</h2></div><div class="stats">
             <div class="stat"><div class="l">起きたトラブル</div><div class="v">${s.incidents.length}<small>件</small></div></div>
@@ -2589,7 +2589,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     app.innerHTML = hdr(studioSub(), `<div class="wk wk-fix"><span class="wk-n">第${s.week}週</span><span class="wk-t">最終回 放送 ・ <b>現場を終えた</b></span><button class="btn-main" data-act="nextJob">次の依頼へ</button></div>`, "")
       + `<div class="main"><div class="col">
           <section class="sec"><div class="sec-h"><h2>話数 12 ・ 作画の出来（薄い棒＝前任のとき・線＝局の基準${E.LINE}）</h2></div>
-            <div class="chart"><div class="bars" style="height:${H}px"><span class="line" style="bottom:${Math.round((E.LINE / 100) * (H - 24))}px"><span>基準${E.LINE}</span></span>${bars}</div><div class="bars-x">${xs}</div></div></section>
+            <div class="chart"><div class="bars" style="height:${H}px"><span class="line" style="bottom:${Math.round((E.LINE / 100) * (H - 24))}px"></span>${bars}</div><div class="bars-x">${xs}</div></div></section>
           <section class="sec"><div class="sec-h"><h2>現場の記録（あなたが入ってから）</h2></div><div class="stats">
             <div class="stat"><div class="l">ヘルプに入った</div><div class="v">${s.helpCount}<small>回</small></div></div>
             <div class="stat"><div class="l">ヘルプで発見</div><div class="v">${s.hiddenFound}<small>件</small></div></div>
