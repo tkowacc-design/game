@@ -132,7 +132,7 @@
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
   .tile { background: var(--card); border-radius: 4px; padding: 8px 10px; min-width: 0; }
   .tile .l { font-size: 11px; color: var(--ink-soft); }
-  .tile .v { font-family: var(--font-pixel); font-size: 18px; white-space: nowrap; }
+  .tile .v { font-family: var(--font-pixel); font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tile.bad { box-shadow: inset 0 0 0 1.5px var(--red); }
   .tile.bad .l, .tile.bad .v { color: var(--red); }
   .tile.good { box-shadow: inset 0 0 0 1.5px var(--green); }
@@ -1961,7 +1961,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       : !ep.started ? tagHtml(P && !gross && ep.conte < 1 ? "コンテ待ち" : "着手前") : tagHtml(E.STAGE_LABEL[st]);
     const who = gross ? `グロス：${esc(E.grossOf(s, p).name)}` : `${p.team}班（社内）`;
     let body = oh("話数", `第${ep.n}話`, `${who} ・ ${ep.cuts}カット ・ 予定 W${p.start}–W${end}`, tag);
-    if (ep.aired) body += `<div class="tiles">${tile("作画の出来", ep.airQ, ep.collapse ? "bad" : "")}${tile("放送", `W${ep.airWeek}`)}${tile("担当", esc(whoShort(p.team)))}</div>`;
+    if (ep.aired) body += `<div class="tiles">${tile("作画の出来", ep.airQ, ep.collapse ? "bad" : "")}${tile("放送", `W${ep.airWeek}`)}${tile("担当", gross ? "グロス" : `${p.team}班`)}</div>`;
     else if (!P) body += `<div class="tiles">${tile("予定", `W${p.start}–${end}`)}${tile("放送", `W${air}`)}${tile("余裕", `${air - end}週`, air - end <= 0 ? "bad" : "")}</div>`;
     else body += `<div class="tiles">${tile("工程", ep.delivered ? "納品済" : gross ? (ep.started ? `${Math.round(ep.gprog * 100)}%` : "着手前") : esc(E.STAGE_LABEL[st]))}${tile("完パケ予測", ep.delivered ? `W${ep.deliveredWeek}` : `W${fc}`, late ? "bad" : "")}${tile("放送", `W${air}`)}</div>`;
     body += mutHtml(mutterOf(ep));
@@ -2374,7 +2374,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       body += `<div class="tiles">${tile("作画の出来", a.ep.airQ, a.ep.collapse ? "bad" : "")}${tile("評判", Math.round(s.R))}${tile("放送済み", `${s.aired}/12`)}</div>`;
       body += `<section class="psec" style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;align-items:start"><span data-bigkv style="display:block;width:120px;height:120px;background:var(--chip);border-radius:4px;overflow:hidden"></span><div style="display:flex;flex-direction:column;gap:6px"><h3>放送後のSNS</h3>${posts.map(postHtml).join("")}</div></section>`;
       const next = E.unaired(s)[0];
-      html = dlg(body, `<div class="pane-f"><span class="lbl">${next ? `次の放送：第${next.n}話（${esc(whoShort(next.plan.team))}）W${E.airWeekOf(s, next)}` : "全話の放送が終わりました"}</span><div class="acts one">${act({ label: "次へ", attrs: `data-act="airedOk"`, pri: true, cost: "→" })}</div></div>`);
+      html = dlg(body, `<div class="pane-f"><span class="lbl">第${a.ep.n}話 放送 にできること</span><div class="acts one">${act({ label: "次へ", sub: next ? `次の放送：第${next.n}話（${whoShort(next.plan.team)}）W${E.airWeekOf(s, next)}` : "全話の放送が終わりました", attrs: `data-act="airedOk"`, pri: true, cost: "→" })}</div></div>`);
     } else if (modal.kind === "quit") {
       html = dlg(oh("メニュー", "やめますか", "進行中のデータは消え、スタジオ選びに戻ります。", "", null, "", "dlgT"),
         `<div class="pane-f"><div class="acts">${act({ label: "続ける", attrs: `data-act="closeModal"`, pri: true })}${act({ label: "やめてスタジオ選びに戻る", attrs: `data-act="quitYes"` })}</div></div>`);
@@ -2418,7 +2418,7 @@ if (typeof module !== "undefined") module.exports = Engine;
         <span><span class="t">${esc(o.label)}</span><span class="s">${esc(o.desc)}</span></span>
         <span class="trk"><span class="airc" style="left:${((air - W0) / cols) * 100}%;width:${100 / cols}%"></span><i style="width:${(Math.max(1, o.fc - W0 + 1) / cols) * 100}%;background:${toneC[o.j.tone]}"></i></span>
         <span class="word tone-${o.j.tone}" style="color:${toneT[o.j.tone]}">${esc(o.j.short)}</span></button>`).join("")}</div>
-      <p class="verdict ${pick.fc > air || pick.q < E.LINE ? "bad" : "good"}">${pick.fc > air ? "放送に間に合わない。放送日に「総集編」か「延期」を選ぶことになる。" : pick.q < E.LINE ? "間に合うが、局の基準を割りそう。納品拒否されたらリテイクになる。" : `W${pick.fc}に完パケ。放送には間に合う。`}</p></section>`;
+      <p class="verdict ${pick.fc > air || pick.q < E.LINE ? "bad" : "good"}">${pick.fc > air ? `W${pick.fc}に完パケ。放送（W${air}）に${pick.fc - air}週間に合わない。放送日に「総集編」か「延期」を選ぶことになる。` : pick.q < E.LINE ? `W${pick.fc}に完パケ。間に合うが、局の基準を割りそう。納品拒否されたらリテイクになる。` : `W${pick.fc}に完パケ。放送（W${air}）には間に合う${air - pick.fc > 0 ? `（余裕${air - pick.fc}週）` : "（ぎりぎり）"}。`}</p></section>`;
     const foot = `<div class="pane-f"><span class="lbl">第${ep.n}話 にできること</span><div class="acts">${act({ label: pick.m === "stay" ? "このまま粘る" : `「${pick.label}」で指示する`, cost: "行動なし", attrs: `data-act="rushGo" data-v="${ep.n}" data-k="${pick.m}"`, pri: true })}${act({ label: "やめる", attrs: `data-act="closeModal"` })}</div></div>`;
     return dlg(body, foot);
   }
