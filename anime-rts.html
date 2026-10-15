@@ -300,7 +300,7 @@ const Engine = (() => {
     if (kind === "home") { sh.task = null; goHome(s, sh, "帰らせた"); s.stats.orders++; return true; }
     if (!sh.task) s.stats.waited = (s.stats.waited || 0) + Math.max(0, s.t - sh.idleSince);
     sh.task = { kind, ep: TASK[kind].ep ? n : null, need: TASK[kind].hours * HOUR, done: 0 };
-    if (kind === "soto") s.car = sid;
+    if (kind === "soto") { s.car = sid; sh.task.bags = loadBags(s); }
     s.stats.orders++;
     return true;
   }
@@ -350,12 +350,22 @@ const Engine = (() => {
       const k = e.dDone; e.dDone = 0; e.shelf += k;
       return report(sh, s, `第${e.n}話の撮入れ準備、${k}カット分の袋を棚に置きました。外回りで撮影に届けます。`, `第${e.n}話、${k}袋 棚に置きました！`, k ? "good" : "");
     }
-    if (T.kind === "soto") { s.car = null; const r = collect(s, sh); return report(sh, s, r.text, "戻りました！", r.tone); }
+    if (T.kind === "soto") { s.car = null; const r = collect(s, sh, T); return report(sh, s, r.text, "戻りました！", r.tone); }
     if (T.kind === "break") { sh.report = null; return; }
   }
+  // the cut bags go into the car when it leaves; the filming studio gets them halfway through the round
+  function loadBags(s) {
+    let bags = 0;
+    for (const e of live(s)) {
+      if (e.gross || e.shelf <= 0) continue;
+      s.pipe.push({ ep: e.n, n: e.shelf, ready: s.t + (TASK.soto.hours / 2) * HOUR + SHOT_LAG, stage: "shot" }); e.shooting += e.shelf; bags += e.shelf; e.shelf = 0;
+    }
+    return bags;
+  }
   // one trip does everyone's episodes: pick up finished drawings, drop the cut bags at the filming studio
-  function collect(s, sh) {
-    let got = 0, blank = 0, bags = 0;
+  function collect(s, sh, T) {
+    let got = 0, blank = 0;
+    const bags = T.bags || 0;
     for (const e of live(s)) {
       if (e.gross) continue;
       if (e.drawn > 0) {
@@ -364,7 +374,6 @@ const Engine = (() => {
         if (b) { const a = s.anims.slice().sort((x, y) => load(x) - load(y))[0]; a.queue.unshift({ ep: e.n, n: b }); }
         e.coll += e.drawn - b; got += e.drawn - b; blank += b; e.drawn = 0;
       }
-      if (e.shelf > 0) { s.pipe.push({ ep: e.n, n: e.shelf, ready: s.t + SHOT_LAG, stage: "shot" }); e.shooting += e.shelf; bags += e.shelf; e.shelf = 0; }
     }
     s.stats.blank += blank;
     if (!got && !bags) return { text: "外回り、戻りました……回収も届けるものもありませんでした。", tone: "bad" };
@@ -392,7 +401,7 @@ const Engine = (() => {
       const a = s.anims.find((x) => x.id === m.ctx.aid), q = a && a.queue.find((x) => x.ep === m.ctx.ep);
       const k = q ? Math.min(q.n, m.ctx.k) : 0;
       if (k && e && !e.result && !e.gross) { q.n -= k; e.empty += k; if (q.n <= 0) a.queue.splice(a.queue.indexOf(q), 1); s.stats.drops++; }
-      log(s, `${m.from}の${k}カットを受け入れた。第${m.ctx.ep}話の空きが増えた。`, "warn");
+      log(s, k ? `${m.from}の${k}カットを受け入れた。第${m.ctx.ep}話の空きが増えた。` : `${m.from}の返事を受け入れた（第${m.ctx.ep}話には、もう返されるカットがなかった）。`, k ? "warn" : "");
     } else if (m.kind === "late") {
       const a = s.anims.find((x) => x.id === m.ctx.aid); if (a) a.slowUntil = s.t + 2 * DAY;
       log(s, `${m.from}の遅れを受け入れた。`);
@@ -717,7 +726,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     return out.join("");
   }
   function bubbles() {
-    return s.shinko.filter((sh) => sh.report && E.present(sh)).map((sh) => {
+    return s.shinko.filter((sh) => sh.report).map((sh) => {
       const b = P[sh.id].bubble, style = b[2] === "r" ? `right:${1920 - b[0]}px;top:${b[1]}px` : `left:${b[0]}px;top:${b[1]}px`;
       return `<button class="bubble ${b[2]} ${sh.report.tone === "bad" ? "bad" : ""}" data-act="sel" data-v="${sh.id}" style="${style}">${esc(sh.report.short || sh.report.text)}</button>`;
     }).join("");
@@ -902,7 +911,8 @@ if (typeof module !== "undefined") module.exports = Engine;
     const el = document.getElementById("popEl");
     if (!el) return;
     const [w, h] = ui.pop === "pc" ? [1500, 860] : [460, 820];
-    const pk = Math.min(1, (window.innerHeight * 0.95) / h, (window.innerWidth * 0.97) / w);
+    const pk = Math.max(ui.pop === "pc" ? 0.8 : 0, Math.min(1, (window.innerHeight * 0.95) / h, (window.innerWidth * 0.97) / w));
+    if (ui.pop === "pc") { el.style.width = `${Math.min(w, (window.innerWidth * 0.97) / pk)}px`; el.style.height = `${Math.min(h, (window.innerHeight * 0.95) / pk)}px`; }
     el.style.transform = `translate(-50%, -50%) scale(${pk})`;
   }
   function toast(text) {
@@ -1047,7 +1057,7 @@ if (typeof module !== "undefined") module.exports = Engine;
   document.addEventListener("keydown", (ev) => {
     if (!s) return;
     if (ev.key === "Escape") { if (ui.modal === "help" || ui.modal === "restart") ui.modal = null; else if (ui.pop) ui.pop = null; else { ui.sel = null; ui.pick = null; } render(); return; }
-    if (ui.modal) return;
+    if (ui.modal || s.phase !== "play") return;
     if (ev.key === " ") { ev.preventDefault(); if (!ev.repeat && s.phase === "play") { ui.paused = !ui.paused; render(); } }
     if (["1", "2", "3"].includes(ev.key) && !ui.pop) select(s.shinko[Number(ev.key) - 1].id);
   });
