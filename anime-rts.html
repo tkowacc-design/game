@@ -33,7 +33,7 @@
   .wb td { border-left: 1px solid #9aa2b8; border-right: 1px solid #9aa2b8; border-bottom: 1px solid #c3c8d6; padding: 1px 6px; white-space: nowrap; }
   .wb td:first-child { text-align: center; width: 46px; }
   .wb td:last-child { text-align: center; width: 120px; }
-  .wb .red { color: var(--red); } .wb .org { color: var(--orange); } .wb .blu { color: var(--blue); } .wb .grn { color: var(--green); } .wb .mut { color: #6a7088; font-weight: 400; }
+  .wb .red { color: var(--red); } .wb .org { color: var(--orange); } .wb .blu { color: var(--blue); } .wb .grn { color: var(--green); } .wb .mut { color: #565c72; font-weight: 400; }
   .wb tr.now td { background: rgba(255, 224, 130, .45); }
 
   /* who you can press */
@@ -111,12 +111,12 @@
   .scr .bar small { font-size: 20px; }
   .scr .list { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
   .scr .m { display: flex; flex-direction: column; gap: 6px; }
-  .scr .m .who { font-size: 17px; font-weight: 700; color: #6a7088; }
+  .scr .m .who { font-size: 17px; font-weight: 700; color: #565c72; }
   .scr .m .txt { background: #e3e5ea; padding: 12px 14px; font-size: 19px; font-weight: 700; line-height: 1.5; }
   .scr .m.bad .txt { background: #f6dcdc; }
-  .scr .m .at { font-size: 14px; color: #6a7088; }
-  .scr .empty { color: #6a7088; font-size: 18px; padding: 20px 0; text-align: center; }
-  .scr .back { margin: 0 18px 18px; height: 64px; flex: none; border: 0; background: var(--navy); color: #fff; font-size: 22px; font-weight: 700; }
+  .scr .m .at { font-size: 14px; color: #565c72; }
+  .scr .empty { color: #565c72; font-size: 18px; padding: 20px 0; text-align: center; }
+  .scr .back { margin: 0 18px 18px; height: 72px; flex: none; border: 0; background: var(--navy); color: #fff; font-size: 22px; font-weight: 700; }
 
   /* dialogs (help, end of week, end of the season) */
   .modal-bg { position: fixed; inset: 0; z-index: 40; background: rgba(8, 10, 18, .7); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
@@ -754,7 +754,7 @@ if (typeof module !== "undefined") module.exports = Engine;
   function placeMenu() {
     if (!ui.sel) return;
     const box = document.getElementById("box").getBoundingClientRect(), p = P[ui.sel];
-    const uk = Math.max(k, Math.min(1, window.innerWidth / 460) * 0.72, 0.6);
+    const uk = Math.max(k, 0.72); // buttons stay at least 46px tall
     const main = document.querySelector('#ui .menu[data-anchor="main"]'), eps = document.querySelector('#ui .menu[data-anchor="eps"]');
     if (!main) return;
     const mw = 260 * uk, mh = main.offsetHeight * uk;
