@@ -129,7 +129,7 @@
   .pc th { background: #dfe2ea; font-size: 14px; padding: 6px 6px; border: 1px solid #c3c8d6; white-space: nowrap; position: sticky; top: 0; }
   .pc td { border: 1px solid #d3d7e0; padding: 6px 6px; text-align: center; font-weight: 700; white-space: nowrap; }
   .pc td.l { text-align: left; }
-  .pc td.z { color: #8a90a4; font-weight: 400; }
+  .pc td.z { color: #60667c; font-weight: 400; }
   .pc td.red, .pc .red { color: var(--red); } .pc td.org, .pc .org { color: var(--orange); } .pc td.grn, .pc .grn { color: var(--green); }
   .pc td.hot { background: #fff1c2; }
   .pc tr.air td { background: #eceef3; color: #6a7088; font-weight: 400; }
@@ -191,6 +191,7 @@ const Engine = (() => {
   "use strict";
   // Time is in game minutes from 第1週 月曜 0:00. One week (10080 min) is 120 real seconds.
   const HOUR = 60, DAY = 1440, WEEK = 7 * DAY, ARRIVE = 10, START = ARRIVE * HOUR, EPS = 12, SCHEDULE = 4;
+  // how full the cut table is when an episode starts: a tuning range for later (only "easy" is used for now)
   const DIFF = {
     easy: { label: "やさしい", fill: 0.8, note: "原画マンが最初から8割埋まっている" },
     normal: { label: "ふつう", fill: 0.6, note: "原画マンが最初に6割埋まっている" },
@@ -830,9 +831,9 @@ if (typeof module !== "undefined") module.exports = Engine;
     <li>放送日に撮影が全部終わっていれば「完成」、85%以上なら「止め絵」、それ未満は「落とした」。</li>
     <li>スペースで止める・動かす。1〜3キーで進行を選ぶ。Esc で閉じる。</li></ul>`;
   function modalHtml() {
-    if (ui.modal === "intro") return card("進行RTS（試作）", "難易度を選んで、はじめる", rules, Object.entries(E.DIFF).map(([v, d], i) => cbtn(`<span class="stack">${d.label}<small>${esc(d.note)}</small></span>`, "start", i === 0, v)).join(""));
-    if (ui.modal === "help") return card("遊び方", "遊び方", rules + `<p style="margin:0">難易度：${esc(E.DIFF[s.diff].label)}（${esc(E.DIFF[s.diff].note)}）</p>`, cbtn("閉じる", "close", true) + cbtn("最初からやり直す", "restartAsk"));
-    if (ui.modal === "restart") return card("最初から", "最初からやり直しますか？", `<p style="margin:0">いまの現場は消える。難易度を選び直す。</p>`, cbtn("やり直す", "restart", true) + cbtn("やめる", "close"));
+    if (ui.modal === "intro") return card("進行RTS（試作）", "遊び方", rules, cbtn("はじめる", "start", true, "easy"));
+    if (ui.modal === "help") return card("遊び方", "遊び方", rules, cbtn("閉じる", "close", true) + cbtn("最初からやり直す", "restartAsk"));
+    if (ui.modal === "restart") return card("最初から", "最初からやり直しますか？", `<p style="margin:0">いまの現場は消える。</p>`, cbtn("やり直す", "start", true, "easy") + cbtn("やめる", "close"));
     if (s.phase === "weekEnd" && s.weekEnd) {
       const w = s.weekEnd, a = E.airStatus(s), live = E.live(s).sort((x, y) => x.air - y.air);
       const aired = w.aired.map((n) => E.epOf(s, n)).map((e) => row(`第${e.n}話 放送`, `${esc(e.result.label)}（撮影 ${e.shot}/${e.cuts}）`, e.result.tone)).join("");
@@ -841,7 +842,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     }
     if (s.phase === "end" && s.result) {
       const r = s.result;
-      return card("放送終了", "全12話 放送終了", `<div style="display:flex;gap:18px;align-items:center"><span class="rank">${esc(r.rank)}</span><span>完成 ${r.full}話 ・ 止め絵 ${r.still}話 ・ 落とした ${r.drop}話<br>難易度 ${esc(E.DIFF[s.diff].label)} ・ 指示 ${r.orders}回 ・ キレた ${r.angry}回 ・ 徹夜 ${r.allnight}回</span></div><div class="rows">${s.eps.map((e) => row(`第${e.n}話（${shName(e.owner)}）`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone)).join("")}</div>`, cbtn("もう一度", "restart", true));
+      return card("放送終了", "全12話 放送終了", `<div style="display:flex;gap:18px;align-items:center"><span class="rank">${esc(r.rank)}</span><span>完成 ${r.full}話 ・ 止め絵 ${r.still}話 ・ 落とした ${r.drop}話<br>指示 ${r.orders}回 ・ キレた ${r.angry}回 ・ 徹夜 ${r.allnight}回</span></div><div class="rows">${s.eps.map((e) => row(`第${e.n}話（${shName(e.owner)}）`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone)).join("")}</div>`, cbtn("もう一度", "start", true, "easy"));
     }
     return "";
   }
