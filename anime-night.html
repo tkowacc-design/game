@@ -54,8 +54,8 @@
   .car b { left: 8px; } .car u { right: 8px; }
 
   /* the heads-up corner */
-  .hud { position: absolute; left: 20px; top: 20px; width: 520px; background: rgba(15, 20, 36, .92); box-shadow: 0 0 0 4px var(--line); padding: 14px 20px 16px; display: flex; flex-direction: column; gap: 8px; }
-  .hud .l0 { font-size: 20px; color: #c9d1e6; font-weight: 700; }
+  .hud { position: absolute; left: 20px; top: 20px; width: 560px; background: rgba(15, 20, 36, .92); box-shadow: 0 0 0 4px var(--line); padding: 14px 20px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .hud .l0 { font-size: 22px; color: #c9d1e6; font-weight: 700; }
   .hud .l1 { display: flex; align-items: baseline; gap: 16px; }
   .hud .clk { font-size: 58px; font-weight: 700; line-height: 1; letter-spacing: 1px; }
   .hud .left { font-size: 22px; font-weight: 700; color: #ffe8a8; }
@@ -65,12 +65,13 @@
   .hud .bar i.low { background: #ffb347; } .hud .bar i.crit { background: #ff6b6b; }
   .hud .cnt { display: flex; gap: 18px; font-size: 24px; font-weight: 700; }
   .hud .cnt b { font-size: 32px; color: var(--yellow); }
-  .hud .say { font-size: 21px; font-weight: 700; padding: 6px 10px; background: #26304d; }
+  .hud .say { font-size: 21px; font-weight: 700; padding: 6px 10px; background: #26304d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .hud .say.bad { background: #5a2430; } .hud .say.good { background: #1f4a37; }
   .ctl { position: absolute; right: 20px; top: 20px; display: flex; gap: 10px; }
   .ctl button { min-width: 64px; height: 64px; padding: 0 14px; border: 0; background: var(--navy); color: #fff; font-size: 24px; font-weight: 700; box-shadow: 0 0 0 4px var(--line); }
   .log { position: absolute; left: 1330px; top: 912px; width: 570px; height: 148px; box-sizing: border-box; overflow: hidden; background: rgba(15, 20, 36, .9); box-shadow: 0 0 0 4px var(--line); padding: 10px 16px; display: flex; flex-direction: column; gap: 5px; pointer-events: none; }
-  .log div { font-size: 20px; line-height: 1.35; color: #dfe4f2; }
+  .log div { font-size: 21px; line-height: 1.3; color: #dfe4f2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .log div:first-child { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   .log div:first-child { color: #fff; font-weight: 700; }
   .log div.good { color: #9ee6b8; } .log div.warn { color: #ffd38a; } .log div.bad { color: #ff9b9b; }
   .log span { color: #9aa3bd; margin-right: 8px; font-weight: 400; }
@@ -84,9 +85,9 @@
   .side .who { padding: 12px 20px 6px; border-bottom: 3px dashed #e0d2ae; }
   .side .who h3 { margin: 0 0 6px; font-size: 27px; } .side .who h3 small { font-size: 21px; color: var(--ink-soft); margin-left: 10px; }
   .side .row { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 10px; font-size: 23px; padding: 3px 0; line-height: 1.35; }
-  .side .row .k { color: var(--ink-soft); font-weight: 700; } .side .row .v { font-weight: 700; } .side .row .v small { font-size: 19px; color: var(--ink-soft); }
+  .side .row .k { color: var(--ink-soft); font-weight: 700; } .side .row .v { font-weight: 700; } .side .row .v small { font-size: 20px; color: var(--ink-soft); }
   .side .say { margin: 8px 0; padding: 8px 14px; background: #fff3cf; box-shadow: inset 5px 0 0 var(--orange); font-size: 24px; font-weight: 700; line-height: 1.35; }
-  .side .say small { display: block; font-size: 19px; color: var(--ink-soft); }
+  .side .say small { display: block; font-size: 20px; color: var(--ink-soft); }
   .side .acts { padding: 10px 20px 14px; display: flex; flex-direction: column; gap: 8px; }
   .side .acts h4 { margin: 4px 0 0; font-size: 21px; color: var(--ink-soft); }
   .side .tip { padding: 10px 20px; font-size: 21px; color: var(--ink-soft); font-weight: 700; border-bottom: 3px dashed #e0d2ae; }
@@ -168,7 +169,7 @@ const Engine = (() => {
     tokorozawa: { name: "所沢", kind: "home", x: 150, y: 430 },
     konbiniS: { name: "コンビニ（環八）", kind: "konbini", x: 650, y: 840 },
     konbiniN: { name: "コンビニ（新青梅）", kind: "konbini", x: 740, y: 270 },
-    famires: { name: "ファミレス", kind: "famires", x: 450, y: 345 },
+    famires: { name: "ファミレス", kind: "famires", x: 470, y: 380 },
   };
   const ROADS = [["office", "nakano"], ["office", "ogikubo"], ["office", "konbiniS"], ["office", "nerima"], ["nakano", "nerima"], ["ogikubo", "famires"], ["ogikubo", "kichijoji"], ["kichijoji", "mitaka"], ["kichijoji", "konbiniS"], ["konbiniS", "mitaka"], ["famires", "tokorozawa"], ["nerima", "konbiniN"], ["konbiniN", "famires"], ["konbiniN", "ogikubo"]];
   // the six animators holding this episode's cuts tonight (ranges are rolled each night)
@@ -222,7 +223,7 @@ const Engine = (() => {
     ev(between(s, [4.5, 6]), "colleague");
     ev(10, "bikeArrive");
     s.events.sort((x, y) => x.at - y.at);
-    log(s, `22:00、スタジオ。第${EP}話の原画を、朝9時の動仕撒きまでに集める。`);
+    log(s, `スタジオ。第${EP}話の原画を、朝9時の動仕撒きまでに集める。`);
     return s;
   }
 
@@ -311,7 +312,7 @@ const Engine = (() => {
     desk1: { from: "デスク（会社）", text: () => `第${EP}話、朝9時に動仕に撒くから、最低${GOAL}カットは会社に入れといて。よろしく。`, choices: [["ok", "わかりました"]], ign: (s) => { s.desk--; return "デスクの電話に出なかった。"; } },
     desk2: { from: "デスク（会社）", text: (s) => {
       const up = s.anims.filter((a) => finished(a) && a.given < a.cuts && !(s.bike && s.bike.aid === a.id));
-      for (const a of up) a.known.seen = { t: s.t, n: ready(a), fin: true, why: null };
+      for (const a of up) a.known.seen = { t: s.t, n: ready(a), fin: true, why: null, heard: "デスク" };
       return `いま何カット？ 会社には${s.delivered}カット入ってる。${up.length ? `${up.map((a) => fam(a.name) + "さん").join("と")}から「上がった」って連絡あったよ。` : "誰からも「上がった」って連絡はない。"}`;
     }, choices: [["ok", "わかりました"]], ign: (s) => { s.desk--; return "デスクの電話に出なかった。"; } },
     busy: { from: "小野寺 葵", text: (s, a) => `すみません、他社の締めが押してて……こっちに戻れるのは${clock(a.stopUntil)}くらいです。`, choices: [["push", "そこを何とか、こっちを先に"], ["ok", "わかりました"]] },
@@ -353,7 +354,7 @@ const Engine = (() => {
     } else if (c.kind === "bike") {
       if (k === "bike") { s.bike = { aid: a.id, n: 0 }; s.desk--; a.known.note = "バイク便で朝8時に会社へ"; text = "原さんの分は、バイク便で朝8時に会社に届く。"; }
       else text = "原さんの分は、取りに行くと伝えた。";
-    } else if (c.kind === "vetDone") { a.known.seen = { t: s.t, n: ready(a), fin: true, why: null }; text = "高槻さんは上がっている。"; }
+    } else if (c.kind === "vetDone") { a.known.seen = { t: s.t, n: ready(a), fin: true, why: null, heard: "本人" }; text = "高槻さんは上がっている。"; }
     else if (c.kind === "colleague") {
       if (k === "help") { min = 40; s.favor++; text = "真壁を拾って会社まで送った（40分。真壁に貸しができた）。"; }
       else text = "真壁の頼みを断った。";
@@ -464,8 +465,9 @@ const Engine = (() => {
     if (to === s.at || !PLACES[to]) return { ok: false, text: "もうここにいる" };
     const r = route(s, s.at, to), from = s.at;
     s.stats.actions++; s.stats.drove += r.min;
+    const t0 = s.t;
     advance(s, r.min, "drive");
-    if (s.phase !== "play") return { ok: true, path: r.path, from, text: "着く前に朝9時になった。" };
+    if (s.phase !== "play") return { ok: true, path: r.path, from, reach: Math.min(1, (s.t - t0) / r.min), text: "着く前に朝9時になった。" };
     s.at = to;
     const text = arrive(s);
     return { ok: true, path: r.path, from, min: r.min, text };
@@ -496,7 +498,13 @@ const Engine = (() => {
   function finish(s, why) {
     if (s.phase !== "play") return;
     if (why === "morning" && s.at === "office" && s.car) { s.delivered += s.car; s.car = 0; }
-    if (s.bike && s.t >= START + 10 * H && s.bike.n === 0 && !s.events.find((e) => e.kind === "bikeArrive").fired) bikeArrive(s);
+    const bikeEv = s.events.find((e) => e.kind === "bikeArrive");
+    if (s.bike && !bikeEv.fired) {
+      // you went home early: 原 keeps drawing (as if left alone) and the bike still arrives at 8:00
+      const a = animOf(s, s.bike.aid), t0 = s.t;
+      for (let t = s.t; t < bikeEv.at; t += 5) { s.t = Math.min(bikeEv.at, t + 5); drawFor(s, a, s.t - Math.max(t0, t)); }
+      s.t = bikeEv.at; bikeEv.fired = true; bikeArrive(s); s.t = t0;
+    }
     s.phase = "end";
     const d = s.delivered;
     const grade = d >= GOAL + 25 ? ["S", "余裕を持って撒ける"] : d >= GOAL + 10 ? ["A", "しっかり撒ける"] : d >= GOAL ? ["B", "最低ラインは撒ける"] : d >= GOAL - 15 ? ["C", "足りない（動仕が止まる）"] : ["D", "撒けない"];
@@ -588,7 +596,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       const who = a ? `<small>${esc(E.fam(a.name))}</small>` : "";
       const cls = ["node", p.kind, ui.sel === id ? "on" : "", s.at === id ? "here" : "", a && a.place === id && !E.finished(a) ? "lit" : ""].join(" ");
       return `<button class="${cls}" data-act="sel" data-v="${id}" style="left:${p.x}px;top:${p.y}px" aria-label="${esc(p.name)}">${chip ? `<span class="chip ${tone}">${esc(chip)}</span>` : ""}<span class="ic"></span><span class="nm">${esc(p.name)}${who}</span></button>`;
-    }).join("") + `<div class="car" id="car" style="left:${P[s.at].x}px;top:${P[s.at].y}px"><i></i><b></b><u></u></div>`;
+    }).join("") + (([x, y]) => `<div class="car" id="car" style="left:${x}px;top:${y}px"><i></i><b></b><u></u></div>`)(s.phase === "end" && ui.carXY ? ui.carXY : [P[s.at].x, P[s.at].y]);
   }
   function hud() {
     const sta = Math.max(0, Math.round(s.sta)), word = sta >= 60 ? "元気" : sta >= 35 ? "疲れている" : sta >= 20 ? "眠い" : "限界";
@@ -607,10 +615,10 @@ if (typeof module !== "undefined") module.exports = Engine;
   }
   function animBlock(a) {
     const k2 = a.known, seen = k2.seen;
-    const seenText = seen ? `${E.clock(seen.t)}に 上がり${seen.n}カット${seen.why === "sleep" ? "・寝ていた" : seen.why === "other" ? "・他社の作業中" : seen.why ? "・手が止まっていた" : ""}` : "まだ見ていない";
+    const seenText = seen && seen.heard ? `${E.clock(seen.t)}に${seen.heard === "デスク" ? "デスクから" : "本人から"}「上がった」と聞いた` : seen ? `${E.clock(seen.t)}に 上がり${seen.n}カット${seen.why === "sleep" ? "・寝ていた" : seen.why === "other" ? "・他社の作業中" : seen.why ? "・手が止まっていた" : ""}` : "まだ見ていない";
     return `<div class="who"><h3>${esc(a.name)}<small>${esc(a.label)}</small></h3>
       <div class="row"><span class="k">言っていた上がり</span><span class="v">${E.clock(k2.said)} <small>${esc(E.trustWord(a))}</small></span></div>
-      <div class="row"><span class="k">最後に見たとき</span><span class="v">${esc(seenText)}</span></div>
+      <div class="row"><span class="k">${seen && seen.heard ? "最後に聞いたこと" : "最後に見たとき"}</span><span class="v">${esc(seenText)}</span></div>
       <div class="row"><span class="k">回収 ・ 機嫌</span><span class="v">${a.given}/${a.cuts}カット ・ ${esc(E.moodWord(a.mood))}</span></div>
       <div class="say"><small>あなたの見立て</small>${esc(E.mutter(s, a))}</div></div>`;
   }
@@ -694,7 +702,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       const rows = [
         ["会社に入った原画", `${r.delivered}カット（最低ライン${E.GOAL}）`, r.delivered >= E.GOAL ? "good" : "bad"],
         r.left ? ["車に残った原画", `${r.left}カット（9時に間に合わなかった）`, "bad"] : null,
-        s.bike ? ["バイク便", `${s.bike.n}カット`, ""] : null,
+        s.bike ? ["バイク便（朝8時に届いた）", `${s.bike.n}カット`, ""] : null,
         ["回収できなかった", `${s.anims.reduce((t, a) => t + a.cuts - a.given, 0)}カット`, ""],
         ["夜の終わり", r.why === "slept" ? `${E.clock(s.sleptAt)}に帰って寝た` : "徹夜した", r.why === "slept" ? "good" : "warn"],
         ["明日の体力", `${r.sta}`, r.sta >= 50 ? "good" : r.sta >= 25 ? "warn" : "bad"],
@@ -746,10 +754,10 @@ if (typeof module !== "undefined") module.exports = Engine;
   }
 
   // ---------- time passing on screen (the engine has already moved; this only shows it) ----------
-  function animate(t0, path) {
+  function animate(t0, path, reach = 1) {
     const t1 = s.t, pts = (path || []).map((id) => [P[id].x, P[id].y]);
     const dur = path ? Math.min(2200, 600 + (t1 - t0) * 18) : Math.min(1000, 250 + (t1 - t0) * 12);
-    ui.anim = { t0, t1, pts, start: performance.now(), dur };
+    ui.anim = { t0, t1, pts, start: performance.now(), dur, reach };
     render();
     const step = (now) => {
       const a = ui.anim;
@@ -759,10 +767,11 @@ if (typeof module !== "undefined") module.exports = Engine;
       if (a.pts.length > 1) {
         const segs = []; let total = 0;
         for (let i = 1; i < a.pts.length; i++) { const d = Math.hypot(a.pts[i][0] - a.pts[i - 1][0], a.pts[i][1] - a.pts[i - 1][1]); segs.push(d); total += d; }
-        let d = total * f, i = 0;
+        let d = total * f * a.reach, i = 0;
         while (i < segs.length - 1 && d > segs[i]) { d -= segs[i]; i++; }
         const q = segs[i] ? d / segs[i] : 1, [x0, y0] = a.pts[i], [x1, y1] = a.pts[i + 1];
-        const car = $("car"); car.style.left = `${x0 + (x1 - x0) * q}px`; car.style.top = `${y0 + (y1 - y0) * q}px`;
+        ui.carXY = [x0 + (x1 - x0) * q, y0 + (y1 - y0) * q];
+        const car = $("car"); car.style.left = `${ui.carXY[0]}px`; car.style.top = `${ui.carXY[1]}px`;
       }
       if (f < 1) requestAnimationFrame(step);
       else { ui.anim = null; ui.phone = "ring"; render(); }
@@ -778,7 +787,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (a === "help") { ui.modal = "help"; return render(); }
     if (a === "restartAsk") { ui.modal = "restart"; return render(); }
     if (a === "close") { if (ui.modal) ui.modal = null; else ui.sel = null; return render(); }
-    if (a === "again" || a === "next") { s = E.newGame(a === "again" ? s.seed : (s.seed % 100000) + 1 + Math.floor(Math.random() * 1000)); ui.sel = null; ui.modal = null; ui.phone = "ring"; save(); return render(); }
+    if (a === "again" || a === "next") { ui.carXY = null; s = E.newGame(a === "again" ? s.seed : (s.seed % 100000) + 1 + Math.floor(Math.random() * 1000)); ui.sel = null; ui.modal = null; ui.phone = "ring"; save(); return render(); }
     if (a === "sleepAsk") { ui.modal = "sleepAsk"; return render(); }
     if (a === "sleep") { ui.modal = null; ui.sel = null; E.act(s, "sleep"); save(); return render(); }
     if (s.phase !== "play") return;
@@ -786,7 +795,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (a === "go") {
       const t0 = s.t, r = E.go(s, v);
       if (!r.ok) return toast(r.text);
-      ui.sel = s.phase === "play" ? v : null; save(); toast(r.text); return animate(t0, r.path);
+      ui.sel = s.phase === "play" ? v : null; ui.carXY = null; save(); toast(r.text); return animate(t0, r.path, r.reach || 1);
     }
     if (a === "do") {
       const t0 = s.t, r = E.act(s, el.dataset.k, el.dataset.a || null);
@@ -805,7 +814,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const el = ev.target.closest("[data-act]");
     if (el && !el.disabled) return doAct(el);
     // pressing empty map closes the place menu
-    if (!el && !ev.target.closest(".side, .card, .phone") && ui.sel && !ui.modal) { ui.sel = null; render(); }
+    if (!el && !ev.target.closest(".side, .card, .phone, .hud, .log") && ui.sel && !ui.modal) { ui.sel = null; render(); }
   });
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape" || !s) return;
