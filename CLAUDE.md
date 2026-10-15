@@ -2,7 +2,7 @@
 
 - ゲーム本体は `anime-producer.html` の1ファイル。計算部分（`<script id="engine">`）と画面（その下の `<script>`）は分かれている。
 - 画面は「左に一覧 → 選ぶと右に詳細 → 詳細のいちばん下に、それにできること」で統一している。品質の見込みは数字で出さず、制作デスクの「あなたの見立て」のひとことで出す。
-- RTS版の試作は `anime-rts.html`（制作部だけ・リアルタイム・進行からの電話）。作りは本体と同じ（計算部分は `<script id="engine">`）。テストのルートは `tools/qa/routes-rts.md`、ランダム操作は `node tools/qa/fuzz.js --page anime-rts.html`。
+- RTS版の試作は `anime-rts.html`（制作部だけ・リアルタイム・進行からの電話）。作りは本体と同じ（計算部分は `<script id="engine">`）。テストのルートは `tools/qa/routes-rts.md`、ランダム操作は `node tools/qa/fuzz.js --page anime-rts.html --live`（時間で書き換わる画面なので `--live` を付ける）。
 
 ## 大きな修正のあとのテスト（必ずやる）
 

@@ -3,7 +3,10 @@
 // reloads now and then to test save/resume, and reports page errors, broken text and layout overflow.
 // Each run fixes Math.random with its own seed, so a failure can be replayed with --seed.
 //
-//   node tools/qa/fuzz.js [--runs 6] [--steps 400] [--seed 1] [--width 1440] [--height 900] [--out report.json] [--page anime-rts.html]
+//   node tools/qa/fuzz.js [--runs 6] [--steps 400] [--seed 1] [--width 1440] [--height 900] [--out report.json] [--page anime-rts.html] [--live]
+//
+// --live: for a screen that redraws while time runs (the RTS prototype). Moving things are clicked without
+// waiting for them to stop, and a button replaced by a redraw is found again by its data-* and clicked once more.
 //
 // Needs playwright-core (`npm i --no-save playwright-core` in tools/qa) and a Chromium
 // (CHROMIUM env, default /opt/pw-browsers/chromium-1194/chrome-linux/chrome).
@@ -16,6 +19,7 @@ const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 ?
 const RUNS = +arg("runs", 6), STEPS = +arg("steps", 400), SEED0 = +arg("seed", 1);
 const W = +arg("width", 1440), H = +arg("height", 900);
 const OUT = arg("out", "");
+const LIVE = process.argv.includes("--live");
 const PAGE = "file://" + path.resolve(__dirname, "../..", arg("page", "anime-producer.html"));
 const EXE = process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 // leaving the game is allowed but rare, so a run gets deep into the season
@@ -37,7 +41,7 @@ function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x9E3779B9) | 0
     await ctx.route(/fonts\.(googleapis|gstatic)/, (rt) => rt.abort());
     const p = await ctx.newPage();
     const errors = [];
-    p.on("pageerror", (e) => errors.push("pageerror: " + e.message));
+    p.on("pageerror", (e) => errors.push("pageerror: " + e.message + ((e.stack || "").split("\n")[1] || "").replace(/file:\/\/\S*\//, " @")));
     p.on("console", (m) => { if (m.type() === "error" && !/ERR_FAILED|fonts/.test(m.text())) errors.push("console: " + m.text()); });
     await p.goto(PAGE);
     const trail = [];
@@ -76,7 +80,15 @@ function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x9E3779B9) | 0
         if (handle && (await handle.evaluate((el) => el.tagName)) === "SELECT") {
           const n = await handle.evaluate((el) => el.options.length);
           await handle.selectOption({ index: Math.floor(rand() * n) });
-        } else if (handle) await handle.click({ timeout: 2000 });
+        } else if (handle) {
+          const key = LIVE ? await handle.evaluate((el) => JSON.stringify(el.dataset)) : null;
+          try { await handle.click({ timeout: 2000, force: LIVE }); }
+          catch (e) {
+            if (!LIVE || !/not attached|detached/.test(e.message)) throw e;
+            const again = (await p.evaluateHandle((k) => [...document.querySelectorAll("[data-act]")].find((el) => JSON.stringify(el.dataset) === k && !el.disabled), key)).asElement();
+            if (again) await again.click({ timeout: 2000, force: true });
+          }
+        }
       } catch (e) { fail("click", `${act}: ${e.message.split("\n")[0]}`); }
       await p.waitForTimeout(30);
       if (errors.length) { fail("error", errors.splice(0).join(" | ")); }

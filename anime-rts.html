@@ -44,7 +44,7 @@
   .hdr-r { margin-left: auto; display: flex; gap: 8px; }
   .btn-main { min-height: 44px; padding: 0 20px; font-family: var(--font-pixel); font-size: 16px; background: var(--marker); color: var(--night); border: 0; border-radius: 4px; box-shadow: 0 3px 0 var(--marker-d); white-space: nowrap; }
   .btn-main:hover { background: #ffe97a; }
-  .btn-main.ring { background: var(--red-d); color: #fff; box-shadow: 0 3px 0 #8f1f25; }
+  .btn-main.ring { background: var(--red); color: #fff; box-shadow: 0 3px 0 #7a1a20; }
   .btn-sys { min-height: 44px; padding: 0 14px; background: transparent; color: var(--on); border: 1px solid var(--line-2); border-radius: 4px; white-space: nowrap; }
   .btn-sys:hover { border-color: var(--on-soft); }
   .speed { display: flex; border: 1px solid var(--line-2); border-radius: 4px; overflow: hidden; }
@@ -977,7 +977,8 @@ if (typeof module !== "undefined") module.exports = Engine;
     else m = sh.rookie ? { tone: "mute", t: "張り切っているが、早とちりが多い" } : { tone: "ok", t: "落ち着いている。任せられる" };
     const stepWords = st.map((x) => {
       if (x.k === "go") return `${placeName(x.to)}へ行く`;
-      return { pick: `本社で袋を${x.n}つ取る`, give: `${famName(animOf(x.aid))}さんに袋を渡す`, collect: `${famName(animOf(x.aid))}さんから上がりを受け取る`, meet: `${famName(animOf(x.aid))}さんに会う`, takeback: `${famName(animOf(x.aid))}さんから描きかけを引き上げる`, wait: x.kind === "hari" ? "張り込む（描き上がるまで）" : "待つ", drop: "撮影スタジオに袋を届ける", rest: "休む", ret: "袋を本社に戻す" }[x.k];
+      const who = x.aid ? `${famName(animOf(x.aid))}さん` : "";
+      return { pick: `本社で袋を${x.n}つ取る`, give: `${who}に袋を渡す`, collect: `${who}から上がりを受け取る`, meet: `${who}に会う`, takeback: `${who}から描きかけを引き上げる`, wait: x.kind === "hari" ? "張り込む（描き上がるまで）" : "待つ", drop: "撮影スタジオに袋を届ける", rest: "休む", ret: "袋を本社に戻す" }[x.k] || "";
     });
     const std = Object.entries(E.STANDING).map(([type, opts]) => `<label class="field"><span>${KIND_NAME[type]}</span><select data-act="standing" data-sid="${sh.id}" data-type="${type}">${opts.map(([v, t]) => `<option value="${v}" ${sh.standing[type] === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>`).join("");
     const body = oh("制作進行", sh.name, `${sh.rookie ? "新人" : "ベテラン"} ・ ${statusOf(sh)}`, tag)
