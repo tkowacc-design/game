@@ -84,7 +84,7 @@
   .cmd { height: 64px; width: 260px; box-sizing: border-box; padding: 0 10px; border: 0; background: var(--cream); color: var(--ink); font-size: 24px; font-weight: 700; box-shadow: 0 0 0 4px var(--line), inset 0 -5px 0 var(--cream-2); display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.1; text-align: center; }
   .cmd small { font-size: 14px; font-weight: 700; color: var(--ink-soft); display: block; }
   .cmd:hover:not(:disabled), .cmd.on { background: var(--yellow); }
-  .cmd:disabled { background: var(--gray); color: #4d5470; box-shadow: 0 0 0 4px var(--line); cursor: not-allowed; font-size: 20px; }
+  .cmd:disabled { background: var(--gray); color: #2f3550; box-shadow: 0 0 0 4px var(--line); cursor: not-allowed; font-size: 20px; }
   .cmd.sub { height: 56px; font-size: 20px; flex-direction: column; gap: 0; }
   .cmd .stack { display: flex; flex-direction: column; }
   .menu.eps { width: 260px; }
@@ -422,7 +422,7 @@ const Engine = (() => {
     const weeksTo = (e) => Math.max(0, Math.ceil((e.air - s.t) / WEEK));
     if (!firstAired) return { main: `第1話 放送まで あと${weeksTo(epOf(s, 1))}週`, sub: "", airing: false, left };
     if (!next) return { main: "全話 放送終了", sub: "", airing: false, left: 0 };
-    return { main: `放送中　残り${left}話`, sub: `次は第${next.n}話（あと${weeksTo(next)}週）`, airing: true, left };
+    return { main: `放送中 残り${left}話`, sub: `次は第${next.n}話（あと${weeksTo(next)}週）`, airing: true, left };
   }
 
   // ---------- your read of things, never a number ----------
@@ -494,9 +494,9 @@ if (typeof module !== "undefined") module.exports = Engine;
   const DOW = ["月", "火", "水", "木", "金", "土", "日"];
   // positions on the 1920x1080 picture (from the art's layout)
   const P = {
-    s1: { zone: [80, 272, 560, 860], tag: [150, 830], bubble: [95, 152, "l"], zzz: [430, 300], menu: [560, 300], side: 1 },
-    s2: { zone: [1360, 262, 1700, 640], tag: [1430, 212], bubble: [1540, 96, "r"], zzz: [1690, 260], menu: [1050, 250], side: -1 },
-    s3: { zone: [1500, 390, 1920, 960], tag: [1630, 336], bubble: [1540, 290, "r"], zzz: [1440, 420], menu: [1180, 360], side: -1 },
+    s1: { zone: [80, 272, 560, 860], tag: [150, 830], bubble: [95, 152, "l"], zzz: [440, 330], menu: [560, 300], side: 1 },
+    s2: { zone: [1360, 262, 1700, 640], tag: [1430, 212], bubble: [1540, 96, "r"], zzz: [1405, 300], menu: [1050, 250], side: -1 },
+    s3: { zone: [1500, 390, 1920, 960], tag: [1630, 336], bubble: [1540, 290, "r"], zzz: [1790, 520], menu: [1180, 360], side: -1 },
   };
   const KEYS = [352, 916, 280, 151], PHONE = [50, 932, 286, 140];
   // where each pose is actually drawn (32x32 cells of the 640px frame), so pressing picks the person under the pointer
@@ -558,7 +558,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (st === "work") return { t: sh.sta < 25 ? "疲労" : "作業中", att: false, task: sh.task };
     return { t: sh.sta < 25 ? "疲労・指示待ち" : "指示待ち", att: true };
   }
-  const taskName = (T) => (T.ep ? `${T.ep}話の${E.TASK[T.kind].short}` : E.TASK[T.kind].short);
+  const taskName = (T) => (T.ep ? `第${T.ep}話の${E.TASK[T.kind].short}` : E.TASK[T.kind].short);
 
   // ---------- the picture ----------
   function stage(e) {
@@ -589,7 +589,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const out = [];
     const a = E.airStatus(s), d = dayOf(s.t), part = (s.t % E.DAY) / E.DAY;
     const secLeft = Math.max(0, Math.ceil((E.WEEK - (s.t % E.WEEK)) / MIN_PER_SEC));
-    out.push(`<div class="hud"><div class="l1"><span>第${Math.min(s.week, E.weekOf(s.t))}週</span><span>${clock(s.t)}</span><small>残り${secLeft}秒</small></div><div class="l2 ${a.airing ? "on" : ""}">${esc(a.main)}${a.sub ? `<small>${esc(a.sub)}</small>` : ""}</div><div class="days">${DOW.map((_, i) => `<span><i style="width:${i < d ? 100 : i === d ? Math.round(part * 100) : 0}%"></i></span>`).join("")}</div></div>`);
+    out.push(`<div class="hud"><div class="l1">${s.phase === "end" ? `<span>第${E.EPS + E.SCHEDULE - 1}週</span><span>放送終了</span>` : `<span>第${Math.min(s.week, E.weekOf(s.t))}週</span><span>${clock(s.t)}</span><small>残り${secLeft}秒</small>`}</div><div class="l2 ${a.airing ? "on" : ""}">${esc(a.main)}${a.sub ? `<small>${esc(a.sub)}</small>` : ""}</div><div class="days">${DOW.map((_, i) => `<span><i style="width:${i < d ? 100 : i === d ? Math.round(part * 100) : 0}%"></i></span>`).join("")}</div></div>`);
     out.push(`<div class="ctl"><button data-act="pause" aria-label="${ui.paused || ui.modal ? "時間を動かす" : "時間を止める"}">${ui.paused || ui.modal || s.phase !== "play" ? "▶ 再開" : "Ⅱ 停止"}</button><button data-act="speed" class="${ui.speed === 2 ? "on" : ""}" aria-pressed="${ui.speed === 2}">×${ui.speed}</button><button data-act="help" aria-label="遊び方">？</button></div>`);
     for (const sh of s.shinko) {
       const p = P[sh.id], st = stateOf(sh), tg = tagOf(sh), on = ui.sel === sh.id;
@@ -640,7 +640,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const btn = (kind) => {
       const T = E.TASK[kind];
       let why = "";
-      if (T.ep) { if (!urgentEps(kind).length) why = kind === "eigyo" ? "空きカットなし" : kind === "meet" ? "作打ちする話数なし" : "進行表はそろっている"; }
+      if (T.ep) { if (!urgentEps(kind).length) why = sh.task && sh.task.kind === kind ? "いまやっている" : kind === "eigyo" ? "空きカットなし" : kind === "meet" ? "作打ちする話数なし" : "進行表はそろっている"; }
       else why = E.canOrder(s, sh.id, kind);
       if (kind === "soto" && why && s.car && s.car !== sh.id) why = "車を使用中";
       if (why === "体力は十分") why = "体力は十分";
@@ -861,7 +861,8 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (el && el.dataset.act === "phoneClose" && el.classList.contains("phone-bg") && ev.target.closest("#phoneEl")) return; // inside the phone
     if (el && el.classList.contains("zone") && ev.detail > 0) {
       // a pointer press on a person: whoever is drawn under the pointer (川口 sits behind 真壁)
-      const who = zoneAt(stagePoint(ev));
+      const pt = stagePoint(ev);
+      const who = zoneAt(pt) || ["s3", "s1", "s2"].map(shOf).find((x) => { if (stateOf(x) !== "out") return false; const [x1, y1, x2, y2] = P[x.id].zone; return pt.x >= x1 && pt.x <= x2 && pt.y >= y1 && pt.y <= y2; });
       if (who) return select(who.id);
       if (ui.sel) { ui.sel = null; ui.pick = null; render(); }
       return;
