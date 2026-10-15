@@ -8,11 +8,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
 <style>
-  /* The desk, seen from your chair, drawn at 1920x1080 and scaled to the window. No fixed panels:
-     press a 進行 and what you can tell them appears beside them; press the phone and it comes up in front of you. */
+  /* The desk, seen from your chair (a PC game), drawn at 1920x1080 and scaled to the window. No fixed panels:
+     press a 進行 and what you can tell them appears beside them; the phone and the PC come up in front of you. */
   :root {
-    --navy: #1f2a44; --navy-2: #2a3654; --cream: #fdf3dc; --cream-2: #f5ead0; --ink: #1d2236; --ink-soft: #4d5470;
-    --yellow: #ffe082; --line: #1a2036; --red: #c8323a; --orange: #a35a00; --blue: #1f5fbf; --green: #167a4d; --gray: #b9bfcc;
+    --navy: #1f2a44; --navy-2: #2a3654; --cream: #fdf3dc; --cream-2: #f5ead0; --ink: #1d2236; --ink-soft: #464d68;
+    --yellow: #ffe082; --line: #1a2036; --red: #c8323a; --orange: #9a5200; --blue: #1f5fbf; --green: #167a4d; --gray: #b9bfcc;
     --font: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "IPAPGothic", sans-serif;
     color-scheme: dark;
   }
@@ -23,20 +23,20 @@
   #app { position: relative; width: 100%; height: 100%; }
   .box { position: absolute; overflow: hidden; }
   .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
-  .stage img.art { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+  .stage img.art { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; -webkit-user-drag: none; }
 
-  /* whiteboard: the twelve episodes, drawn as text on the board in the picture */
-  .wb { position: absolute; left: 770px; top: 84px; width: 400px; height: 390px; box-sizing: border-box; padding: 14px 18px 0; color: var(--ink); pointer-events: none; }
-  .wb h2 { margin: 0 0 6px; text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .02em; }
-  .wb table { width: 100%; border-collapse: collapse; font-size: 19px; font-weight: 700; line-height: 1.12; color: var(--ink); }
-  .wb th { font-size: 18px; border: 1px solid #9aa2b8; padding: 2px 4px; background: rgba(255, 255, 255, .35); }
-  .wb td { border-left: 1px solid #9aa2b8; border-right: 1px solid #9aa2b8; border-bottom: 1px solid #c3c8d6; padding: 1px 6px; white-space: nowrap; }
-  .wb td:first-child { text-align: center; width: 46px; }
-  .wb td:last-child { text-align: center; width: 120px; }
+  /* whiteboard: the twelve episodes */
+  .wb { position: absolute; left: 770px; top: 84px; width: 400px; height: 390px; box-sizing: border-box; padding: 14px 16px 0; color: var(--ink); pointer-events: none; }
+  .wb h2 { margin: 0 0 6px; text-align: center; font-size: 25px; font-weight: 700; }
+  .wb table { width: 100%; border-collapse: collapse; font-size: 18px; font-weight: 700; line-height: 1.12; color: var(--ink); table-layout: fixed; }
+  .wb th { font-size: 17px; border: 1px solid #9aa2b8; padding: 2px 4px; background: rgba(255, 255, 255, .35); }
+  .wb td { border-left: 1px solid #9aa2b8; border-right: 1px solid #9aa2b8; border-bottom: 1px solid #c3c8d6; padding: 1px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wb td:first-child { text-align: center; width: 62px; } .wb td:first-child small { font-size: 14px; margin-left: 3px; }
+  .wb td:last-child { text-align: center; width: 92px; }
   .wb .red { color: var(--red); } .wb .org { color: var(--orange); } .wb .blu { color: var(--blue); } .wb .grn { color: var(--green); } .wb .mut { color: #565c72; font-weight: 400; }
   .wb tr.now td { background: rgba(255, 224, 130, .45); }
 
-  /* who you can press */
+  /* who and what you can press in the room */
   .zone { position: absolute; background: transparent; border: 0; padding: 0; border-radius: 8px; }
   .zone:hover, .zone:focus-visible { box-shadow: inset 0 0 0 4px rgba(255, 224, 130, .55); outline: none; }
   .zone.on { box-shadow: inset 0 0 0 5px var(--yellow); }
@@ -46,13 +46,20 @@
   .obj:hover, .obj:focus-visible { box-shadow: 0 0 0 4px rgba(255, 224, 130, .7); outline: none; }
   .keys { touch-action: none; cursor: grab; }
   .badge { position: absolute; right: -8px; top: -14px; min-width: 48px; height: 48px; padding: 0 6px; box-sizing: border-box; background: var(--red); color: #fff; font-size: 28px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 4px var(--line); }
+  .pclabel { position: absolute; left: 1752px; top: 1024px; padding: 4px 12px; background: var(--navy); color: #fff; font-size: 20px; font-weight: 700; box-shadow: 0 0 0 3px var(--line); pointer-events: none; }
+  /* the shelf of cut bags waiting for the next round (placeholder art) */
+  .shelf { position: absolute; left: 880px; top: 548px; width: 250px; height: 80px; pointer-events: none; }
+  .shelf .bags { position: absolute; left: 0; bottom: 0; display: flex; align-items: flex-end; gap: 3px; }
+  .shelf .bags i { display: block; width: 26px; background: #c9a46a; box-shadow: inset 0 -4px 0 #a8834d, 0 0 0 2px var(--line); }
+  .shelf .lbl { position: absolute; left: 0; top: -36px; padding: 2px 10px; background: var(--navy); color: #fff; font-size: 18px; font-weight: 700; box-shadow: 0 0 0 3px var(--line); white-space: nowrap; }
 
   /* status tag and report bubble over each person */
   .tag { position: absolute; height: 42px; padding: 0 16px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; background: var(--navy); color: #fff; font-size: 22px; font-weight: 700; white-space: nowrap; pointer-events: none; box-shadow: 0 0 0 3px var(--line); }
   .tag.att { background: var(--yellow); color: var(--ink); }
   .tag .bar { width: 72px; height: 8px; background: #46506e; display: block; }
   .tag .bar i { display: block; height: 100%; background: var(--yellow); }
-  .bubble { position: absolute; min-width: 260px; max-width: 360px; box-sizing: border-box; padding: 14px 22px; background: var(--cream); color: var(--ink); font-size: 28px; font-weight: 700; line-height: 1.3; text-align: center; border: 0; box-shadow: 0 0 0 5px var(--line), 6px 6px 0 5px rgba(0, 0, 0, .25); }
+  .tag .night { background: #6b2d8f; color: #fff; padding: 0 8px; font-size: 18px; }
+  .bubble { position: absolute; min-width: 260px; max-width: 380px; box-sizing: border-box; padding: 14px 22px; background: var(--cream); color: var(--ink); font-size: 28px; font-weight: 700; line-height: 1.3; text-align: center; border: 0; box-shadow: 0 0 0 5px var(--line), 6px 6px 0 5px rgba(0, 0, 0, .25); }
   .bubble::after { content: ""; position: absolute; left: 60px; bottom: -22px; border: 11px solid transparent; border-top: 12px solid var(--line); }
   .bubble.r::after { left: auto; right: 60px; }
   .bubble.bad { background: #ffe1e1; }
@@ -72,43 +79,71 @@
   .ctl button { height: 60px; min-width: 76px; padding: 0 18px; background: rgba(31, 42, 68, .94); border: 0; color: #fff; font-size: 24px; font-weight: 700; }
   .ctl button.on { color: var(--yellow); }
 
-
-  /* what you can tell a 進行: beside them, unscaled enough to read */
+  /* what you can tell a 進行: beside them */
   .ui { position: absolute; left: 0; top: 0; width: 0; height: 0; }
-  .menu { position: absolute; transform-origin: 0 0; display: flex; flex-direction: column; gap: 8px; width: 260px; }
+  .menu { position: absolute; transform-origin: 0 0; display: flex; flex-direction: column; gap: 7px; width: 270px; }
   .menu .head { background: var(--cream); color: var(--ink); padding: 10px 14px; box-shadow: 0 0 0 4px var(--line), 6px 6px 0 4px rgba(0, 0, 0, .25); font-size: 15px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px; }
   .menu .head b { font-size: 18px; }
   .menu .head .said { border-top: 2px dashed #d9caa6; padding-top: 4px; }
   .menu .head .me { color: var(--ink-soft); }
   .menu .head .me.worry { color: var(--orange); } .menu .head .me.bad { color: var(--red); } .menu .head .me.good { color: var(--green); }
-  .cmd { height: 64px; width: 260px; box-sizing: border-box; padding: 0 10px; border: 0; background: var(--cream); color: var(--ink); font-size: 24px; font-weight: 700; box-shadow: 0 0 0 4px var(--line), inset 0 -5px 0 var(--cream-2); display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.1; text-align: center; }
-  .cmd small { font-size: 14px; font-weight: 700; color: var(--ink-soft); display: block; }
+  .cmd { height: 52px; width: 270px; box-sizing: border-box; padding: 0 10px; border: 0; background: var(--cream); color: var(--ink); font-size: 22px; font-weight: 700; box-shadow: 0 0 0 4px var(--line), inset 0 -5px 0 var(--cream-2); display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.1; text-align: center; }
+  .cmd small { font-size: 13px; font-weight: 700; color: var(--ink-soft); display: block; }
   .cmd:hover:not(:disabled), .cmd.on { background: var(--yellow); }
-  .cmd:disabled { background: var(--gray); color: #2f3550; box-shadow: 0 0 0 4px var(--line); cursor: not-allowed; font-size: 20px; }
+  .cmd:disabled { background: var(--gray); color: #2f3550; box-shadow: 0 0 0 4px var(--line); cursor: not-allowed; font-size: 18px; }
   .cmd.sub { height: 56px; font-size: 20px; flex-direction: column; gap: 0; }
+  .cmd.night { background: #e7d6f3; }
   .cmd .stack { display: flex; flex-direction: column; }
-  .menu.eps { width: 260px; }
   .menu .cap { font-size: 15px; font-weight: 700; color: #fff; background: var(--navy); padding: 4px 10px; box-shadow: 0 0 0 4px var(--line); }
+  .menu .sep { height: 2px; }
 
-  /* the phone, brought up in front of you */
-  .phone-bg { position: fixed; inset: 0; z-index: 30; background: rgba(8, 10, 18, .35); }
-  .phone { position: absolute; left: 50%; top: 50%; width: 460px; height: 820px; transform-origin: 50% 50%; }
+  /* the phone and the PC, brought up in front of you (time keeps running) */
+  .pop-bg { position: fixed; inset: 0; z-index: 30; background: rgba(8, 10, 18, .4); }
+  .phone { position: absolute; left: 50%; top: 50%; width: 460px; height: 820px; }
   .phone img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
   .scr { position: absolute; left: 32px; top: 66px; width: 396px; height: 678px; background: #f5efe0; color: var(--ink); display: flex; flex-direction: column; }
-  .scr .bar { background: var(--navy); color: #fff; height: 74px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 24px; font-weight: 700; flex: none; }
+  .scr .bar { background: var(--navy); color: #fff; height: 70px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 24px; font-weight: 700; flex: none; }
   .scr .bar small { font-size: 20px; }
-  .scr .list { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .scr .list { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 14px; user-select: text; }
   .scr .m { display: flex; flex-direction: column; gap: 6px; }
-  .scr .m .who { font-size: 17px; font-weight: 700; color: #565c72; }
-  .scr .m .txt { background: #e3e5ea; padding: 12px 14px; font-size: 19px; font-weight: 700; line-height: 1.5; }
-  .scr .m.bad .txt { background: #f6dcdc; }
-  .scr .m .at { font-size: 14px; color: #565c72; }
+  .scr .m .who { font-size: 16px; font-weight: 700; color: #565c72; display: flex; justify-content: space-between; }
+  .scr .m .txt { background: #e3e5ea; padding: 10px 12px; font-size: 18px; font-weight: 700; line-height: 1.5; }
+  .scr .m.new .txt { background: #fff1c2; box-shadow: inset 4px 0 0 var(--orange); }
+  .scr .m .rep { display: flex; gap: 8px; }
+  .scr .m .rep button { flex: 1; height: 50px; border: 0; font-size: 17px; font-weight: 700; color: #fff; background: var(--navy); }
+  .scr .m .rep button.angry { background: var(--red); }
+  .scr .m .rep button:disabled { background: var(--gray); color: #2f3550; cursor: not-allowed; font-size: 14px; }
+  .scr .m .done { font-size: 14px; color: #565c72; font-weight: 700; }
   .scr .empty { color: #565c72; font-size: 18px; padding: 20px 0; text-align: center; }
-  .scr .back { margin: 0 18px 18px; height: 72px; flex: none; border: 0; background: var(--navy); color: #fff; font-size: 22px; font-weight: 700; }
+  .scr .back { margin: 0 16px 16px; height: 64px; flex: none; border: 0; background: var(--navy); color: #fff; font-size: 22px; font-weight: 700; }
+  .pc { position: absolute; left: 50%; top: 50%; width: 1500px; height: 860px; background: #2b3349; box-shadow: 0 0 0 6px var(--line), 12px 12px 0 6px rgba(0, 0, 0, .35); padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
+  .pc .win { flex: 1; background: #f4f2ec; color: var(--ink); display: flex; flex-direction: column; min-height: 0; }
+  .pc .tb { display: flex; align-items: center; gap: 8px; background: var(--navy); color: #fff; padding: 8px 12px; }
+  .pc .tb b { font-size: 22px; margin-right: 16px; }
+  .pc .tb button { height: 46px; padding: 0 22px; border: 0; background: #3a4566; color: #fff; font-size: 19px; font-weight: 700; }
+  .pc .tb button.on { background: var(--yellow); color: var(--ink); }
+  .pc .tb .close { margin-left: auto; background: var(--red); }
+  .pc .body { flex: 1; overflow: auto; padding: 14px 16px; user-select: text; }
+  .pc .note { font-size: 15px; color: var(--ink-soft); margin: 0 0 10px; }
+  .pc table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  .pc th { background: #dfe2ea; font-size: 14px; padding: 6px 6px; border: 1px solid #c3c8d6; white-space: nowrap; position: sticky; top: 0; }
+  .pc td { border: 1px solid #d3d7e0; padding: 6px 6px; text-align: center; font-weight: 700; white-space: nowrap; }
+  .pc td.l { text-align: left; }
+  .pc td.z { color: #8a90a4; font-weight: 400; }
+  .pc td.red, .pc .red { color: var(--red); } .pc td.org, .pc .org { color: var(--orange); } .pc td.grn, .pc .grn { color: var(--green); }
+  .pc td.hot { background: #fff1c2; }
+  .pc tr.air td { background: #eceef3; color: #6a7088; font-weight: 400; }
+  .pc .gs { display: flex; flex-direction: column; gap: 12px; }
+  .pc .g { background: #fff; padding: 12px 14px; box-shadow: inset 4px 0 0 var(--navy); display: flex; flex-direction: column; gap: 8px; }
+  .pc .g b { font-size: 19px; }
+  .pc .g .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pc .g button { height: 48px; padding: 0 16px; border: 0; background: var(--navy); color: #fff; font-size: 16px; font-weight: 700; }
+  .pc .g button:disabled { background: var(--gray); color: #2f3550; cursor: not-allowed; }
+  .pc .legend { font-size: 14px; color: var(--ink-soft); margin-top: 10px; line-height: 1.6; }
 
   /* dialogs (help, end of week, end of the season) */
   .modal-bg { position: fixed; inset: 0; z-index: 40; background: rgba(8, 10, 18, .7); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
-  .card { width: min(620px, 100%); background: var(--cream); color: var(--ink); box-shadow: 0 0 0 5px var(--line), 10px 10px 0 5px rgba(0, 0, 0, .3); padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .card { width: min(660px, 100%); background: var(--cream); color: var(--ink); box-shadow: 0 0 0 5px var(--line), 10px 10px 0 5px rgba(0, 0, 0, .3); padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }
   .card .k { display: inline-block; align-self: flex-start; background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; padding: 2px 10px; }
   .card h2 { margin: 0; font-size: 28px; }
   .card .big { font-size: 34px; font-weight: 700; }
@@ -118,7 +153,7 @@
   .card .row .v.good { color: var(--green); } .card .row .v.warn { color: var(--orange); } .card .row .v.bad { color: var(--red); } .card .row .v.mute { color: var(--ink-soft); }
   .card ul { margin: 0; padding-left: 22px; display: grid; gap: 7px; font-size: 15px; line-height: 1.55; }
   .card .acts { display: flex; flex-wrap: wrap; gap: 10px; }
-  .card .acts .cmd { width: auto; min-width: 220px; padding: 0 20px; flex: 1 1 220px; }
+  .card .acts .cmd { width: auto; min-width: 180px; padding: 0 16px; flex: 1 1 180px; height: 64px; }
   .card .acts .cmd.pri { background: var(--yellow); }
   .rank { font-size: 72px; font-weight: 700; line-height: 1; }
   .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 35; background: var(--navy); color: #fff; padding: 10px 18px; font-size: 15px; font-weight: 700; box-shadow: 0 0 0 3px var(--line); pointer-events: none; max-width: 90vw; }
@@ -135,6 +170,7 @@
     <div class="stage" id="stage">
       <img class="art" id="bg" src="assets/rts/bg-day.webp" alt="" style="left:0;top:0;width:1920px;height:1080px">
       <div class="wb" id="wb"></div>
+      <div class="shelf" id="shelf"></div>
       <img class="art" id="c-s2" alt="" style="left:1300px;top:235px;width:430px;height:430px">
       <img class="art" id="c-s1" alt="" style="left:0px;top:242px;width:640px;height:640px">
       <img class="art" id="c-s3" alt="" style="left:1375px;top:344px;width:640px;height:640px">
@@ -153,22 +189,31 @@
 <script id="engine">
 const Engine = (() => {
   "use strict";
-  // Time is in game minutes from 第1週 月曜 0:00. One week (10080 min) is 120 real seconds: 84 min per second.
-  const HOUR = 60, DAY = 1440, WEEK = 7 * DAY, START = 9 * HOUR, EPS = 12, SCHEDULE = 4;
-  const TASK = {
-    eigyo: { label: "原画マン営業", short: "営業", hours: 16, ep: true },
-    meet: { label: "作打ち", short: "作打ち", hours: 8, ep: true },
-    shinko: { label: "進行表", short: "進行表", hours: 10, ep: true, sheet: true },
-    soto: { label: "回収へ", short: "回収", hours: 16, car: true },
-    rest: { label: "休ませる", short: "休憩", hours: 0 },
+  // Time is in game minutes from 第1週 月曜 0:00. One week (10080 min) is 120 real seconds.
+  const HOUR = 60, DAY = 1440, WEEK = 7 * DAY, ARRIVE = 10, START = ARRIVE * HOUR, EPS = 12, SCHEDULE = 4;
+  const DIFF = {
+    easy: { label: "やさしい", fill: 0.8, note: "原画マンが最初から8割埋まっている" },
+    normal: { label: "ふつう", fill: 0.6, note: "原画マンが最初に6割埋まっている" },
+    hard: { label: "きびしい", fill: 0.5, note: "原画マンが最初に5割しか埋まっていない" },
   };
-  const NAMES = ["高槻 透", "三好 かおる", "芹沢 一馬", "小野寺 ゆう", "柚木 瞳", "黒川 仁", "日向 まどか", "塩見 直", "久住 梓", "早瀬 涼", "蓮見 楓", "宇佐美 圭", "榎本 一花", "真田 航"];
-  const SHINKO = [
-    { id: "s1", name: "佐伯", rookie: true },
-    { id: "s2", name: "川口", rookie: false },
-    { id: "s3", name: "真壁", rookie: true },
+  const TASK = {
+    eigyo: { label: "原画営業", short: "原画営業", hours: 10, ep: true },
+    meet: { label: "作打ち", short: "作打ち", hours: 6, ep: true },
+    douga: { label: "動仕撒き", short: "動仕撒き", hours: 6, ep: true },
+    satsu: { label: "撮入れ準備", short: "撮入れ準備", hours: 6, ep: true },
+    soto: { label: "外回り", short: "外回り", hours: 10 },
+    break: { label: "休憩", short: "休憩", hours: 2 },
+    sleep: { label: "寝る", short: "仮眠", hours: 0 },
+  };
+  const NAMES = ["高槻 透", "三好 かおる", "芹沢 一馬", "小野寺 ゆう", "柚木 瞳", "黒川 仁", "日向 まどか", "塩見 直", "久住 梓", "早瀬 涼", "蓮見 楓", "宇佐美 圭", "榎本 一花", "真田 航", "相良 実", "桐生 遥", "七瀬 律", "望月 紬", "狩野 蒼", "白石 葵"];
+  const SHINKO = [{ id: "s1", name: "佐伯", rookie: true }, { id: "s2", name: "川口", rookie: false }, { id: "s3", name: "真壁", rookie: true }];
+  const STUDIOS = [
+    { id: "g1", name: "スタジオ極光", days: 16, rel: 0.9 },
+    { id: "g2", name: "アニメーション工房ひばり", days: 20, rel: 0.75 },
+    { id: "g3", name: "夜明けスタジオ", days: 24, rel: 0.6 },
   ];
-  const DOUGA_PER_DAY = 70, DOUGA_LAG = 36 * HOUR, SHOT_PER_DAY = 90, SHOT_LAG = 12 * HOUR, CAR_CAP = 60, ANIM_CAP = 40;
+  const DOUGA_CO = ["動画会社 ブルーライン", "仕上げ ネオンセル"];
+  const DOUGA_LAG = 24 * HOUR, SHOT_LAG = 12 * HOUR, ANIM_CAP = 40, PER_ANIM = 20, MAIL_WAIT = DAY;
 
   function rnd(s) {
     let a = (s.r = (s.r + 0x6d2b79f5) | 0);
@@ -176,64 +221,84 @@ const Engine = (() => {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   }
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const hourOf = (t) => Math.floor((t % DAY) / HOUR);
   const weekOf = (t) => Math.floor(t / WEEK) + 1;
-  const airOf = (n) => (n + SCHEDULE - 1) * WEEK; // 第n話: starts at the beginning of week n, airs at the end of week n+3
+  const airOf = (n) => (n + SCHEDULE - 1) * WEEK;
+  const ownerOf = (n) => SHINKO[(n - 1) % 3].id;
   const famName = (name) => name.split(" ")[0];
   function log(s, text, tone = "") { s.log.unshift({ t: s.t, text, tone }); if (s.log.length > 200) s.log.length = 200; }
 
-  function newGame(seed = 1) {
-    const s = { v: 2, seed, r: (seed * 2654435761) >>> 0 || 1, t: START, phase: "play", week: 1, eps: [], anims: [], shinko: [], car: null, pipe: [], phone: [], log: [], weekEnd: null, result: null, acc: { douga: 0, shot: 0 },
-      stats: { orders: 0, waited: 0, blank: 0, drops: 0 } };
-    s.anims = NAMES.map((name, i) => ({ id: "a" + (i + 1), name, rate: 2.0 + rnd(s) * 1.2, acc: 0, queue: [] }));
-    s.shinko = SHINKO.map((d) => ({ ...d, sta: 100, task: null, report: null, idleSince: START, asleep: false }));
+  function newGame(seed = 1, diff = "easy") {
+    const s = { v: 3, seed, diff: DIFF[diff] ? diff : "easy", r: (seed * 2654435761) >>> 0 || 1, t: START, phase: "play", week: 1, eps: [], anims: [], shinko: [], car: null, pipe: [], mails: [], mailSeq: 0, angry: {}, log: [], weekEnd: null, result: null,
+      studios: STUDIOS.map((g) => ({ ...g, ep: null })), stats: { orders: 0, blank: 0, drops: 0, angry: 0, allnight: 0 } };
+    s.anims = NAMES.map((name, i) => ({ id: "a" + (i + 1), name, rate: 3.0 + rnd(s) * 1.2, acc: 0, queue: [], slowUntil: 0 }));
+    s.shinko = SHINKO.map((d) => ({ ...d, sta: 100, task: null, report: null, idleSince: START, at: "desk", allnight: false, allnightWeek: 0 }));
     startEp(s, 1);
-    log(s, "第1週 月曜 9:00。第1話のコンテが上がった。放送まで4週。");
+    log(s, `第1週 月曜 10:00。第1話のコンテが上がった（担当：佐伯）。放送まで4週。`);
     return s;
   }
   function startEp(s, n) {
     const cuts = 180 + Math.floor(rnd(s) * 41);
-    s.eps.push({ n, cuts, empty: cuts, drawn: 0, coll: 0, douga: 0, dDone: 0, shooting: 0, shot: 0, meet: false, sheets: { shinko: false, hatchu: true, kouban: true } /* 香盤表・発注表 are made as the episode starts */, air: airOf(n), result: null });
+    const e = { n, owner: ownerOf(n), cuts, empty: cuts, drawn: 0, coll: 0, douga: 0, dDone: 0, shelf: 0, shooting: 0, shot: 0, meet: false, air: airOf(n), result: null, gross: null, grossLeft: 0, grossAcc: 0, grossPause: 0 };
+    s.eps.push(e);
+    // the cut table starts partly filled (difficulty)
+    let want = Math.round(cuts * DIFF[s.diff].fill);
+    for (const a of shuffled(s, s.anims)) {
+      if (want <= 0) break;
+      const room = ANIM_CAP - load(a);
+      if (room < 8) continue;
+      const k = Math.min(want, room, 15 + Math.floor(rnd(s) * 11));
+      a.queue.push({ ep: n, n: k }); e.empty -= k; want -= k;
+    }
   }
+  function shuffled(s, arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd(s) * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   const live = (s) => s.eps.filter((e) => !e.result);
   const epOf = (s, n) => s.eps.find((e) => e.n === n);
   const shOf = (s, id) => s.shinko.find((x) => x.id === id);
+  const load = (a) => a.queue.reduce((t, q) => t + q.n, 0);
   const queued = (s, e) => s.anims.reduce((t, a) => t + a.queue.filter((q) => q.ep === e.n).reduce((u, q) => u + q.n, 0), 0);
-  const animLoad = (a) => a.queue.reduce((t, q) => t + q.n, 0);
+  const animsOn = (s, e) => s.anims.filter((a) => a.queue.some((q) => q.ep === e.n));
   function counts(s, e) {
     const q = queued(s, e);
-    return { empty: e.empty, queued: q, drawn: e.drawn, coll: e.coll, douga: e.douga, dDone: e.dDone, shooting: e.shooting, shot: e.shot, filled: e.cuts - e.empty };
+    return { empty: e.empty, queued: q, drawn: e.drawn, coll: e.coll, douga: e.douga, dDone: e.dDone, shelf: e.shelf, shooting: e.shooting, shot: e.shot, gross: e.grossLeft, filled: e.cuts - e.empty, need: Math.ceil(e.empty / PER_ANIM) };
   }
 
-  // ---------- the 進行: they never move on their own ----------
+  // ---------- the 進行 (they never move on their own) ----------
+  const present = (sh) => sh.at === "desk";
   function canOrder(s, sid, kind, n) {
     const sh = shOf(s, sid), T = TASK[kind];
     if (s.phase !== "play") return "いまは指示を出せない";
+    if (!present(sh)) return "帰宅している（10時に来る）";
+    if (kind === "home") return "";
+    if (kind === "allnight") return sh.allnight ? "今夜は徹夜する" : sh.allnightWeek === s.week ? "今週はもう徹夜させた" : "";
     if (!T) return "その指示はない";
+    if (sh.task && sh.task.kind === kind && (!T.ep || sh.task.ep === n)) return "いまやっている";
     if (T.ep) {
       const e = epOf(s, n);
       if (!e || e.result) return "その話数はない";
-      if (kind === "eigyo" && e.empty <= 0) return "空きカットがない";
-      if (kind === "meet" && e.meet) return "作打ちは済んでいる";
-      if (kind === "meet" && e.cuts - e.empty <= 0) return "まだ誰にも頼んでいない（先に営業）";
-      if (T.sheet && e.sheets[kind]) return "もうできている";
+      if (e.owner !== sid) return "担当の話数ではない";
+      if (e.gross) return "グロスに出している";
+      const c = counts(s, e);
+      if (kind === "eigyo") { if (c.empty <= 0) return "空きカットなし"; if (!s.anims.some((a) => load(a) < ANIM_CAP - 4)) return "原画マンが手一杯"; }
+      if (kind === "meet") { if (e.meet) return "作打ちは済んでいる"; if (c.filled <= 0) return "原画マンがいない"; }
+      if (kind === "douga" && c.coll <= 0) return c.drawn > 0 ? "まず回収（外回り）" : "撒く原画がない";
+      if (kind === "satsu" && c.dDone <= 0) return c.douga > 0 ? "動仕の上がり待ち" : "撮入れするものがない";
     }
-    if (kind === "soto" && s.car && s.car !== sid) return `社用車がない（${shOf(s, s.car).name}が使用中）`;
-    if (sh.task && sh.task.kind === kind && sh.task.kind !== "rest" && (!T.ep || sh.task.ep === n)) return "いまやっている";
-    if (kind === "rest" && sh.task && sh.task.kind === "rest") return "もう休んでいる";
-    if (kind === "rest" && sh.sta >= 95) return "体力は十分";
+    if (kind === "soto" && s.car && s.car !== sid) return `車を使用中（${shOf(s, s.car).name}）`;
+    if (kind === "break" && sh.sta >= 90) return "体力は十分";
+    if (kind === "sleep" && sh.sta >= 70) return "まだ眠くない";
     return "";
   }
   function order(s, sid, kind, n = null) {
     if (canOrder(s, sid, kind, n)) return false;
     const sh = shOf(s, sid);
-    if (sh.task && sh.task.kind === "soto" && kind !== "soto") s.car = null; // calling them back brings the car back
-    if (sh.task && sh.task.kind !== "rest") log(s, `${sh.name}：「${TASK[sh.task.kind].short}」を途中でやめた。`, "warn");
-    if (!sh.asleep && !sh.task) s.stats.waited += Math.max(0, s.t - sh.idleSince);
+    if (kind === "allnight") { sh.allnight = true; sh.allnightWeek = s.week; s.stats.allnight++; log(s, `${sh.name}：今夜は徹夜する。`); return true; }
+    if (sh.task && sh.task.kind === "soto") s.car = null;
+    if (sh.task && sh.task.kind !== "break" && sh.task.kind !== "sleep") log(s, `${sh.name}：「${label(sh.task)}」を途中でやめた。`, "warn");
     sh.report = null;
-    sh.asleep = false;
-    sh.task = { kind, ep: TASK[kind].ep ? n : null, need: TASK[kind].hours * HOUR, done: 0, t0: s.t };
+    if (kind === "home") { sh.task = null; goHome(s, sh, "帰らせた"); s.stats.orders++; return true; }
+    if (!sh.task) s.stats.waited = (s.stats.waited || 0) + Math.max(0, s.t - sh.idleSince);
+    sh.task = { kind, ep: TASK[kind].ep ? n : null, need: TASK[kind].hours * HOUR, done: 0 };
     if (kind === "soto") s.car = sid;
     s.stats.orders++;
     return true;
@@ -242,246 +307,298 @@ const Engine = (() => {
     const sh = shOf(s, sid);
     if (!sh.task) return false;
     if (sh.task.kind === "soto") s.car = null;
-    log(s, `${sh.name}：「${TASK[sh.task.kind].short}」を取り消した。`);
+    log(s, `${sh.name}：「${label(sh.task)}」を取り消した。`);
     sh.task = null; sh.idleSince = s.t;
     return true;
   }
-  const ack = (s, sid) => { const sh = shOf(s, sid); sh.report = null; };
+  const label = (T) => (T.ep ? `第${T.ep}話の${TASK[T.kind].short}` : TASK[T.kind].short);
+  const ack = (s, sid) => { shOf(s, sid).report = null; };
+  function goHome(s, sh, why) {
+    sh.at = "home"; sh.allnight = false;
+    if (sh.task && (sh.task.kind === "break" || sh.task.kind === "sleep")) sh.task = null;
+    log(s, `${sh.name}：${why}（明日10時に来る）。`);
+  }
+  function report(sh, s, text, short, tone = "") { sh.report = { text, short: short || text, tone, t: s.t }; log(s, `${sh.name}：${text}`, tone); }
 
   function finish(s, sh) {
     const T = sh.task, e = T.ep ? epOf(s, T.ep) : null;
-    let text = "", tone = "", short = "";
-    if (e && e.result) { text = `${e.n}話はもう放送されていた……。`; short = "もう放送されてました……"; }
-    else if (T.kind === "eigyo") {
-      // fill the cut table: the animators with room take some cuts
-      let want = Math.round((12 + rnd(s) * 10) * (sh.rookie ? 0.85 : 1));
-      want = Math.min(want, e.empty);
-      const free = s.anims.map((a) => ({ a, room: ANIM_CAP - animLoad(a) })).filter((x) => x.room > 0).sort((x, y) => y.room - x.room + (rnd(s) - 0.5) * 8);
+    sh.task = null; sh.idleSince = s.t;
+    if (e && (e.result || e.gross)) return report(sh, s, `第${e.n}話は、もう手を離れていました……。`, "もう手を離れてました", "bad");
+    if (T.kind === "eigyo") {
+      let want = Math.min(e.empty, Math.round((16 + rnd(s) * 14) * (sh.rookie ? 0.85 : 1)));
       const took = [];
-      for (const { a, room } of free) {
-        if (want <= 0 || took.length >= 3) break;
-        const k = Math.min(room, Math.max(6, Math.ceil(want / (3 - took.length))), want);
-        a.queue.push({ ep: e.n, n: k });
-        e.empty -= k; want -= k; took.push([a, k]);
+      for (const a of shuffled(s, s.anims).sort((x, y) => load(x) - load(y))) {
+        if (want <= 0 || took.length >= 2) break;
+        const room = ANIM_CAP - load(a);
+        if (room < 4) continue;
+        const k = Math.min(room, want, took.length ? want : Math.max(4, Math.ceil(want * 0.6)));
+        a.queue.push({ ep: e.n, n: k }); e.empty -= k; want -= k; took.push([a, k]);
       }
       const got = took.reduce((t, [, k]) => t + k, 0);
-      if (got) { text = `${e.n}話の営業、終わりました！ ${took.map(([a]) => famName(a.name) + "さん").join("と")}で${got}カット埋まりました！`; tone = "good"; short = `${e.n}話、${got}カット埋まりました！`; }
-      else { text = `${e.n}話の営業……みんな手一杯で、取れませんでした。`; tone = "bad"; short = "取れませんでした……"; }
-      if (got && !e.meet) text += "（作打ちはまだです）";
-    } else if (T.kind === "meet") {
-      e.meet = true; text = `${e.n}話の作打ち、終わりました。原画、描き始めてもらいます！`; tone = "good"; short = `${e.n}話の作打ち、終わりました！`;
-    } else if (TASK[T.kind].sheet) {
-      e.sheets[T.kind] = true; text = `${e.n}話の${TASK[T.kind].short}、できました！`; tone = "good"; short = text;
-    } else if (T.kind === "soto") {
-      s.car = null;
-      text = collect(s, sh); tone = /白紙/.test(text) ? "warn" : /ありませんでした/.test(text) ? "bad" : "good"; short = "戻りました！";
+      if (!got) return report(sh, s, `第${e.n}話の原画営業……みんな手一杯でした。`, "取れませんでした……", "bad");
+      const c = counts(s, e);
+      return report(sh, s, `第${e.n}話の原画営業、${took.map(([a]) => famName(a.name) + "さん").join("と")}で${got}カット埋まりました！${c.empty ? `（あと${c.need}人くらい足りません）` : "（カット表、埋まりました）"}`, `第${e.n}話、${got}カット埋まりました！`, "good");
     }
-    log(s, `${sh.name}：${text}`, tone);
-    sh.report = { text, tone, short: short || text, t: s.t };
-    sh.task = null; sh.idleSince = s.t;
+    if (T.kind === "meet") { e.meet = true; return report(sh, s, `第${e.n}話の作打ち、終わりました。原画、描き始めてもらいます！`, `第${e.n}話の作打ち、終わりました！`, "good"); }
+    if (T.kind === "douga") {
+      const k = e.coll; e.coll = 0; e.douga += k;
+      if (k) s.pipe.push({ ep: e.n, n: k, ready: s.t + DOUGA_LAG, stage: "douga" });
+      return report(sh, s, `第${e.n}話の動仕撒き、${k}カット出しました！`, `第${e.n}話、${k}カット撒きました！`, k ? "good" : "");
+    }
+    if (T.kind === "satsu") {
+      const k = e.dDone; e.dDone = 0; e.shelf += k;
+      return report(sh, s, `第${e.n}話の撮入れ準備、${k}カット分の袋を棚に置きました。外回りで撮影に届けます。`, `第${e.n}話、${k}袋 棚に置きました！`, k ? "good" : "");
+    }
+    if (T.kind === "soto") { s.car = null; const r = collect(s, sh); return report(sh, s, r.text, "戻りました！", r.tone); }
+    if (T.kind === "break") { sh.report = null; return; }
   }
+  // one trip does everyone's episodes: pick up finished drawings, drop the cut bags at the filming studio
   function collect(s, sh) {
-    let cap = CAR_CAP;
-    const got = [];
-    let blank = 0;
-    for (const e of live(s).sort((x, y) => x.air - y.air)) {
-      if (cap <= 0 || e.drawn <= 0) continue;
-      // without a 進行表 nobody knows who is done: some finished cuts are missed
-      const found = e.sheets.shinko ? e.drawn : Math.round(e.drawn * (0.6 + rnd(s) * 0.2));
-      let k = Math.min(cap, found);
-      if (k <= 0) continue;
-      let b = 0;
-      for (let i = 0; i < k; i++) if (rnd(s) < (sh.rookie ? 0.07 : 0.04)) b++;
-      e.drawn -= k; cap -= k;
-      // white bags go back to an animator to finish
-      if (b) { const a = s.anims.slice().sort((x, y) => animLoad(x) - animLoad(y))[0]; a.queue.unshift({ ep: e.n, n: b }); }
-      const ok = k - b;
-      e.coll += ok; blank += b;
-      got.push(`${e.n}話 ${ok}`);
+    let got = 0, blank = 0, bags = 0;
+    for (const e of live(s)) {
+      if (e.gross) continue;
+      if (e.drawn > 0) {
+        let b = 0;
+        for (let i = 0; i < e.drawn; i++) if (rnd(s) < (sh.rookie ? 0.06 : 0.03)) b++;
+        if (b) { const a = s.anims.slice().sort((x, y) => load(x) - load(y))[0]; a.queue.unshift({ ep: e.n, n: b }); }
+        e.coll += e.drawn - b; got += e.drawn - b; blank += b; e.drawn = 0;
+      }
+      if (e.shelf > 0) { s.pipe.push({ ep: e.n, n: e.shelf, ready: s.t + SHOT_LAG, stage: "shot" }); e.shooting += e.shelf; bags += e.shelf; e.shelf = 0; }
     }
     s.stats.blank += blank;
-    if (!got.length) return "回収、戻りました……上がっている原画がありませんでした。";
-    return `回収、戻りました！ ${got.join("・")}カット。${blank ? `……${blank}カット、白紙でした。` : ""}`;
+    if (!got && !bags) return { text: "外回り、戻りました……回収も届けるものもありませんでした。", tone: "bad" };
+    return { text: `外回り、戻りました！ 原画${got}カット回収、撮影に${bags}袋届けました。${blank ? `……${blank}カット白紙でした。` : ""}`, tone: blank ? "warn" : "good" };
   }
+
+  // ---------- mail (on your phone) ----------
+  function mail(s, kind, from, text, ctx) {
+    const m = { id: ++s.mailSeq, t: s.t, kind, from, text, ctx, state: "new", reply: null };
+    s.mails.unshift(m); if (s.mails.length > 40) s.mails.length = 40;
+    log(s, `メール：${from}「${text}」`, "warn");
+  }
+  const canAngry = (s, m) => !s.angry[m.from];
+  function reply(s, id, how) {
+    const m = s.mails.find((x) => x.id === id);
+    if (!m || (m.state !== "new" && m.state !== "read")) return false;
+    if (how === "angry" && !canAngry(s, m)) return false;
+    if (how === "angry") { s.angry[m.from] = true; s.stats.angry++; m.state = "angry"; m.reply = "キレて出させた"; log(s, `${m.from}にキレて、出させた。`, "warn"); return true; }
+    accept(s, m); m.state = "accepted"; m.reply = "受け入れた";
+    return true;
+  }
+  function accept(s, m) {
+    const e = m.ctx.ep ? epOf(s, m.ctx.ep) : null;
+    if (m.kind === "drop") {
+      const a = s.anims.find((x) => x.id === m.ctx.aid), q = a && a.queue.find((x) => x.ep === m.ctx.ep);
+      const k = q ? Math.min(q.n, m.ctx.k) : 0;
+      if (k && e && !e.result && !e.gross) { q.n -= k; e.empty += k; if (q.n <= 0) a.queue.splice(a.queue.indexOf(q), 1); s.stats.drops++; }
+      log(s, `${m.from}の${k}カットを受け入れた。第${m.ctx.ep}話の空きが増えた。`, "warn");
+    } else if (m.kind === "late") {
+      const a = s.anims.find((x) => x.id === m.ctx.aid); if (a) a.slowUntil = s.t + 2 * DAY;
+      log(s, `${m.from}の遅れを受け入れた。`);
+    } else if (m.kind === "gross") {
+      if (e) e.grossPause += m.ctx.days * DAY;
+      log(s, `${m.from}の${m.ctx.days}日の遅れを受け入れた。`, "warn");
+    } else if (m.kind === "douga") {
+      for (const p of s.pipe) if (p.ep === m.ctx.ep && p.stage === "douga") p.ready += DAY;
+      log(s, `${m.from}の遅れを受け入れた（第${m.ctx.ep}話の動仕が1日遅れる）。`);
+    }
+  }
+  function mailEvents(s) {
+    // an animator wants to give cuts back
+    if (rnd(s) < 1 / 48) {
+      const cands = s.anims.filter((a) => a.queue.some((q) => q.n >= 6 && !epOf(s, q.ep).gross));
+      if (cands.length) {
+        const a = cands[Math.floor(rnd(s) * cands.length)], q = a.queue.find((x) => x.n >= 6 && !epOf(s, x.ep).gross);
+        const k = Math.max(3, Math.round(q.n * (0.3 + rnd(s) * 0.4)));
+        mail(s, "drop", `${a.name}さん`, `すみません、第${q.ep}話の${k}カット……他社が入って、無理になりました。`, { aid: a.id, ep: q.ep, k });
+      }
+    }
+    if (rnd(s) < 1 / 96) {
+      const cands = s.anims.filter((a) => a.queue.length && a.slowUntil < s.t);
+      if (cands.length) { const a = cands[Math.floor(rnd(s) * cands.length)]; mail(s, "late", `${a.name}さん`, `第${a.queue[0].ep}話、体調を崩して少し遅れます……。`, { aid: a.id, ep: a.queue[0].ep }); }
+    }
+    if (rnd(s) < 1 / 120 && live(s).some((e) => e.douga > 0)) {
+      const e = live(s).find((x) => x.douga > 0), co = DOUGA_CO[Math.floor(rnd(s) * DOUGA_CO.length)];
+      mail(s, "douga", co, `第${e.n}話の動仕、上がりが1日遅れそうです。`, { ep: e.n });
+    }
+    for (const g of s.studios) {
+      if (!g.ep || s.t % DAY) continue;
+      if (rnd(s) < (1 - g.rel) * 0.45) { const days = 2 + Math.floor(rnd(s) * 3); mail(s, "gross", g.name, `第${g.ep}話、${days}日ほど遅れます。申し訳ありません。`, { ep: g.ep, days }); }
+    }
+    // unanswered for a day: taken as accepted
+    for (const m of s.mails) if ((m.state === "new" || m.state === "read") && s.t - m.t >= MAIL_WAIT) { accept(s, m); m.state = "auto"; m.reply = "返事をしなかった（受け入れた扱い）"; }
+  }
+
+  // ---------- gross (a whole episode to another studio) ----------
+  function canGross(s, n, gid) {
+    const e = epOf(s, n), g = s.studios.find((x) => x.id === gid);
+    if (!e || e.result) return "その話数はない";
+    if (e.gross) return "もうグロスに出している";
+    if (e.shot >= e.cuts) return "もう撮影まで終わっている";
+    if (!g) return "その会社はない";
+    if (g.ep) return `第${g.ep}話を担当中`;
+    return "";
+  }
+  function grossOut(s, n, gid) {
+    if (canGross(s, n, gid)) return false;
+    const e = epOf(s, n), g = s.studios.find((x) => x.id === gid);
+    for (const a of s.anims) a.queue = a.queue.filter((q) => q.ep !== n);
+    s.pipe = s.pipe.filter((p) => p.ep !== n);
+    e.grossLeft = e.cuts - e.shot;
+    e.empty = e.drawn = e.coll = e.douga = e.dDone = e.shelf = e.shooting = 0;
+    e.gross = gid; e.grossRate = e.cuts / (g.days * DAY); g.ep = n;
+    for (const sh of s.shinko) if (sh.task && sh.task.ep === n) { sh.task = null; sh.idleSince = s.t; }
+    log(s, `第${n}話を${g.name}にグロスで出した。`);
+    return true;
+  }
+  const grossDays = (s, e) => (e.gross ? e.grossLeft / (e.grossRate * DAY) + e.grossPause / DAY : null);
 
   // ---------- one game minute ----------
   function step(s) {
     s.t++;
-    const h = hourOf(s.t), night = h < 7;
-    // animators draw (only cuts of episodes whose 作打ち is done)
+    const h = hourOf(s.t), min = s.t % DAY;
+    // 24:00: home, unless told to stay up
+    if (min === 0) for (const sh of s.shinko) {
+      if (!present(sh)) continue;
+      if (sh.allnight) { log(s, `${sh.name}：徹夜で残っている。`); continue; }
+      if (sh.task && sh.task.kind === "soto") continue; // finishes the round first
+      goHome(s, sh, "24時、帰宅した");
+    }
+    // 10:00: everyone at the desk
+    if (min === ARRIVE * HOUR) for (const sh of s.shinko) {
+      sh.allnight = false;
+      if (!present(sh)) { sh.at = "desk"; sh.idleSince = s.t; log(s, `${sh.name}：出社した。`); }
+    }
     for (const a of s.anims) {
-      a.acc += a.rate / DAY;
+      a.acc += (a.rate * (a.slowUntil > s.t ? 0.5 : 1)) / DAY;
       while (a.acc >= 1) {
-        const q = a.queue.find((x) => { const e = epOf(s, x.ep); return e && !e.result && e.meet; });
+        const q = a.queue.find((x) => { const e = epOf(s, x.ep); return e && !e.result && !e.gross && e.meet; });
         if (!q) { a.acc = Math.min(a.acc, 1); break; }
         a.acc -= 1; q.n--; epOf(s, q.ep).drawn++;
         if (q.n <= 0) a.queue.splice(a.queue.indexOf(q), 1);
       }
     }
-    // 進行
     for (const sh of s.shinko) {
-      const T = sh.task;
-      if (!T) {
-        sh.asleep = night; // nothing to do at night: asleep at the desk (a report waits in its bubble)
-        sh.sta = Math.min(100, sh.sta + (night ? 14 : 4) / HOUR);
-        continue;
-      }
-      if (T.kind === "rest") {
-        sh.asleep = true;
-        sh.sta = Math.min(100, sh.sta + 14 / HOUR);
-        if (sh.sta >= 95) { sh.task = null; sh.idleSince = s.t; sh.report = { text: "寝ました！ 次、なにやりますか", short: "寝ました！", tone: "", t: s.t }; }
-        continue;
-      }
-      sh.asleep = false;
-      sh.sta = Math.max(0, sh.sta - (night ? 5 : 3.5) / HOUR);
+      if (!present(sh)) { sh.sta = Math.min(100, sh.sta + 9 / HOUR); continue; }
+      const T = sh.task, late = h < ARRIVE;
+      if (!T) { sh.sta = Math.min(100, sh.sta + (late ? 12 : 2) / HOUR); continue; } // up all night with nothing to do: asleep at the desk
+      if (T.kind === "sleep") { sh.sta = Math.min(100, sh.sta + 15 / HOUR); if (sh.sta >= 85) { sh.task = null; sh.idleSince = s.t; report(sh, s, "寝ました！ 次、なにやりますか", "起きました！"); } continue; }
+      if (T.kind === "break") { sh.sta = Math.min(100, sh.sta + 10 / HOUR); T.done++; if (T.done >= T.need) finish(s, sh); continue; }
+      sh.sta = Math.max(0, sh.sta - (late ? 5.5 : 3.5) / HOUR);
       T.done += sh.sta <= 0 ? 0.3 : sh.sta < 25 ? 0.6 : 1;
-      if (T.done >= T.need) finish(s, sh);
+      if (T.done >= T.need) { finish(s, sh); if (!present(sh)) continue; }
+      if (late && !sh.allnight && T.kind === "soto" && !sh.task) goHome(s, sh, "外回りから戻って、帰宅した");
     }
-    if (s.t % HOUR === 0) hourly(s);
+    for (const e of live(s)) {
+      if (!e.gross) continue;
+      if (e.grossPause > 0) { e.grossPause--; continue; }
+      e.grossAcc += e.grossRate;
+      while (e.grossAcc >= 1 && e.grossLeft > 0) { e.grossAcc -= 1; e.grossLeft--; e.shot++; }
+    }
+    if (min % HOUR === 0) {
+      for (const p of s.pipe) {
+        if (p.ready > s.t) continue;
+        const e = epOf(s, p.ep);
+        if (!e.result && !e.gross) { if (p.stage === "douga") { e.douga -= p.n; e.dDone += p.n; } else { e.shooting -= p.n; e.shot += p.n; } }
+        p.done = true;
+      }
+      s.pipe = s.pipe.filter((p) => !p.done);
+      mailEvents(s);
+    }
     if (s.t % WEEK === 0) endWeek(s);
-  }
-  function hourly(s) {
-    // 動画・仕上げ (outsourced): needs the 発注表, takes a day and a half
-    s.acc.douga += DOUGA_PER_DAY / 24;
-    for (const e of live(s).sort((x, y) => x.air - y.air)) {
-      if (!e.sheets.hatchu || e.coll <= 0) continue;
-      const k = Math.min(e.coll, Math.floor(s.acc.douga));
-      if (k <= 0) break;
-      e.coll -= k; e.douga += k; s.acc.douga -= k;
-      s.pipe.push({ ep: e.n, n: k, ready: s.t + DOUGA_LAG, stage: "douga" });
-    }
-    s.acc.douga = Math.min(s.acc.douga, DOUGA_PER_DAY / 24);
-    // 撮影: needs the 香盤表
-    s.acc.shot += SHOT_PER_DAY / 24;
-    for (const e of live(s).sort((x, y) => x.air - y.air)) {
-      if (!e.sheets.kouban || e.dDone <= 0) continue;
-      const k = Math.min(e.dDone, Math.floor(s.acc.shot));
-      if (k <= 0) break;
-      e.dDone -= k; e.shooting += k; s.acc.shot -= k;
-      s.pipe.push({ ep: e.n, n: k, ready: s.t + SHOT_LAG, stage: "shot" });
-    }
-    s.acc.shot = Math.min(s.acc.shot, SHOT_PER_DAY / 24);
-    for (const p of s.pipe) {
-      if (p.ready > s.t) continue;
-      const e = epOf(s, p.ep);
-      if (!e.result) {
-        if (p.stage === "douga") { e.douga -= p.n; e.dDone += p.n; }
-        else { e.shooting -= p.n; e.shot += p.n; }
-      }
-      p.done = true;
-    }
-    s.pipe = s.pipe.filter((p) => !p.done);
-    // the smartphone: an animator gives cuts back
-    if (rnd(s) < 1 / 40) {
-      const cands = s.anims.filter((a) => a.queue.some((q) => q.n >= 6));
-      if (cands.length) {
-        const a = cands[Math.floor(rnd(s) * cands.length)], q = a.queue.filter((x) => x.n >= 6)[0];
-        const k = Math.max(3, Math.round(q.n * (0.3 + rnd(s) * 0.4)));
-        q.n -= k; epOf(s, q.ep).empty += k;
-        if (q.n <= 0) a.queue.splice(a.queue.indexOf(q), 1);
-        s.stats.drops++;
-        phone(s, `${a.name}さん`, `すみません、${q.ep}話の${k}カット……他社が入って、無理になりました。`, "bad");
-      }
-    }
-  }
-  function phone(s, from, text, tone = "") {
-    s.phone.unshift({ t: s.t, from, text, tone, read: false });
-    if (s.phone.length > 40) s.phone.length = 40;
-    log(s, `スマホ：${from}「${text}」`, tone);
   }
   function airResult(e) {
     const r = e.shot / e.cuts;
     return r >= 1 ? { key: "full", label: "完成して放送", tone: "good", r } : r >= 0.85 ? { key: "still", label: "止め絵でしのいで放送", tone: "warn", r } : { key: "drop", label: "落とした（総集編）", tone: "bad", r };
   }
   function endWeek(s) {
-    const week = weekOf(s.t - 1);
-    const aired = [];
+    const week = weekOf(s.t - 1), aired = [];
     for (const e of live(s)) {
-      if (e.air <= s.t) {
-        e.result = airResult(e);
-        // whatever was left is thrown away
-        for (const a of s.anims) a.queue = a.queue.filter((q) => q.ep !== e.n);
-        aired.push(e.n);
-        log(s, `第${e.n}話：${e.result.label}（撮影 ${e.shot}/${e.cuts}）`, e.result.tone);
-      }
+      if (e.air > s.t) continue;
+      e.result = airResult(e);
+      for (const a of s.anims) a.queue = a.queue.filter((q) => q.ep !== e.n);
+      for (const g of s.studios) if (g.ep === e.n) g.ep = null;
+      aired.push(e.n);
+      log(s, `第${e.n}話：${e.result.label}（撮影 ${e.shot}/${e.cuts}）`, e.result.tone);
     }
     s.week = week + 1;
-    if (s.week <= EPS) { startEp(s, s.week); log(s, `第${s.week}週。第${s.week}話のコンテが上がった。放送まで4週。`); }
-    const left = s.eps.filter((e) => !e.result).length + (EPS - s.eps.length);
-    s.weekEnd = { week, aired, left };
+    if (s.week <= EPS) { startEp(s, s.week); log(s, `第${s.week}週。第${s.week}話のコンテが上がった（担当：${shOf(s, ownerOf(s.week)).name}）。`); }
+    s.weekEnd = { week, aired };
     s.phase = s.eps.length === EPS && s.eps.every((e) => e.result) ? "end" : "weekEnd";
     if (s.phase === "end") s.result = result(s);
   }
   function nextWeek(s) { if (s.phase === "weekEnd") { s.phase = "play"; s.weekEnd = null; } }
-
-  // what the header says: before the first broadcast, how many weeks to go; then how many are left
   function airStatus(s) {
-    const firstAired = s.eps.some((e) => e.result);
-    const next = live(s).sort((x, y) => x.air - y.air)[0];
-    const left = EPS - s.eps.filter((e) => e.result).length;
+    const next = live(s).sort((x, y) => x.air - y.air)[0], left = EPS - s.eps.filter((e) => e.result).length;
     const weeksTo = (e) => Math.max(0, Math.ceil((e.air - s.t) / WEEK));
-    if (!firstAired) return { main: `第1話 放送まで あと${weeksTo(epOf(s, 1))}週`, sub: "", airing: false, left };
+    if (!s.eps.some((e) => e.result)) return { main: `第1話 放送まで あと${weeksTo(epOf(s, 1))}週`, sub: "", airing: false, left };
     if (!next) return { main: "全話 放送終了", sub: "", airing: false, left: 0 };
     return { main: `放送中 残り${left}話`, sub: `次は第${next.n}話（あと${weeksTo(next)}週）`, airing: true, left };
   }
 
-  // ---------- your read of things, never a number ----------
+  // ---------- what is holding an episode up, and your read of it ----------
   const say = (tone, t) => ({ tone, t });
-  // how far along this episode should be by now (from many played seasons): collected or later, and drawn or later
   function pace(s, e) {
     const d = (e.air - s.t) / DAY, c = counts(s, e);
-    const down = (c.coll + c.douga + c.dDone + c.shooting + c.shot) / e.cuts;
-    const up = (e.cuts - c.empty - c.queued) / e.cuts, filled = c.filled / e.cuts;
     if (c.shot >= e.cuts) return { level: 2, d };
-    if (d <= 14) {
-      const need = d <= 7 ? 0.9 : 0.9 - ((d - 7) / 7) * 0.6;
-      return { level: down < need * 0.55 ? 0 : down < need ? 1 : 2, d };
-    }
+    if (e.gross) { const need = grossDays(s, e); return { level: need > d ? 0 : need > d * 0.9 ? 1 : 2, d }; }
+    const down = (c.coll + c.douga + c.dDone + c.shelf + c.shooting + c.shot) / e.cuts, up = (e.cuts - c.empty - c.queued) / e.cuts, filled = c.filled / e.cuts;
+    if (d <= 14) { const need = d <= 7 ? 0.9 : 0.9 - ((d - 7) / 7) * 0.6; return { level: down < need * 0.55 ? 0 : down < need ? 1 : 2, d }; }
     if (d <= 17 && up < 0.1) return { level: 0, d };
-    if (d <= 21 && filled < 0.6) return { level: 1, d };
+    if (d <= 21 && filled < 0.85) return { level: 1, d };
     return { level: 2, d };
+  }
+  // the one thing to do next for this episode
+  function blocker(s, e) {
+    const c = counts(s, e);
+    if (e.result) return null;
+    if (e.gross) { const g = s.studios.find((x) => x.id === e.gross); return { key: "gross", text: `グロス（${g.name}）`, tone: pace(s, e).level === 0 ? "bad" : "ok" }; }
+    if (c.shot >= e.cuts) return { key: "done", text: "撮影済み", tone: "good" };
+    if (c.empty > 0 && !e.meet) return { key: "eigyo", text: `原画マン あと${c.need}人`, tone: "worry" };
+    if (!e.meet) return { key: "meet", text: "作打ちまだ", tone: "worry" };
+    if (c.coll > 0) return { key: "douga", text: `動仕撒き待ち ${c.coll}`, tone: "worry" };
+    if (c.dDone > 0) return { key: "satsu", text: `撮入れ準備待ち ${c.dDone}`, tone: "worry" };
+    if (c.shelf > 0) return { key: "shelf", text: `棚に${c.shelf}袋（外回り待ち）`, tone: "worry" };
+    if (c.empty > 0) return { key: "eigyo", text: `原画マン あと${c.need}人`, tone: "worry" };
+    if (c.drawn > 0) return { key: "soto", text: `回収待ち ${c.drawn}`, tone: "ok" };
+    if (c.queued > 0) return { key: "draw", text: "原画中", tone: "ok" };
+    if (c.douga > 0) return { key: "wait", text: "動仕中", tone: "ok" };
+    return { key: "wait", text: "撮影中", tone: "ok" };
   }
   function epMut(s, e) {
     if (e.result) return say(e.result.tone === "good" ? "good" : e.result.tone === "warn" ? "worry" : "bad", e.result.label);
-    const c = counts(s, e), p = pace(s, e);
+    const c = counts(s, e), p = pace(s, e), b = blocker(s, e);
     if (c.shot >= e.cuts) return say("good", "撮影まで終わった。あとは放送を待つだけ");
-    if (c.filled > 0 && !e.meet) return say("worry", "作打ちがまだだ。原画が始まらない・・・");
-    if (c.coll > 0 && !e.sheets.hatchu) return say("worry", "回収した原画が発注表待ちで止まってる");
-    if (c.dDone > 0 && !e.sheets.kouban) return say("worry", "撮影にものが入ってない・・・香盤表がない");
+    if (e.gross && p.level === 0) return say("bad", "グロス先が間に合いそうにない・・・");
+    if (e.gross) return say("ok", "グロス先に任せている");
     if (p.level === 0) return say("bad", p.d < 7 ? "このままじゃ落ちる・・・" : "スケジュールが無い・・・");
-    if (p.level === 1) return say("worry", p.d < 10 ? "ギリギリだ・・・止め絵になるかも" : "ちょっと遅れてる・・・");
-    if (c.empty > 0 && p.d < 21) return say("worry", "まだ空きカットがある。営業しないと");
+    if (b.tone === "worry") return say("worry", `${b.text}・・・`);
+    if (p.level === 1) return say("worry", "ちょっと遅れてる・・・");
     return say("ok", "このペースなら、なんとか");
   }
-  function hint(s) {
-    // the most urgent thing a free 進行 could do
-    for (const e of live(s).sort((x, y) => x.air - y.air)) {
-      const c = counts(s, e);
-      if (c.filled > 0 && !e.meet) return say("worry", `${e.n}話の作打ちがまだだ`);
-      if (c.coll > 0 && !e.sheets.hatchu) return say("worry", `${e.n}話の発注表がないと、動画に出せない`);
-      if ((c.dDone > 0 || c.douga > 0) && !e.sheets.kouban) return say("worry", `${e.n}話の香盤表がないと、撮影に入れない`);
-      if (c.empty > 0) return say("worry", `${e.n}話の空きが${c.empty}カットもある・・・営業だ`);
-    }
-    const drawn = live(s).reduce((t, e) => t + e.drawn, 0);
-    if (drawn > 20 && !s.car) return say("ok", "上がっている原画がありそうだ。回収に行かせたい");
+  function hint(s, sid) {
+    const mine = live(s).filter((e) => !sid || e.owner === sid).sort((a, b) => a.air - b.air);
+    for (const e of mine) { const b = blocker(s, e); if (b && b.tone === "worry") return say("worry", `第${e.n}話：${b.text}`); }
+    const drawn = live(s).reduce((t, e) => t + e.drawn, 0), shelf = live(s).reduce((t, e) => t + e.shelf, 0);
+    if ((drawn > 20 || shelf > 0) && !s.car) return say("ok", `外回りに出たい（回収待ち${drawn}・棚${shelf}袋）`);
     return say("ok", "いまは落ち着いている");
   }
   function shMut(s, sh) {
+    if (!present(sh)) return say("mute", "帰宅している。10時に来る");
     if (sh.sta < 25) return say("bad", "もう限界だ・・・寝かせないと");
-    if (sh.task && sh.task.kind !== "rest") return say("ok", `${TASK[sh.task.kind].short}をやっている`);
-    return hint(s);
+    if (sh.task && sh.task.kind !== "break" && sh.task.kind !== "sleep") return say("ok", `${label(sh.task)}をやっている`);
+    return hint(s, sh.id);
   }
-
   function result(s) {
     const r = { full: 0, still: 0, drop: 0 };
     s.eps.forEach((e) => r[e.result.key]++);
     const score = r.full * 3 + r.still;
-    const rank = score >= 34 ? "S" : score >= 28 ? "A" : score >= 20 ? "B" : score >= 12 ? "C" : "D";
-    return { ...r, score, rank, ...s.stats };
+    return { ...r, score, rank: score >= 34 ? "S" : score >= 28 ? "A" : score >= 20 ? "B" : score >= 12 ? "C" : "D", ...s.stats };
   }
   function tick(s, n) { for (let i = 0; i < n && s.phase === "play"; i++) step(s); }
 
-  return { HOUR, DAY, WEEK, START, EPS, SCHEDULE, TASK, newGame, tick, order, canOrder, cancel, ack, nextWeek, airStatus, counts, live, epOf, shOf, epMut, shMut, hint, pace, airOf, weekOf, hourOf, animLoad, ANIM_CAP };
+  return { HOUR, DAY, WEEK, START, EPS, SCHEDULE, ARRIVE, DIFF, TASK, PER_ANIM, ANIM_CAP, newGame, tick, order, canOrder, cancel, ack, reply, canAngry, canGross, grossOut, grossDays, nextWeek, airStatus,
+    counts, live, epOf, shOf, animsOn, load, blocker, epMut, shMut, hint, pace, airOf, weekOf, hourOf, ownerOf, label, present };
 })();
 if (typeof module !== "undefined") module.exports = Engine;
 </script>
@@ -494,40 +611,28 @@ if (typeof module !== "undefined") module.exports = Engine;
   const DOW = ["月", "火", "水", "木", "金", "土", "日"];
   // positions on the 1920x1080 picture (from the art's layout)
   const P = {
-    s1: { zone: [80, 272, 560, 860], tag: [150, 830], bubble: [95, 152, "l"], zzz: [440, 330], menu: [560, 300], side: 1 },
-    s2: { zone: [1360, 262, 1700, 640], tag: [1430, 212], bubble: [1540, 96, "r"], zzz: [1405, 300], menu: [1050, 250], side: -1 },
-    s3: { zone: [1500, 390, 1920, 960], tag: [1630, 336], bubble: [1540, 290, "r"], zzz: [1790, 520], menu: [1180, 360], side: -1 },
+    s1: { zone: [80, 272, 560, 860], tag: [150, 830], bubble: [95, 152, "l"], zzz: [440, 330], menu: [560, 230], side: 1 },
+    s2: { zone: [1360, 262, 1700, 640], tag: [1430, 212], bubble: [1540, 96, "r"], zzz: [1405, 300], menu: [1050, 200], side: -1 },
+    s3: { zone: [1500, 390, 1920, 960], tag: [1630, 336], bubble: [1540, 290, "r"], zzz: [1790, 520], menu: [1180, 300], side: -1 },
   };
-  const KEYS = [352, 916, 280, 151], PHONE = [50, 932, 286, 140];
-  // where each pose is actually drawn (32x32 cells of the 640px frame), so pressing picks the person under the pointer
+  const KEYS = [352, 916, 280, 151], PHONE = [50, 932, 286, 140], PC = [1720, 740, 200, 340];
   const MASKS = {"s1":{"idle":"AAAAAAAAYAAAAPAAAAD+AwCA/wMA4P8DAOD/AwDw/wMA+P8HAPj/BwD8/wcA/P8DAPj/AwD4/wMA+P8BAPD/AADwfwAA8P8BAPD/AQD4/wMA/P8DAPz/AwD+/wMA/v8DAP//B4D//weA//8HAP//B4D//w+A//8PwP//BwAAAAA=","work":"AAAAAAAAGAAAAHwAAID/AADg/wAA+P8AAPj/AAD8/wAA/v8BAP7/AQD//wEA//8BAP7/AAD+fwAA/j8AAPx/AAD8fwAA+P8AAPj/AQD4/wEA/P8DAP7/A4D//wOA//8D4P//A/D//wNw//8HAPz/BwD+/wcA/v8HAP//BwAAAAA=","report":"AAAAAAAABgAAgB8AAMA/AADwPwAA+D8AAPw/AAD+PwAA/n8AAP9/AAD/fwAA/38AAP9/AAD+PwAA/z8AAPwfAMD0HwD4/D8A+P9/APD//wDA//8D4P//A+D//wHg//8D4P//B+D//wfA//8HgP//B4D//wOA//8BwP//AQAACAA=","tired":"AAAAAAAAAAAAAAAAAMABAADgDwAA8A8AAPAPAAD8DwAA/h8AAP8/AAD/fwCA/38AgP8/AID/PwDA/z8AgP9/AID//wCA//8BAP//AwD+/wMA/P8DAP7/BwD+/wcA//8HAP//DwD//w8A//8PAP7/HwD+/x8A//8fAP//HwAAAAA=","sleep":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAB8AADA/wEA4P8DAPj/AwD8/wMA/P8DAP7/AwD//wOA//8HAP//AwD//wOA//8DgP//B8D//wfA//8H4P//D8D//w/A//8HAP//AwD//wOA//8DwP//B8D//weA//8HgP//BwAAAAA=","phone":"AAAAAAAAAAAAAB4AAAB/AADwfwAA+P8AAPx/AAD+fwAA/v8AAP//AAD//wCA//8AAP9/AAD/fwAA/38AAP5/AAD8fwAA/v8AAP7/AQD//wEA//8DgP//A8D//wfA//8H4P//B+D//wPg//8B4P//AcD//wHg//8D4P//AQAAAAA="},"s2":{"idle":"AAAAAAAAAAAAAAwAAIAfAADgfwAA8P8AAPD/AQDw/wAA+P8BAPD/AQDw/wAA8P8AAOB/AADgPwAAwD8AAPgfAAD8fwAA/n8AAP7/AAD+/wAA/v8AAP//AQD//wEA//8DAP//AwD//wMA/v8DAP7/AwD8/w8A/P8fAPz/HwAAAAA=","work":"AAAAAAAAAAAAAAAAAMAHAADgHwAA8D8AAPh/AAD8fwAA/H8AAPx/AAD4fwAA+D8AAPg/AAD4HwAA/B8AAP4PAAD/BwCA/wcAgP8PAID/DwCA/x8AwP9/AMD//w/A//8fwP//H8D//wPA/48BwP9/AID//wCA//8BgP//AQAAAAA=","report":"AAAAAAAAAAAAAAAAAPgBAAD8BwAA/gcAAP8PAAD/DwAA/w8AgP8PAID/DwAA/w8AAP4PAAD+BwAA/AMAAPgDAAD+HwkA/z8PgP+/D+D//wfg//8HwP//A8D//wPg//8D4P//A/D//wHw/88A4P8/AMD//wEA/v8DAP7/AwAAAAA=","tired":"AAAAAAAAAAAAAAQAAIA/AACAfwAA4P8BAOD/AQDg/wEA8P8DAOD/AQDg/wEA8P8BAPz/AAD+/wAA//8AAP//AID//wCA//8BgP//AcD//wPA//8DwP//B8D//wfA//8DwP//B8D//w/A//8PwP//D8D//x8AAAAAAAAAAAAAAAA=","sleep":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfAAAAP8BAID/AQDw/wMA/P8HAP7/BwD//w+A//8HgP//B8D//w/A//8fwP//H8D//x/g//8f4P/fH+D/AwDg/wEA4P8fAOD//wDg//8A4P//AeD//wEAAAAAAAAAAAAAAAA=","phone":"AAAAAAAAAAAA8AEAAPgPAAD+DwAA/h8AAP4fAAD/HwAA/x8AAP8fAAD+DwAA/g8AAPwPAAD+BwAA/x8AgP8/AID/PwDA/z8AwP9/AMD/fwDA/38AwP//AMD//wDA//8BgP//AYD//wOA//8HgP//B4D//w8AAAAAAAAAAAAAAAA="},"s3":{"idle":"AAAAAAAAAAAAwAcAAPAfAAD4PwAA/H8AAP5/AAD+/wAA/v8BAP//AQD//wAA/v8BAP7/AwD+/wMA/v8DAOz/AQD4/wAA+P8AAPj/AQD8/wEA/P8BAP7/AwD+/wMA/v8DAP//BwD//wcA//8HAP//BwD//wcA//8HgP//BwAAAAA=","work":"AAAAAAAAAAAA4AcAAPgfAAD8PwAA/n8AAP7/AAD//wAA//8BgP//AYD//wEA//8AAP//AQD//wMA/v8DAPz/AwDs/wEA6P8AAPD/AQDw/wEA+P8BAPz/AwD+/wPA//8D8P//A/j//wf4//8HgP//DwD4/wcA/v8HAP7/BwAAAAA=","report":"AAAAAAAAAAAAwA8AAPAfAAD4PwAA/H8AAPx/AAD+/wAA/v8AAP//AQD//wEA/v8BAP5/AAD+/wAA/P8AAOz/AQD4/wFA+P8A+Pz/Afz//wf4//8H8P//A8D//wPA//8HwP//B8D//w/A//8PgP//BwD+/wMA/v8DAP7/AwAAAAA=","tired":"AAAAAAAAAAAAAAAAAOADAAD4DwAA/B8AAP4/AAD/PwAA/38AgP//AID//wCA//8AgP//AQD//wEA//8DAP//AQD//wMA//8DAP7/BwD8/wcA/P8HAP7/DwD+/w8A//8PAP//HwD//x8A/v8fAPz/HwD+/x8A//8fAAAAAAAAAAA=","sleep":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwAAAA/AMAAP8PAID/HwCA/x8AwP8/AMD//wDg//8B4P//A/D//wHw//8D8P//A/D//wfg//8H8P//B/D//w/w//8P8P//D+D//x+A//8PwP//D8D//w/g//8PAAAAAAAAAAA=","phone":"AAAAAAAAAAAAwB8AAPB/AAD4/wAA/P8AAPz/AQD+/wEA/v8BAP7/AwD+/wMA/v8BAP7/AQD8/wEA7P8DAPj/AwD4/wMA/P8BAPz/AQD+/wEA/v8DAP//AwD//wcA//8HgP//B4D//weA//8DAP//A4D//wfA//8HAAAAAAAAAAA="}};
   const FRAME = { s1: [0, 242, 640], s2: [1300, 235, 430], s3: [1375, 344, 640] };
-  const maskBits = {};
-  function drawnAt(sh, pt) {
-    const [fx, fy, fw] = FRAME[sh.id], pose = poseOf(sh);
-    if (stateOf(sh) === "out") return false;
-    const cx = Math.floor(((pt.x - fx) / fw) * 32), cy = Math.floor(((pt.y - fy) / fw) * 32);
-    if (cx < 0 || cy < 0 || cx >= 32 || cy >= 32) return false;
-    const key = sh.id + pose;
-    if (!maskBits[key]) maskBits[key] = Uint8Array.from(atob(MASKS[sh.id][pose]), (c) => c.charCodeAt(0));
-    const i = cy * 32 + cx;
-    return !!(maskBits[key][i >> 3] & (1 << (i & 7)));
-  }
   const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   let s = null, k = 1;
-  const ui = { speed: 1, paused: true, sel: null, pick: null, phone: false, modal: null };
+  const ui = { speed: 1, paused: true, sel: null, pick: null, pop: null, tab: "sheet", modal: null };
   let pressing = false, dragging = null, suppressClick = false, toastTimer = 0;
 
   // ---------- save ----------
-  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ s, ui: { speed: ui.speed, modal: ui.modal } })); } catch (e) { /* storage may be off */ } }
+  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ s, ui: { speed: ui.speed, modal: ui.modal, tab: ui.tab } })); } catch (e) { /* storage may be off */ } }
   function load() {
     try {
       const d = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
-      if (d && d.s && d.s.v === 2 && d.s.shinko) { s = d.s; Object.assign(ui, d.ui || {}); ui.paused = true; return true; }
+      if (d && d.s && d.s.v === 3 && d.s.shinko) { s = d.s; Object.assign(ui, d.ui || {}); ui.paused = true; return true; }
     } catch (e) { /* a broken save: start over */ }
     return false;
   }
-  function fresh(seed) { s = E.newGame(seed); Object.assign(ui, { sel: null, pick: null, phone: false, paused: true, modal: "intro", speed: 1 }); save(); }
+  function fresh(diff) { s = E.newGame(1 + Math.floor(Math.random() * 100000), diff); Object.assign(ui, { sel: null, pick: null, pop: null, paused: false, modal: null, speed: 1 }); save(); }
 
   // ---------- words ----------
   const pad = (n) => String(n).padStart(2, "0");
@@ -536,54 +641,56 @@ if (typeof module !== "undefined") module.exports = Engine;
   const hrs = (m) => (m < 60 ? `${Math.max(1, Math.round(m))}分` : `${Math.round(m / 60)}時間`);
   const daysTo = (t) => { const d = (t - s.t) / E.DAY; return d >= 1 ? `${Math.floor(d)}日` : `${Math.max(0, Math.round(d * 24))}時間`; };
   const shOf = (id) => E.shOf(s, id);
+  const shName = (id) => shOf(id).name;
   function stateOf(sh) {
+    if (!E.present(sh)) return "home";
     if (sh.task && sh.task.kind === "soto") return "out";
-    if (sh.task && sh.task.kind === "rest") return "sleep";
+    if (sh.task && sh.task.kind === "sleep") return "sleep";
+    if (sh.task && sh.task.kind === "break") return "break";
     if (sh.task) return "work";
-    if (sh.asleep) return "sleep";
+    if (E.hourOf(s.t) < E.ARRIVE) return "sleep"; // up all night with nothing to do
     return "wait";
   }
   function poseOf(sh) {
     const st = stateOf(sh);
     if (st === "sleep") return "sleep";
+    if (st === "break") return "tired";
     if (sh.report) return "report";
-    if (st === "work") return sh.task.kind === "eigyo" ? "phone" : sh.sta < 25 ? "tired" : "work";
+    if (st === "work") return sh.sta < 25 ? "tired" : sh.task.kind === "eigyo" ? "phone" : "work";
     return sh.sta < 25 ? "tired" : "idle";
   }
   function tagOf(sh) {
     const st = stateOf(sh);
+    if (st === "home") return { t: "帰宅（10時に来る）", att: false };
     if (sh.report) return { t: "報告あり", att: true };
     if (st === "out") return { t: "外回り中", att: false };
-    if (st === "sleep") return { t: "休憩中", att: false };
+    if (st === "sleep") return { t: sh.task ? "仮眠中" : "寝ている", att: false };
+    if (st === "break") return { t: "休憩中", att: false };
     if (st === "work") return { t: sh.sta < 25 ? "疲労" : "作業中", att: false, task: sh.task };
     return { t: sh.sta < 25 ? "疲労・指示待ち" : "指示待ち", att: true };
   }
-  const taskName = (T) => (T.ep ? `第${T.ep}話の${E.TASK[T.kind].short}` : E.TASK[T.kind].short);
+  const taskName = (T) => E.label(T);
 
   // ---------- the picture ----------
-  function stage(e) {
-    const c = E.counts(s, e), m = E.epMut(s, e);
-    if (c.shot >= e.cuts) return ["完成", "完了", "grn"];
-    let step = "営業";
-    if (c.filled > 0 && !e.meet) step = "作打ち";
-    else if (e.meet && c.queued + c.drawn > 0) step = "原画";
-    else if (c.coll + c.douga > 0 && c.queued + c.drawn === 0) step = "動画・仕上げ";
-    else if (c.dDone + c.shooting > 0 && c.queued + c.drawn + c.coll + c.douga === 0) step = "撮影";
-    if (c.empty > 0 && c.filled === 0) step = "営業";
-    const st = m.tone === "bad" ? ["要確認", "red"] : m.tone === "worry" ? ["遅れ気味", "org"] : e.sheets.shinko && c.drawn > 0 ? ["回収待ち", "blu"] : ["進行中", ""];
-    return [step, st[0], st[1]];
-  }
   function whiteboard() {
     const next = E.live(s).sort((a, b) => a.air - b.air)[0];
     const rows = [];
     for (let n = 1; n <= E.EPS; n++) {
-      const e = E.epOf(s, n);
-      if (!e) { rows.push(`<tr><td>${pad(n)}</td><td class="mut">未着手</td><td class="mut">—</td></tr>`); continue; }
-      if (e.result) { const cls = e.result.key === "full" ? "grn" : e.result.key === "still" ? "org" : "red"; rows.push(`<tr><td>${pad(n)}</td><td class="mut">放送済</td><td class="${cls}">${e.result.key === "full" ? "完成" : e.result.key === "still" ? "止め絵" : "落とした"}</td></tr>`); continue; }
-      const [step, st, cls] = stage(e);
-      rows.push(`<tr class="${next && next.n === n ? "now" : ""}"><td>${pad(n)}</td><td>${step}</td><td class="${cls}">${st}</td></tr>`);
+      const e = E.epOf(s, n), who = shName(E.ownerOf(n))[0];
+      if (!e) { rows.push(`<tr><td>${pad(n)}<small>${who}</small></td><td class="mut">未着手</td><td class="mut">—</td></tr>`); continue; }
+      if (e.result) { const cls = e.result.key === "full" ? "grn" : e.result.key === "still" ? "org" : "red"; rows.push(`<tr><td>${pad(n)}<small>${who}</small></td><td class="mut">放送済</td><td class="${cls}">${e.result.key === "full" ? "完成" : e.result.key === "still" ? "止め絵" : "落とした"}</td></tr>`); continue; }
+      const b = E.blocker(s, e), m = E.epMut(s, e);
+      const step = b.key === "gross" ? "グロス" : b.text.replace(/ \d+$/, "").replace(/（.*/, "");
+      const st = m.tone === "bad" ? ["要確認", "red"] : m.tone === "worry" ? ["遅れ気味", "org"] : m.tone === "good" ? ["完了", "grn"] : ["進行中", ""];
+      rows.push(`<tr class="${next && next.n === n ? "now" : ""}"><td>${pad(n)}<small>${who}</small></td><td>${esc(step)}</td><td class="${st[1]}">${st[0]}</td></tr>`);
     }
-    return `<h2>TVアニメ 進行表</h2><table><thead><tr><th>話数</th><th>工程</th><th>状況</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+    return `<h2>TVアニメ 進行表</h2><table><thead><tr><th style="width:62px">話数</th><th>いま</th><th style="width:92px">状況</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+  }
+  function shelf() {
+    const n = E.live(s).reduce((t, e) => t + e.shelf, 0);
+    if (!n) return "";
+    const piles = Math.min(8, Math.ceil(n / 12));
+    return `<span class="lbl">撮入れ棚 ${n}袋（外回りで撮影へ）</span><div class="bags">${Array.from({ length: piles }, (_, i) => `<i style="height:${18 + ((i * 7) % 4) * 8}px"></i>`).join("")}</div>`;
   }
   function overlay() {
     const out = [];
@@ -598,28 +705,29 @@ if (typeof module !== "undefined") module.exports = Engine;
       let extra = "";
       if (tg.task) { const pr = Math.min(1, tg.task.done / tg.task.need); extra = `<span>${esc(taskName(tg.task))}</span><span class="bar"><i style="width:${Math.round(pr * 100)}%"></i></span>`; }
       if (st === "out") extra = `<span>あと${hrs(sh.task.need - sh.task.done)}</span>`;
+      if (sh.allnight) extra += `<span class="night">今夜徹夜</span>`;
       out.push(`<div class="tag ${tg.att ? "att" : ""}" style="left:${p.tag[0]}px;top:${p.tag[1]}px"><span>${sh.name}</span><span>${tg.t}</span>${extra}</div>`);
       if (st === "sleep") out.push(`<div class="zzz" style="left:${p.zzz[0]}px;top:${p.zzz[1]}px">z Z Z</div>`);
     }
-    const unread = s.phone.filter((m) => !m.read).length;
-    out.push(`<button class="obj" data-act="phone" style="left:${PHONE[0]}px;top:${PHONE[1] - 10}px;width:${PHONE[2]}px;height:${PHONE[3] + 20}px" aria-label="スマホ${unread ? `（未読${unread}件）` : ""}">${unread ? `<span class="badge">${unread}</span>` : ""}</button>`);
-    if (!s.car) out.push(`<button class="obj keys" data-act="keys" data-keys="1" style="left:${KEYS[0]}px;top:${KEYS[1]}px;width:${KEYS[2]}px;height:${KEYS[3]}px" aria-label="社用車の鍵（進行にドラッグすると回収へ）"></button>`);
+    const unread = s.mails.filter((m) => m.state === "new").length;
+    out.push(`<button class="obj" data-act="phone" style="left:${PHONE[0]}px;top:${PHONE[1] - 10}px;width:${PHONE[2]}px;height:${PHONE[3] + 20}px" aria-label="スマホ${unread ? `（返事待ち${unread}件）` : ""}">${unread ? `<span class="badge">${unread}</span>` : ""}</button>`);
+    if (!s.car) out.push(`<button class="obj keys" data-act="keys" data-keys="1" style="left:${KEYS[0]}px;top:${KEYS[1]}px;width:${KEYS[2]}px;height:${KEYS[3]}px" aria-label="社用車の鍵（進行にドラッグすると外回りへ）"></button>`);
+    out.push(`<button class="obj" data-act="pc" style="left:${PC[0]}px;top:${PC[1]}px;width:${PC[2]}px;height:${PC[3]}px" aria-label="パソコン（進行表・原画マン・グロス）"></button><span class="pclabel">進行表</span>`);
     return out.join("");
   }
-  // report bubbles in their own layer: redrawn only when a report comes or goes
   function bubbles() {
-    return s.shinko.filter((sh) => sh.report).map((sh) => {
+    return s.shinko.filter((sh) => sh.report && E.present(sh)).map((sh) => {
       const b = P[sh.id].bubble, style = b[2] === "r" ? `right:${1920 - b[0]}px;top:${b[1]}px` : `left:${b[0]}px;top:${b[1]}px`;
       return `<button class="bubble ${b[2]} ${sh.report.tone === "bad" ? "bad" : ""}" data-act="sel" data-v="${sh.id}" style="${style}">${esc(sh.report.short || sh.report.text)}</button>`;
     }).join("");
   }
   function drawArt() {
     const h = E.hourOf(s.t), bg = h < 6 || h >= 19 ? "night" : h >= 17 ? "evening" : "day";
-    const bgEl = document.getElementById("bg"), src = `assets/rts/bg-${bg}.webp`;
-    if (!bgEl.getAttribute("src").endsWith(`bg-${bg}.webp`)) bgEl.setAttribute("src", src);
+    const bgEl = document.getElementById("bg");
+    if (!bgEl.getAttribute("src").endsWith(`bg-${bg}.webp`)) bgEl.setAttribute("src", `assets/rts/bg-${bg}.webp`);
     for (const sh of s.shinko) {
       const img = document.getElementById("c-" + sh.id), st = stateOf(sh);
-      img.style.display = st === "out" ? "none" : "";
+      img.style.display = st === "out" || st === "home" ? "none" : "";
       const want = `assets/rts/chars/${sh.id}/${poseOf(sh)}.webp`;
       if (img.getAttribute("src") !== want) img.setAttribute("src", want);
     }
@@ -627,71 +735,113 @@ if (typeof module !== "undefined") module.exports = Engine;
   }
 
   // ---------- the menu beside a 進行 ----------
-  function urgentEps(kind) {
-    return E.live(s).sort((a, b) => a.air - b.air).filter((e) => !E.canOrder(s, ui.sel, kind, e.n));
-  }
+  const mineLive = (sid) => E.live(s).filter((e) => e.owner === sid).sort((a, b) => a.air - b.air);
+  const okEps = (kind) => mineLive(ui.sel).filter((e) => !E.canOrder(s, ui.sel, kind, e.n));
   function menuHtml() {
-    if (!ui.sel || ui.phone || ui.modal) return "";
-    const sh = shOf(ui.sel), p = P[sh.id], tg = tagOf(sh);
-    const m = E.shMut(s, sh);
+    if (!ui.sel || ui.pop || ui.modal) return "";
+    const sh = shOf(ui.sel), tg = tagOf(sh), m = E.shMut(s, sh);
+    const mine = mineLive(sh.id).map((e) => `第${e.n}話（${e.gross ? "グロス" : `放送まで${daysTo(e.air)}`}）`).join("・") || "いまはない";
     const said = sh.lastReport ? `<span class="said">「${esc(sh.lastReport)}」</span>` : "";
-    const now = sh.task && sh.task.kind !== "rest" ? `<span>いま：${esc(taskName(sh.task))}（あと${hrs(sh.task.need - sh.task.done)}）</span>` : "";
-    const head = `<div class="head"><b>${sh.name}（${sh.rookie ? "新人" : "ベテラン"}）・ ${esc(tg.t)}</b><span>体力 ${Math.round(sh.sta)}</span>${now}${said}<span class="me ${m.tone}">あなたの見立て：${esc(m.t)}</span></div>`;
+    const now = sh.task && sh.task.kind !== "break" && sh.task.kind !== "sleep" ? `<span>いま：${esc(taskName(sh.task))}（あと${hrs(sh.task.need - sh.task.done)}）</span>` : "";
+    const head = `<div class="head"><b>${sh.name}（${sh.rookie ? "新人" : "ベテラン"}）・ ${esc(tg.t)}</b><span>体力 ${Math.round(sh.sta)}${sh.allnight ? " ・ 今夜は徹夜" : ""}</span><span>担当：${mine}</span>${now}${said}<span class="me ${m.tone}">あなたの見立て：${esc(m.t)}</span></div>`;
     const btn = (kind) => {
       const T = E.TASK[kind];
       let why = "";
-      if (T.ep) { if (!urgentEps(kind).length) why = sh.task && sh.task.kind === kind ? "いまやっている" : kind === "eigyo" ? "空きカットなし" : kind === "meet" ? "作打ちする話数なし" : "進行表はそろっている"; }
-      else why = E.canOrder(s, sh.id, kind);
-      if (kind === "soto" && why && s.car && s.car !== sh.id) why = "車を使用中";
-      if (why === "体力は十分") why = "体力は十分";
+      if (T.ep) {
+        if (!okEps(kind).length) {
+          const reasons = mineLive(sh.id).map((e) => E.canOrder(s, sh.id, kind, e.n));
+          why = !E.present(sh) ? "帰宅している" : reasons.find((r) => r === "いまやっている") || reasons[0] || "担当の話数がない";
+        }
+      } else why = E.canOrder(s, sh.id, kind);
       return `<button class="cmd ${ui.pick === kind ? "on" : ""}" data-act="cmd" data-v="${kind}" ${why ? "disabled" : ""}>${why ? esc(why) : esc(T.label)}</button>`;
     };
-    const cmds = ["eigyo", "meet", "shinko", "soto", "rest"].map(btn).join("") + (sh.task ? `<button class="cmd" data-act="cancel"><span class="stack">やめさせる<small>いまの作業は無駄になる</small></span></button>` : "");
+    const night = E.canOrder(s, sh.id, "allnight");
+    const cmds = ["eigyo", "meet", "douga", "satsu", "soto"].map(btn).join("") + `<span class="sep"></span>` + ["break", "sleep"].map(btn).join("")
+      + `<button class="cmd" data-act="cmd" data-v="home" ${E.canOrder(s, sh.id, "home") ? "disabled" : ""}>${E.present(sh) ? "帰宅" : "帰宅している"}</button>`
+      + `<button class="cmd night" data-act="cmd" data-v="allnight" ${night ? "disabled" : ""}>${night ? esc(night) : "今夜は徹夜（週1回）"}</button>`
+      + (sh.task ? `<button class="cmd" data-act="cancel">やめさせる</button>` : "");
     let eps = "";
-    if (ui.pick && E.TASK[ui.pick].ep) {
-      const list = urgentEps(ui.pick);
-      eps = `<div class="menu eps" data-anchor="eps"><span class="cap">どの話数？（${E.TASK[ui.pick].label}）</span>${list.map((e) => { const c = E.counts(s, e), mm = E.epMut(s, e); const info = ui.pick === "eigyo" ? `空き${c.empty} ・ 放送まで${daysTo(e.air)}` : ui.pick === "meet" ? `${c.filled}カット分 ・ 放送まで${daysTo(e.air)}` : `放送まで${daysTo(e.air)}`; return `<button class="cmd sub" data-act="ep" data-v="${e.n}"><span>第${e.n}話</span><small style="color:${mm.tone === "bad" ? "var(--red)" : mm.tone === "worry" ? "var(--orange)" : "var(--ink-soft)"}">${esc(info)}</small></button>`; }).join("")}</div>`;
+    if (ui.pick && E.TASK[ui.pick] && E.TASK[ui.pick].ep) {
+      eps = `<div class="menu eps" data-anchor="eps"><span class="cap">どの話数？（${E.TASK[ui.pick].label}）</span>${okEps(ui.pick).map((e) => { const c = E.counts(s, e), mm = E.epMut(s, e);
+        const info = ui.pick === "eigyo" ? `空き${c.empty}（あと${c.need}人）` : ui.pick === "meet" ? `${c.filled}カット分` : ui.pick === "douga" ? `撒き待ち${c.coll}` : `撮入れ待ち${c.dDone}`;
+        return `<button class="cmd sub" data-act="ep" data-v="${e.n}"><span>第${e.n}話</span><small style="color:${mm.tone === "bad" ? "var(--red)" : mm.tone === "worry" ? "var(--orange)" : "var(--ink-soft)"}">${esc(info)} ・ 放送まで${daysTo(e.air)}</small></button>`; }).join("")}</div>`;
     }
     return `<div class="menu" data-anchor="main">${cmds}${head}</div>${eps}`;
   }
 
-  // ---------- the phone ----------
+  // ---------- the phone: mail, and your reply ----------
   function phoneHtml() {
-    if (!ui.phone) return "";
-    const msgs = s.phone.slice(0, 30);
-    const list = msgs.length ? msgs.map((m) => `<div class="m ${m.tone}"><span class="who">${esc(m.from)}</span><span class="txt">${esc(m.text)}</span><span class="at">${E.weekOf(m.t)}週 ${clock(m.t)} 受信</span></div>`).join("") : `<div class="empty">まだ連絡はない</div>`;
-    return `<div class="phone-bg modal-bg" data-act="phoneClose" style="display:block;padding:0;place-items:initial"><div class="phone" id="phoneEl" role="dialog" aria-label="スマホ"><img src="assets/rts/phone-body.webp" alt=""><div class="scr"><div class="bar"><span>連絡</span><small>${clock(s.t)}</small></div><div class="list">${list}</div><button class="back" data-act="phoneClose">机に戻す</button></div></div></div>`;
+    if (ui.pop !== "phone") return "";
+    const list = s.mails.length ? s.mails.slice(0, 30).map((m) => {
+      const open = m.state === "new" || m.state === "read", angry = E.canAngry(s, m);
+      const rep = open ? `<div class="rep"><button data-act="reply" data-v="accept" data-id="${m.id}">受け入れる</button><button class="angry" data-act="reply" data-v="angry" data-id="${m.id}" ${angry ? "" : "disabled"}>${angry ? "キレて出させる" : "もうキレた相手"}</button></div>` : `<span class="done">→ ${esc(m.reply || "")}</span>`;
+      return `<div class="m ${m.state === "new" ? "new" : ""}"><span class="who"><span>${esc(m.from)}</span><span>${E.weekOf(m.t)}週 ${clock(m.t)}</span></span><span class="txt">${esc(m.text)}</span>${rep}</div>`;
+    }).join("") : `<div class="empty">まだメールはない</div>`;
+    return `<div class="pop-bg modal-bg" data-act="popClose" style="display:block;padding:0"><div class="phone" id="popEl" role="dialog" aria-label="スマホ"><img src="assets/rts/phone-body.webp" alt=""><div class="scr"><div class="bar"><span>メール</span><small>${clock(s.t)}</small></div><div class="list">${list}</div><button class="back" data-act="popClose">机に戻す</button></div></div></div>`;
+  }
+
+  // ---------- the PC: the schedule sheet, animators, gross ----------
+  function pcHtml() {
+    if (ui.pop !== "pc") return "";
+    const tab = (v, t) => `<button class="${ui.tab === v ? "on" : ""}" data-act="tab" data-v="${v}">${t}</button>`;
+    let body = "";
+    if (ui.tab === "sheet") {
+      const cell = (v, cls = "") => `<td class="${v ? cls : "z"}">${v}</td>`;
+      const rows = s.eps.slice().sort((a, b) => a.n - b.n).map((e) => {
+        const c = E.counts(s, e), who = shName(e.owner);
+        if (e.result) return `<tr class="air"><td>第${e.n}話</td><td>${who}</td><td colspan="11" class="l">放送済み：${esc(e.result.label)}（撮影 ${e.shot}/${e.cuts}）</td><td>—</td></tr>`;
+        const b = E.blocker(s, e), m = E.epMut(s, e), tone = m.tone === "bad" ? "red" : m.tone === "worry" ? "org" : m.tone === "good" ? "grn" : "";
+        if (e.gross) { const g = s.studios.find((x) => x.id === e.gross); return `<tr><td>第${e.n}話</td><td>${who}</td><td>${daysTo(e.air)}</td><td colspan="9" class="l">グロス：${esc(g.name)} ・ 上がり見込み あと${Math.ceil(E.grossDays(s, e))}日</td><td>${c.shot}/${e.cuts}</td><td class="l ${tone}">${esc(m.t)}</td></tr>`; }
+        const anims = E.animsOn(s, e).length;
+        return `<tr><td>第${e.n}話</td><td>${who}</td><td class="${(e.air - s.t) / E.DAY < 7 ? "red" : ""}">${daysTo(e.air)}</td><td>${anims}人 ・ ${c.filled}/${e.cuts}</td>${cell(c.empty ? `あと${c.need}人（${c.empty}）` : "", "red hot")}<td class="${e.meet ? "grn" : c.filled ? "red hot" : "z"}">${e.meet ? "済" : "まだ"}</td>${cell(c.queued)}${cell(c.drawn, "org")}${cell(c.coll, "red hot")}${cell(c.douga)}${cell(c.dDone, "red hot")}${cell(c.shelf, "org")}<td>${c.shooting ? `${c.shot}（+${c.shooting}）` : c.shot}/${e.cuts}</td><td class="l ${tone}">${esc(b.text)}</td></tr>`;
+      }).join("");
+      body = `<p class="note">黄色のマスが、いま止まっているところ。原画マンは1人あたり約${E.PER_ANIM}カットで数えている。</p>
+        <table><thead><tr><th>話数</th><th>担当</th><th>放送まで</th><th>原画マン・埋まり</th><th>足りない</th><th>作打ち</th><th>原画中</th><th>回収待ち</th><th>撒き待ち</th><th>動仕中</th><th>撮入れ待ち</th><th>棚</th><th>撮影済み</th><th>止まっているもの</th></tr></thead><tbody>${rows}</tbody></table>
+        <p class="legend">流れ：原画営業でカット表を埋める → 作打ちで原画が始まる → 外回りで回収 → 動仕撒き → 上がったら撮入れ準備（棚に袋）→ 外回りで撮影に届ける → 撮影済み。外回りは1人が行けば、全員の話数をまとめてやる。</p>`;
+    } else if (ui.tab === "anims") {
+      body = `<p class="note">原画マン ${s.anims.length}人。1人で抱えられるのは約${E.ANIM_CAP}カット。</p><table><thead><tr><th>名前</th><th>抱えているカット</th><th>合計</th><th>状態</th><th>キレた</th></tr></thead><tbody>${s.anims.map((a) => {
+        const l = E.load(a), list = a.queue.map((q) => `第${q.ep}話 ${q.n}`).join("・");
+        const st = l >= E.ANIM_CAP - 4 ? ["手一杯", "red"] : a.slowUntil > s.t ? ["遅れ気味", "org"] : l ? ["描いている", ""] : ["空いている", "grn"];
+        return `<tr><td class="l">${esc(a.name)}</td><td class="l">${list || "—"}</td><td>${l}</td><td class="${st[1]}">${st[0]}</td><td>${s.angry[a.name + "さん"] ? "済" : ""}</td></tr>`; }).join("")}</tbody></table>`;
+    } else {
+      const house = E.live(s).filter((e) => !e.gross && e.shot < e.cuts).sort((a, b) => a.air - b.air);
+      body = `<p class="note">グロスに出した話数は、その会社が丸ごと仕上げる（担当の進行の手が空く）。出すのが遅いと間に合わない。</p><div class="gs">${s.studios.map((g) => {
+        const e = g.ep ? E.epOf(s, g.ep) : null;
+        const speed = g.days <= 16 ? "速い" : g.days <= 20 ? "ふつう" : "遅め", rel = g.rel >= 0.85 ? "信用できる" : g.rel >= 0.7 ? "ときどき遅れる" : "よく遅れる";
+        const st = e ? `第${e.n}話を担当中 ・ 上がり見込み あと${Math.ceil(E.grossDays(s, e))}日 ・ 放送まで${daysTo(e.air)}` : "空いている";
+        const acts = e ? "" : house.map((x) => { const need = E.counts(s, x); const left = x.cuts - x.shot; const days = Math.ceil((left / x.cuts) * g.days); const late = days > (x.air - s.t) / E.DAY; return `<button data-act="gross" data-v="${x.n}" data-g="${g.id}">第${x.n}話を出す（あと${days}日で上がる${late ? "・間に合わない" : ""}）</button>`; }).join("");
+        return `<div class="g"><b>${esc(g.name)}</b><span>${speed} ・ ${rel}${s.angry[g.name] ? " ・ キレた" : ""}</span><span class="${e ? "org" : "grn"}">${st}</span>${acts ? `<div class="acts">${acts}</div>` : ""}</div>`; }).join("")}</div>`;
+    }
+    return `<div class="pop-bg modal-bg" data-act="popClose" style="display:block;padding:0"><div class="pc" id="popEl" role="dialog" aria-label="パソコン"><div class="win"><div class="tb"><b>進行表</b>${tab("sheet", "話数")}${tab("anims", "原画マン")}${tab("gross", "グロス")}<button class="close" data-act="popClose">閉じる</button></div><div class="body">${body}</div></div></div></div>`;
   }
 
   // ---------- dialogs ----------
   const card = (k, title, body, acts) => `<div class="modal-bg"><div class="card" role="dialog" aria-modal="true" aria-labelledby="cardT"><span class="k">${esc(k)}</span><h2 id="cardT">${esc(title)}</h2>${body}<div class="acts">${acts}</div></div></div>`;
   const row = (l, v, cls = "") => `<div class="row"><span>${l}</span><span class="v ${cls}">${v}</span></div>`;
-  const cbtn = (label, act, pri = false) => `<button class="cmd ${pri ? "pri" : ""}" data-act="${act}">${esc(label)}</button>`;
+  const cbtn = (label, act, pri = false, v = "") => `<button class="cmd ${pri ? "pri" : ""}" data-act="${act}" ${v ? `data-v="${v}"` : ""}>${label}</button>`;
+  const rules = `<ul>
+    <li>あなたは制作デスク。全12話、1話のスケジュールは<b>4週</b>（炎上中）。毎週1話ずつコンテが上がり、4週後に放送。<b>1週間＝120秒</b>。</li>
+    <li>話数は進行3人の<b>担当制</b>（第1話は佐伯、第2話は川口、第3話は真壁、第4話は佐伯……）。進行は<b>自分からは動かない</b>。押すと、そばに指示が出る。</li>
+    <li>1話の流れ：<b>原画営業</b>（カット表を埋める）→ <b>作打ち</b>（原画が始まる）→ <b>外回り</b>で回収 → <b>動仕撒き</b> → 上がったら <b>撮入れ準備</b>（棚にカット袋）→ <b>外回り</b>で撮影へ届ける。外回りは1人が行けば、全員の話数をまとめてやる。</li>
+    <li>進行は<b>10時に出社、24時に帰宅</b>。作業の途中で帰ったら、翌朝に続きをやる。<b>徹夜</b>は1人週1回まで。疲れたら<b>休憩</b>・<b>寝る</b>・<b>帰宅</b>。</li>
+    <li>社用車は1台。机の<b>車の鍵を進行にドラッグ</b>すると外回りに出る（指示の「外回り」でもよい）。</li>
+    <li>右手前の<b>パソコン</b>で進行表：話数ごとに、原画マンがあと何人足りないか、どこで止まっているか。原画マンの一覧と、<b>グロス</b>（1話まるごと外の会社へ）もここ。</li>
+    <li>机の<b>スマホ</b>にメールが来る。「受け入れる」か「キレて出させる」で返事をする。<b>同じ相手には一度しかキレられない</b>。返事をしないと、1日で受け入れた扱い。</li>
+    <li>放送日に撮影が全部終わっていれば「完成」、85%以上なら「止め絵」、それ未満は「落とした」。</li>
+    <li>スペースで止める・動かす。1〜3キーで進行を選ぶ。Esc で閉じる。</li></ul>`;
   function modalHtml() {
-    if (ui.modal === "intro" || ui.modal === "help") {
-      const intro = ui.modal === "intro";
-      return card("遊び方", intro ? "進行RTS（試作）" : "遊び方", `<ul>
-        <li>あなたは制作デスク。全12話、1話のスケジュールは<b>4週</b>（炎上中）。毎週1話ずつコンテが上がり、4週後に放送される。<b>1週間＝120秒</b>。</li>
-        <li>制作進行の3人は<b>自分からは動かない</b>。進行を押すと、そばに指示が出る：<b>原画マン営業</b>（カット表を埋める）・<b>作打ち</b>（済むと原画が始まる）・<b>進行表</b>（原画の進み具合が分かり、回収の取りこぼしがなくなる）・<b>回収へ</b>・<b>休ませる</b>。</li>
-        <li>香盤表と発注表は、話数が始まるときに作ってある。回収した原画は動画・仕上げ、撮影へ自動で流れる。</li>
-        <li>仕事が終わると、報告の吹き出しを出して待つ（押すまで出たまま）。待たせた時間はそのまま無駄になる。</li>
-        <li>社用車は1台。机の<b>車の鍵を進行にドラッグ</b>すると回収へ出る（指示の「回収へ」でもよい）。</li>
-        <li>夜、仕事のない進行は机で寝る。働かせ続けると疲れて遅くなる。</li>
-        <li>机のスマホを押すと、原画マンからの連絡が読める。カットを返されると、その話数の空きが増える。</li>
-        <li>壁のホワイトボードに全12話の進み具合。放送日に撮影が全部終わっていれば「完成」、85%以上なら「止め絵」、それ未満は「落とした」。</li>
-        <li>スペースで止める・動かす。1〜3キーで進行を選ぶ。Esc で閉じる。</li></ul>`,
-        cbtn(intro ? "はじめる" : "閉じる", intro ? "start" : "close", true) + (intro ? "" : cbtn("最初からやり直す", "restartAsk")));
-    }
-    if (ui.modal === "restart") return card("最初から", "最初からやり直しますか？", `<p style="margin:0">いまの現場は消える。</p>`, cbtn("やり直す", "restart", true) + cbtn("やめる", "close"));
+    if (ui.modal === "intro") return card("進行RTS（試作）", "難易度を選んで、はじめる", rules, Object.entries(E.DIFF).map(([v, d], i) => cbtn(`<span class="stack">${d.label}<small>${esc(d.note)}</small></span>`, "start", i === 0, v)).join(""));
+    if (ui.modal === "help") return card("遊び方", "遊び方", rules + `<p style="margin:0">難易度：${esc(E.DIFF[s.diff].label)}（${esc(E.DIFF[s.diff].note)}）</p>`, cbtn("閉じる", "close", true) + cbtn("最初からやり直す", "restartAsk"));
+    if (ui.modal === "restart") return card("最初から", "最初からやり直しますか？", `<p style="margin:0">いまの現場は消える。難易度を選び直す。</p>`, cbtn("やり直す", "restart", true) + cbtn("やめる", "close"));
     if (s.phase === "weekEnd" && s.weekEnd) {
       const w = s.weekEnd, a = E.airStatus(s), live = E.live(s).sort((x, y) => x.air - y.air);
       const aired = w.aired.map((n) => E.epOf(s, n)).map((e) => row(`第${e.n}話 放送`, `${esc(e.result.label)}（撮影 ${e.shot}/${e.cuts}）`, e.result.tone)).join("");
-      return card("1週間おわり", `第${w.week}週 おわり`, `${aired ? `<div class="rows">${aired}</div>` : ""}<div class="big ${a.airing ? "on" : ""}">${esc(a.main)}</div>${a.sub ? `<div>${esc(a.sub)}</div>` : ""}<div class="rows">${live.map((e) => { const m = E.epMut(s, e); return row(`第${e.n}話 ・ 放送まで${daysTo(e.air)}`, esc(m.t), m.tone === "bad" ? "bad" : m.tone === "worry" ? "warn" : m.tone === "good" ? "good" : "mute"); }).join("")}</div>`,
+      return card("1週間おわり", `第${w.week}週 おわり`, `${aired ? `<div class="rows">${aired}</div>` : ""}<div class="big ${a.airing ? "on" : ""}">${esc(a.main)}</div>${a.sub ? `<div>${esc(a.sub)}</div>` : ""}<div class="rows">${live.map((e) => { const m = E.epMut(s, e); return row(`第${e.n}話（${shName(e.owner)}）・ 放送まで${daysTo(e.air)}`, esc(m.t), m.tone === "bad" ? "bad" : m.tone === "worry" ? "warn" : m.tone === "good" ? "good" : "mute"); }).join("")}</div>`,
         cbtn(`第${w.week + 1}週へ`, "nextWeek", true));
     }
     if (s.phase === "end" && s.result) {
       const r = s.result;
-      return card("放送終了", "全12話 放送終了", `<div style="display:flex;gap:18px;align-items:center"><span class="rank">${esc(r.rank)}</span><span>完成 ${r.full}話 ・ 止め絵 ${r.still}話 ・ 落とした ${r.drop}話<br>指示 ${r.orders}回</span></div><div class="rows">${s.eps.map((e) => row(`第${e.n}話`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone)).join("")}</div>`, cbtn("もう一度", "restart", true));
+      return card("放送終了", "全12話 放送終了", `<div style="display:flex;gap:18px;align-items:center"><span class="rank">${esc(r.rank)}</span><span>完成 ${r.full}話 ・ 止め絵 ${r.still}話 ・ 落とした ${r.drop}話<br>難易度 ${esc(E.DIFF[s.diff].label)} ・ 指示 ${r.orders}回 ・ キレた ${r.angry}回 ・ 徹夜 ${r.allnight}回</span></div><div class="rows">${s.eps.map((e) => row(`第${e.n}話（${shName(e.owner)}）`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone)).join("")}</div>`, cbtn("もう一度", "restart", true));
     }
     return "";
   }
@@ -702,55 +852,56 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (cache[id] === html) return false;
     const el = document.getElementById(id), ae = document.activeElement;
     let key = null;
-    if (ae && el.contains(ae) && ae.dataset && ae.dataset.act) key = `${ae.dataset.act}|${ae.dataset.v || ""}`;
+    if (ae && el.contains(ae) && ae.dataset && ae.dataset.act) key = `${ae.dataset.act}|${ae.dataset.v || ""}|${ae.dataset.id || ""}`;
+    const sc = el.querySelector(".list, .body"); const top = sc ? sc.scrollTop : 0;
     cache[id] = html; el.innerHTML = html;
-    if (key) { const again = [...el.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.v || ""}` === key); if (again && !again.disabled) again.focus({ preventScroll: true }); }
+    const sc2 = el.querySelector(".list, .body"); if (sc2) sc2.scrollTop = top;
+    if (key) { const again = [...el.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.v || ""}|${x.dataset.id || ""}` === key); if (again && !again.disabled) again.focus({ preventScroll: true }); }
     return true;
   }
   function render() {
     if (!s || pressing || dragging) return;
     drawArt();
     put("wb", whiteboard());
+    put("shelf", shelf());
     put("ov", overlay());
     put("ovb", bubbles());
     if (put("ui", menuHtml())) placeMenu();
-    put("modal-root", phoneHtml() + modalHtml());
-    placePhone();
-    if (!rendered) { rendered = true; layout(); }
+    put("modal-root", phoneHtml() + pcHtml() + modalHtml());
+    placePop();
   }
-  let rendered = false;
   function layout() {
     const W = window.innerWidth, H = window.innerHeight;
     k = Math.min(W / 1920, H / 1080);
     const bw = 1920 * k, bh = 1080 * k, box = document.getElementById("box");
     box.style.width = `${bw}px`; box.style.height = `${bh}px`; box.style.left = `${(W - bw) / 2}px`; box.style.top = `${Math.max(0, (H - bh) / 2)}px`;
     document.getElementById("stage").style.transform = `scale(${k})`;
-    placeMenu(); placePhone();
+    placeMenu(); placePop();
   }
   // the menu stays readable in a small window: never below 0.72 of its drawn size, kept inside the window
   function placeMenu() {
     if (!ui.sel) return;
     const box = document.getElementById("box").getBoundingClientRect(), p = P[ui.sel];
-    const uk = Math.max(k, 0.72); // buttons stay at least 46px tall
+    const uk = Math.max(k, 0.72);
     const main = document.querySelector('#ui .menu[data-anchor="main"]'), eps = document.querySelector('#ui .menu[data-anchor="eps"]');
     if (!main) return;
-    const mw = 260 * uk, mh = main.offsetHeight * uk;
+    const mw = 270 * uk, mh = main.offsetHeight * uk;
     let x = box.left + p.menu[0] * k, y = box.top + p.menu[1] * k;
     x = Math.max(6, Math.min(window.innerWidth - mw - 6, x)); y = Math.max(6, Math.min(window.innerHeight - mh - 6, y));
     main.style.transform = `scale(${uk})`; main.style.left = `${x}px`; main.style.top = `${y}px`;
     if (eps) {
-      const ew = 260 * uk, eh = eps.offsetHeight * uk;
+      const ew = 270 * uk, eh = eps.offsetHeight * uk;
       let ex = p.side > 0 ? x + mw + 12 : x - ew - 12;
       if (ex < 6 || ex + ew > window.innerWidth - 6) ex = p.side > 0 ? x - ew - 12 : x + mw + 12;
       if (ex < 6 || ex + ew > window.innerWidth - 6) ex = Math.max(6, Math.min(window.innerWidth - ew - 6, x + 20));
-      const ey = Math.max(6, Math.min(window.innerHeight - eh - 6, y));
-      eps.style.transform = `scale(${uk})`; eps.style.left = `${ex}px`; eps.style.top = `${ey}px`;
+      eps.style.transform = `scale(${uk})`; eps.style.left = `${ex}px`; eps.style.top = `${Math.max(6, Math.min(window.innerHeight - eh - 6, y))}px`;
     }
   }
-  function placePhone() {
-    const el = document.getElementById("phoneEl");
+  function placePop() {
+    const el = document.getElementById("popEl");
     if (!el) return;
-    const pk = Math.min(1, (window.innerHeight * 0.94) / 820, (window.innerWidth * 0.96) / 460);
+    const [w, h] = ui.pop === "pc" ? [1500, 860] : [460, 820];
+    const pk = Math.min(1, (window.innerHeight * 0.95) / h, (window.innerWidth * 0.97) / w);
     el.style.transform = `translate(-50%, -50%) scale(${pk})`;
   }
   function toast(text) {
@@ -769,10 +920,10 @@ if (typeof module !== "undefined") module.exports = Engine;
       const n = Math.floor(acc);
       if (n > 0) {
         acc -= n;
-        const before = s.shinko.map((x) => !!x.report);
+        const before = s.shinko.map((x) => !!x.report), mails = s.mailSeq;
         E.tick(s, n);
-        if (s.phase !== "play") { ui.sel = null; ui.phone = false; save(); render(); }
-        else if (s.shinko.some((x, i) => x.report && !before[i])) render();
+        if (s.phase !== "play") { ui.sel = null; ui.pop = null; save(); render(); }
+        else if (s.shinko.some((x, i) => x.report && !before[i]) || s.mailSeq !== mails) render();
       }
     }
     if (now - lastRender > 200) { lastRender = now; render(); }
@@ -785,12 +936,16 @@ if (typeof module !== "undefined") module.exports = Engine;
     const sh = shOf(id);
     if (ui.sel === id && !sh.report) { ui.sel = null; ui.pick = null; return render(); } // pressing again closes the menu
     ui.sel = id; ui.pick = null;
-    if (sh.report) { sh.lastReport = sh.report.text; E.ack(s, id); } else if (!sh.task) sh.lastReport = sh.lastReport || null;
+    if (sh.report) { sh.lastReport = sh.report.text; E.ack(s, id); }
     save(); render();
   }
   function give(sid, kind, ep) {
     const ok = E.order(s, sid, kind, ep);
-    if (ok) { const sh = shOf(sid); sh.lastReport = null; toast(`${sh.name}：${taskName(sh.task)}に取りかかった`); ui.sel = null; ui.pick = null; }
+    if (ok) {
+      const sh = shOf(sid); sh.lastReport = null;
+      toast(kind === "allnight" ? `${sh.name}：今夜は徹夜する` : kind === "home" ? `${sh.name}：帰宅した（明日10時に来る）` : `${sh.name}：${taskName(sh.task)}に取りかかった`);
+      if (kind !== "allnight") { ui.sel = null; ui.pick = null; }
+    }
     save(); render();
     return ok;
   }
@@ -799,28 +954,47 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (a === "sel") return select(v);
     if (a === "cmd") {
       const T = E.TASK[v];
-      if (!T.ep) return give(ui.sel, v, null);
-      const list = urgentEps(v);
+      if (!T || !T.ep) return give(ui.sel, v, null);
+      const list = okEps(v);
       if (list.length === 1) return give(ui.sel, v, list[0].n);
       ui.pick = ui.pick === v ? null : v; return render();
     }
     if (a === "ep") return give(ui.sel, ui.pick, Number(v));
     if (a === "cancel") { E.cancel(s, ui.sel); ui.sel = null; save(); return render(); }
-    if (a === "phone") { ui.phone = true; ui.sel = null; s.phone.forEach((m) => (m.read = true)); save(); return render(); }
-    if (a === "phoneClose") { ui.phone = false; return render(); }
-    if (a === "keys") { toast("車の鍵は、回収に出す進行までドラッグする"); return; }
+    if (a === "phone") { ui.pop = "phone"; ui.sel = null; s.mails.forEach((m) => { if (m.state === "new") m.state = "read"; }); save(); return render(); }
+    if (a === "pc") { ui.pop = "pc"; ui.sel = null; return render(); }
+    if (a === "popClose") { ui.pop = null; return render(); }
+    if (a === "tab") { ui.tab = v; return render(); }
+    if (a === "reply") { E.reply(s, Number(el.dataset.id), v); save(); return render(); }
+    if (a === "gross") { if (E.grossOut(s, Number(v), el.dataset.g)) toast(`第${v}話をグロスに出した`); save(); return render(); }
+    if (a === "keys") { toast("車の鍵は、外回りに出す進行までドラッグする"); return; }
     if (a === "pause") { if (ui.modal || s.phase !== "play") return; ui.paused = !ui.paused; return render(); }
     if (a === "speed") { ui.speed = ui.speed === 2 ? 1 : 2; return render(); }
     if (a === "help") { ui.modal = "help"; ui.sel = null; return render(); }
-    if (a === "start") { ui.modal = null; ui.paused = false; save(); return render(); }
+    if (a === "start") { fresh(v || "easy"); return render(); }
     if (a === "close") { ui.modal = null; return render(); }
     if (a === "restartAsk") { ui.modal = "restart"; return render(); }
-    if (a === "restart") { fresh(1 + Math.floor(Math.random() * 100000)); ui.modal = null; ui.paused = false; save(); return render(); }
+    if (a === "restart") { ui.modal = "intro"; ui.sel = null; ui.pop = null; return render(); }
     if (a === "nextWeek") { E.nextWeek(s); save(); return render(); }
   }
   function stagePoint(ev) { const r = document.getElementById("box").getBoundingClientRect(); return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k }; }
-  // front to back: 真壁, 佐伯, 川口
-  function zoneAt(pt) { return ["s3", "s1", "s2"].map(shOf).find((sh) => drawnAt(sh, pt)); }
+  const maskBits = {};
+  function drawnAt(sh, pt) {
+    const st = stateOf(sh);
+    if (st === "out" || st === "home") return false;
+    const [fx, fy, fw] = FRAME[sh.id], pose = poseOf(sh);
+    const cx = Math.floor(((pt.x - fx) / fw) * 32), cy = Math.floor(((pt.y - fy) / fw) * 32);
+    if (cx < 0 || cy < 0 || cx >= 32 || cy >= 32) return false;
+    const key = sh.id + pose;
+    if (!maskBits[key]) maskBits[key] = Uint8Array.from(atob(MASKS[sh.id][pose]), (c) => c.charCodeAt(0));
+    const i = cy * 32 + cx;
+    return !!(maskBits[key][i >> 3] & (1 << (i & 7)));
+  }
+  // front to back: 真壁, 佐伯, 川口; someone away is found by their empty chair
+  function zoneAt(pt) {
+    const order = ["s3", "s1", "s2"].map(shOf);
+    return order.find((sh) => drawnAt(sh, pt)) || order.find((sh) => { const st = stateOf(sh); if (st !== "out" && st !== "home") return false; const [x1, y1, x2, y2] = P[sh.id].zone; return pt.x >= x1 && pt.x <= x2 && pt.y >= y1 && pt.y <= y2; });
+  }
   document.addEventListener("pointerdown", (ev) => {
     const el = ev.target.closest && ev.target.closest("[data-act]");
     if (!el) return;
@@ -845,7 +1019,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       document.getElementById("ghost").style.display = "none";
       if (d.moved) {
         const z = zoneAt(stagePoint(ev));
-        if (z) { const why = E.canOrder(s, z.id, "soto"); if (why) toast(`${z.name}は回収に出せない：${why}`); else give(z.id, "soto", null); }
+        if (z) { const why = E.canOrder(s, z.id, "soto"); if (why) toast(`${z.name}は外回りに出せない：${why}`); else give(z.id, "soto", null); }
         pressing = false; render();
         suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
         return;
@@ -858,32 +1032,30 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (suppressClick) { suppressClick = false; return; }
     pressing = false;
     const el = ev.target.closest && ev.target.closest("[data-act]");
-    if (el && el.dataset.act === "phoneClose" && el.classList.contains("phone-bg") && ev.target.closest("#phoneEl")) return; // inside the phone
+    if (el && el.classList.contains("pop-bg") && ev.target.closest("#popEl")) return; // inside the phone or the PC
     if (el && el.classList.contains("zone") && ev.detail > 0) {
-      // a pointer press on a person: whoever is drawn under the pointer (川口 sits behind 真壁)
-      const pt = stagePoint(ev);
-      const who = zoneAt(pt) || ["s3", "s1", "s2"].map(shOf).find((x) => { if (stateOf(x) !== "out") return false; const [x1, y1, x2, y2] = P[x.id].zone; return pt.x >= x1 && pt.x <= x2 && pt.y >= y1 && pt.y <= y2; });
+      const who = zoneAt(stagePoint(ev));
       if (who) return select(who.id);
       if (ui.sel) { ui.sel = null; ui.pick = null; render(); }
       return;
     }
-    if (!el) { if (ui.sel) { ui.sel = null; ui.pick = null; render(); } return; } // pressing the room closes the menu
+    if (!el) { if (ui.sel) { ui.sel = null; ui.pick = null; render(); } return; }
     if (el.disabled) return;
     doAct(el);
   });
   document.addEventListener("keydown", (ev) => {
     if (!s) return;
-    if (ev.key === "Escape") { if (ui.modal === "intro") { ui.modal = null; ui.paused = false; } else if (ui.modal === "help" || ui.modal === "restart") ui.modal = null; else if (ui.phone) ui.phone = false; else { ui.sel = null; ui.pick = null; } render(); return; }
+    if (ev.key === "Escape") { if (ui.modal === "help" || ui.modal === "restart") ui.modal = null; else if (ui.pop) ui.pop = null; else { ui.sel = null; ui.pick = null; } render(); return; }
     if (ui.modal) return;
     if (ev.key === " ") { ev.preventDefault(); if (!ev.repeat && s.phase === "play") { ui.paused = !ui.paused; render(); } }
-    if (["1", "2", "3"].includes(ev.key)) select(s.shinko[Number(ev.key) - 1].id);
+    if (["1", "2", "3"].includes(ev.key) && !ui.pop) select(s.shinko[Number(ev.key) - 1].id);
   });
   document.addEventListener("keyup", (ev) => { if (ev.key === " " && !ui.modal) ev.preventDefault(); });
   window.addEventListener("resize", layout);
   window.addEventListener("pagehide", save);
   document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
 
-  if (!load()) fresh(1 + Math.floor(Math.random() * 100000));
+  if (!load()) { s = E.newGame(1, "easy"); ui.modal = "intro"; }
   layout();
   render();
   requestAnimationFrame(frame);
