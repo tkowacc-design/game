@@ -84,7 +84,7 @@ function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x9E3779B9) | 0
           const key = LIVE ? await handle.evaluate((el) => JSON.stringify(el.dataset)) : null;
           try { await handle.click({ timeout: 2000, force: LIVE }); }
           catch (e) {
-            if (!LIVE || !/not attached|detached/.test(e.message)) throw e;
+            if (!LIVE || !/not attached|detached|not visible/.test(e.message)) throw e;
             const again = (await p.evaluateHandle((k) => [...document.querySelectorAll("[data-act]")].find((el) => JSON.stringify(el.dataset) === k && !el.disabled), key)).asElement();
             if (again) await again.click({ timeout: 2000, force: true });
           }

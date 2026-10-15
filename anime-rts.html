@@ -151,7 +151,7 @@
   .act { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 4px; text-align: left; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
   .act.pri { background: var(--ink); color: var(--paper); }
   .act:hover:not(:disabled) { box-shadow: 0 2px 0 var(--ink); }
-  .act:disabled { color: #6f7484; border: 1.5px dashed #b9b4a6; background: transparent; }
+  .act:disabled { color: var(--ink-soft); border: 1.5px dashed #b9b4a6; background: transparent; }
   .act .m { display: grid; line-height: 1.35; }
   .act .m small { font-size: 11.5px; font-weight: 400; }
   .act .m b { font-weight: 700; }
@@ -641,14 +641,16 @@ const Engine = (() => {
     log(s, `あなたが電話：${text}`);
     return text;
   }
+  // what a 進行 does on their own when nobody answers
+  function defaultOf(s, c) {
+    const sh = shOf(s, c.sid), all = choicesOf(s, c), k = DEFAULT[sh.rookie ? "rookie" : "vet"][c.type];
+    return all.find((x) => x.k === k && x.ok) || all.find((x) => x.ok);
+  }
   function expire(s) {
     for (const c of s.calls) {
       if (c.state !== "ring" || s.t < c.until) continue;
-      const sh = shOf(s, c.sid);
-      let k = DEFAULT[sh.rookie ? "rookie" : "vet"][c.type];
-      if (!okChoice(s, c, k)) k = choicesOf(s, c).find((x) => x.ok).k;
       s.stats.missed++;
-      apply(s, c, k, "missed");
+      apply(s, c, defaultOf(s, c).k, "missed");
     }
     flushAfter(s);
   }
@@ -760,7 +762,7 @@ const Engine = (() => {
   }
   function tick(s, n) { for (let i = 0; i < n && s.phase === "play"; i++) step(s); }
 
-  return { DAY, START, DEADLINE, RING, BAGS, CALLBUSY, RHY, STANDING, newGame, tick, order, canOrder, answer, choicesOf, callOut, setStanding, estimate, hintOf, viewOf,
+  return { DAY, START, DEADLINE, RING, BAGS, CALLBUSY, RHY, STANDING, newGame, tick, order, canOrder, answer, choicesOf, defaultOf, callOut, setStanding, estimate, hintOf, viewOf,
     animBags, carryNew, carryUp, hqBags, travel, node, anim, shOf, asleep, locOf, workOf, result };
 })();
 if (typeof module !== "undefined") module.exports = Engine;
@@ -933,7 +935,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       if (!el) {
         el = document.createElementNS("http://www.w3.org/2000/svg", "g");
         el.id = "car-" + sh.id; el.setAttribute("class", "car"); el.setAttribute("data-act", "sel"); el.setAttribute("data-k", "sh"); el.setAttribute("data-v", sh.id);
-        el.innerHTML = `<circle class="hit" r="5.5" fill="transparent"/><circle class="ring" r="3.4"/><circle class="body" r="2" fill="var(--${sh.id})" stroke="var(--night)" stroke-width=".4"/><text y=".8" text-anchor="middle">${esc(sh.name[0])}</text>`;
+        el.innerHTML = `<circle class="hit" r="2.8" fill="transparent"/><circle class="ring" r="3.4"/><circle class="body" r="2" fill="var(--${sh.id})" stroke="var(--night)" stroke-width=".4"/><text y=".8" text-anchor="middle">${esc(sh.name[0])}</text>`;
         g.appendChild(el);
         const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
         ln.id = "route-" + sh.id; ln.setAttribute("class", "route"); ln.setAttribute("stroke", `var(--${sh.id})`);
@@ -942,7 +944,8 @@ if (typeof module !== "undefined") module.exports = Engine;
       // cars at the same place sit side by side
       const same = s.shinko.filter((o) => o.node && o.node === sh.node);
       const off = sh.node ? (same.indexOf(sh) - (same.length - 1) / 2) * 3.6 : 0;
-      el.setAttribute("transform", `translate(${(sh.x + off).toFixed(2)} ${(sh.y - (sh.node ? 4 : 0)).toFixed(2)})`);
+      el.setAttribute("transform", `translate(${(sh.x + off).toFixed(2)} ${(sh.y - (sh.node ? 6 : 0)).toFixed(2)})`);
+      if (sh.node) el.setAttribute("data-node", sh.node); else el.removeAttribute("data-node");
       el.classList.toggle("calling", sh.status === "call");
       el.classList.toggle("on", selIs("sh", sh.id));
       const go = sh.steps.find((x) => x.k === "go"), ln = document.getElementById("route-" + sh.id);
@@ -1068,7 +1071,8 @@ if (typeof module !== "undefined") module.exports = Engine;
       + (!ring ? `<section class="psec"><h3>どうなったか</h3><p>${esc(c.result || "")}</p></section>` : "");
     if (!ring) return pane(body, foot("この電話", act({ label: `${sh.name}を見る`, attrs: `data-act="sel" data-k="sh" data-v="${sh.id}"` }), "", true));
     const acts = E.choicesOf(s, c).map((ch) => act({ label: ch.label, sub: busy ? `いま通話中（あと${s.busyUntil - s.t}分）` : ch.why, cost: ch.cost, attrs: `data-act="answer" data-v="${ch.k}" data-arg="${c.id}"`, disabled: !ch.ok || busy })).join("");
-    return pane(body, foot("この電話（返事）", acts, `出ないでいると、${sh.name}が自分で決める（${sh.rookie ? "新人は待ち続けがち" : "ベテランは無理をしない"}）。`, true));
+    const own = E.defaultOf(s, c);
+    return pane(body, foot("この電話（返事）", acts, `出ないでいると、鳴り終わったときに${sh.name}が自分で決める（${sh.name}なら、たぶん「${own ? own.label : "その場で待つ"}」）。`, true));
   }
   function paneHtml() {
     const { k, id } = ui.sel;
@@ -1222,6 +1226,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (!g || ui.sel.k !== "sh" || !s || s.phase !== "play") return;
     ev.preventDefault();
     const sid = ui.sel.id, n = E.node(s, g.dataset.node);
+    if (g.classList.contains("car") && g.dataset.v === sid && n.kind === "hq") return; // right-clicking yourself at the desk: nothing to do
     if (n.kind === "home") E.order(s, sid, E.animBags(s, animOf(n.aid)).length && !E.canOrder(s, sid, "kaishu", n.aid) ? "kaishu" : "hatchu", n.aid, ui.n);
     else if (n.kind === "studio") E.order(s, sid, "deliver");
     else if (n.kind === "hq") E.order(s, sid, "rest");
@@ -1232,9 +1237,11 @@ if (typeof module !== "undefined") module.exports = Engine;
     const tag = (document.activeElement && document.activeElement.tagName) || "";
     if (ev.key === "Escape" && ui.modal) { if (ui.modal === "intro") { ui.modal = null; ui.paused = false; } else ui.modal = null; render(); return; }
     if (ui.modal || tag === "SELECT" || tag === "INPUT") return;
-    if (ev.key === " " && tag !== "BUTTON") { ev.preventDefault(); if (s.phase === "play") { ui.paused = !ui.paused; render(); } }
+    if (ev.key === " ") { ev.preventDefault(); if (!ev.repeat && s.phase === "play") { ui.paused = !ui.paused; render(); } }
     if (["1", "2", "3"].includes(ev.key)) select("sh", s.shinko[Number(ev.key) - 1].id);
   });
+  // a focused button must not also be pressed by the Space that pauses
+  document.addEventListener("keyup", (ev) => { const tag = (document.activeElement && document.activeElement.tagName) || ""; if (ev.key === " " && !ui.modal && tag !== "SELECT" && tag !== "INPUT") ev.preventDefault(); });
   window.addEventListener("pagehide", save);
   document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
 
