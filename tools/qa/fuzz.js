@@ -23,7 +23,7 @@ const LIVE = process.argv.includes("--live");
 const PAGE = "file://" + path.resolve(__dirname, "../..", arg("page", "anime-producer.html"));
 const EXE = process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 // leaving the game is allowed but rare, so a run gets deep into the season
-const RARE = new Set(["title", "quitYes", "again", "quit", "restartAsk", "retry", "restart"]);
+const RARE = new Set(["title", "quitYes", "again", "quit", "restartAsk", "retry", "restart", "cancel"]);
 const BAD_TEXT = /undefined|NaN|\[object Object\]|Infinity/;
 
 function seeded(seed) {
