@@ -2,12 +2,13 @@
 
 - ゲーム本体は `anime-producer.html` の1ファイル。計算部分（`<script id="engine">`）と画面（その下の `<script>`）は分かれている。
 - 画面は「左に一覧 → 選ぶと右に詳細 → 詳細のいちばん下に、それにできること」で統一している。品質の見込みは数字で出さず、制作デスクの「あなたの見立て」のひとことで出す。
+- RTS版の試作は `anime-rts.html`（制作部だけ・リアルタイム・進行からの電話）。作りは本体と同じ（計算部分は `<script id="engine">`）。テストのルートは `tools/qa/routes-rts.md`、ランダム操作は `node tools/qa/fuzz.js --page anime-rts.html`。
 
 ## 大きな修正のあとのテスト（必ずやる）
 
 画面の作り直し、ゲームの流れ・ルールの変更、複数の画面にまたがる修正をしたら、プッシュする前に次をすべて行う。
 
-1. デバッグ担当（`.claude/agents/debugger.md`、Haiku）を呼び、`tools/qa/routes.md` の**全ルート**を実際のブラウザで試させる。
+1. デバッグ担当（`.claude/agents/debugger.md`、Haiku）を呼び、`tools/qa/routes.md` の**全ルート**を実際のブラウザで試させる（RTS版を直したときは `tools/qa/routes-rts.md`）。
    - 呼ぶときは `subagent_type: "debugger"`。使えないときは general-purpose に `model: "haiku"` を指定し、`.claude/agents/debugger.md` の本文をそのまま渡す。
 2. 並行して、自分でも次を確かめる。
    - `node tools/qa/fuzz.js`（PC幅・スマホ幅）
@@ -16,4 +17,4 @@
    - 保存と再開（制作中・ダイアログ表示中の再読み込み）
    - 計算部分を変えたときは、Node で多数の seed を回して破綻がないか
 3. 見つかった問題を直し、もう一度テストしてからプッシュする。直さなかったものは理由と一緒に報告する。
-4. 画面や操作を足したら、`tools/qa/routes.md` にも足す。
+4. 画面や操作を足したら、`tools/qa/routes.md`（RTS版は `tools/qa/routes-rts.md`）にも足す。

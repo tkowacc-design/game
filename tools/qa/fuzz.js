@@ -3,7 +3,7 @@
 // reloads now and then to test save/resume, and reports page errors, broken text and layout overflow.
 // Each run fixes Math.random with its own seed, so a failure can be replayed with --seed.
 //
-//   node tools/qa/fuzz.js [--runs 6] [--steps 400] [--seed 1] [--width 1440] [--height 900] [--out report.json]
+//   node tools/qa/fuzz.js [--runs 6] [--steps 400] [--seed 1] [--width 1440] [--height 900] [--out report.json] [--page anime-rts.html]
 //
 // Needs playwright-core (`npm i --no-save playwright-core` in tools/qa) and a Chromium
 // (CHROMIUM env, default /opt/pw-browsers/chromium-1194/chrome-linux/chrome).
@@ -16,10 +16,10 @@ const arg = (k, d) => { const i = process.argv.indexOf("--" + k); return i > 0 ?
 const RUNS = +arg("runs", 6), STEPS = +arg("steps", 400), SEED0 = +arg("seed", 1);
 const W = +arg("width", 1440), H = +arg("height", 900);
 const OUT = arg("out", "");
-const PAGE = "file://" + path.resolve(__dirname, "../../anime-producer.html");
+const PAGE = "file://" + path.resolve(__dirname, "../..", arg("page", "anime-producer.html"));
 const EXE = process.env.CHROMIUM || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 // leaving the game is allowed but rare, so a run gets deep into the season
-const RARE = new Set(["title", "quitYes", "again", "quit"]);
+const RARE = new Set(["title", "quitYes", "again", "quit", "restartAsk", "retry", "restart"]);
 const BAD_TEXT = /undefined|NaN|\[object Object\]|Infinity/;
 
 function seeded(seed) {

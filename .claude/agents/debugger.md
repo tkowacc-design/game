@@ -18,7 +18,7 @@ tools: Bash, Read, Grep, Glob, Write
    - `node tools/qa/fuzz.js --runs 4 --steps 400 --width 390 --height 844 --out tools/qa/out/fuzz-sp.json`
    - 失敗があれば、`--seed` でその回だけ再実行して再現を確かめる。
 3. ルート確認（本番）
-   - `tools/qa/routes.md` の項目を**上から全部**、Playwright のスクリプトで実際に操作して確かめる。スクリプトは `tools/qa/out/` に書く（コミットしない）。
+   - `tools/qa/routes.md`（RTS版のときは `tools/qa/routes-rts.md`）の項目を**上から全部**、Playwright のスクリプトで実際に操作して確かめる。スクリプトは `tools/qa/out/` に書く（コミットしない）。
    - 押す要素は `[data-act="..."]` で探せる。`data-v` の値は必ず引用符で囲む（`[data-v="24h"]`。`24h` `12h` `2gen` のような数字始まりの値は、引用符なしだと無効なセレクタになり、押せないまま「変化しない」と誤判定する）。
    - 選択は `data-act="sel" data-k="ep|team|shinko|dir|post|gross|tv|studio" data-v="..."`。
    - スクロール・アニメーションの結果は、1秒ほど待ってから測る。

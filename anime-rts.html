@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>進行RTS 試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap">
+<style>
+  /* Same layout rules as 深夜アニメP: collections on the left, the selected object's detail on the right,
+     and what you can do with it at the bottom of the detail. The town map sits in between. */
+  :root {
+    --night: #12151f; --desk: #1c2130; --desk-2: #262c40; --line: #2a3146; --line-2: #323a52;
+    --on: #e8eaf1; --on-soft: #a1a9be;
+    --paper: #f4f2ec; --card: #ffffff; --rule: #dcd8cc; --ink: #1a1c24; --ink-soft: #5a6072; --chip: #e3dfd3;
+    --marker: #ffe14a; --marker-d: #b89e1e;
+    --red: #c8323a; --red-d: #e5484d; --red-l: #ff9a9d;
+    --green: #167a4d; --green-d: #1f9d63; --green-l: #8fe0b5;
+    --amber: #e0b400; --teal: #1f7f7f; --pink: #ff5fa2; --gross: #8a93ab;
+    --s1: #ff9f43; --s2: #4fc3f7; --s3: #c792ea;
+    --font-pixel: "DotGothic16", "IPAGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
+    --font-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "IPAPGothic", sans-serif;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--night); color: var(--on); font-family: var(--font-body); font-size: 14px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
+  #app { max-width: 1440px; margin: 0 auto; }
+  h1, h2, h3 { font-family: var(--font-pixel); font-weight: 400; letter-spacing: .04em; margin: 0; }
+  button, select { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
+  button:disabled { cursor: not-allowed; }
+
+  /* header: brand | the clock and its one action | system */
+  .hdr { min-height: 64px; box-sizing: border-box; padding: 8px 24px; display: flex; align-items: center; gap: 12px 24px; border-bottom: 1px solid var(--line); flex-wrap: wrap; background: var(--night); position: sticky; top: 0; z-index: 10; }
+  .brand { width: 248px; display: grid; line-height: 1.3; }
+  .brand b { font-family: var(--font-pixel); font-weight: 400; font-size: 18px; }
+  .brand span { font-size: 12px; color: var(--on-soft); }
+  .wk { display: flex; align-items: center; gap: 12px 16px; padding-left: 24px; border-left: 1px solid var(--line); min-height: 44px; flex-wrap: wrap; }
+  .clock { font-family: var(--font-pixel); font-size: 24px; line-height: 1.1; color: var(--marker); white-space: nowrap; }
+  .clock small { font-size: 12px; color: var(--on-soft); margin-left: 8px; }
+  .dl { font-size: 12px; color: var(--on-soft); white-space: nowrap; }
+  .dl b { color: var(--on); font-weight: 700; }
+  .hdr-r { margin-left: auto; display: flex; gap: 8px; }
+  .btn-main { min-height: 44px; padding: 0 20px; font-family: var(--font-pixel); font-size: 16px; background: var(--marker); color: var(--night); border: 0; border-radius: 4px; box-shadow: 0 3px 0 var(--marker-d); white-space: nowrap; }
+  .btn-main:hover { background: #ffe97a; }
+  .btn-main.ring { background: var(--red-d); color: #fff; box-shadow: 0 3px 0 #8f1f25; }
+  .btn-sys { min-height: 44px; padding: 0 14px; background: transparent; color: var(--on); border: 1px solid var(--line-2); border-radius: 4px; white-space: nowrap; }
+  .btn-sys:hover { border-color: var(--on-soft); }
+  .speed { display: flex; border: 1px solid var(--line-2); border-radius: 4px; overflow: hidden; }
+  .speed button { min-height: 44px; min-width: 52px; padding: 0 10px; background: transparent; border: 0; color: var(--on-soft); font-size: 13px; }
+  .speed button + button { border-left: 1px solid var(--line-2); }
+  .speed button.on { background: var(--desk-2); color: var(--marker); }
+
+  /* body: collections | town | detail */
+  .main { display: grid; grid-template-columns: 272px minmax(0, 1fr) 392px; grid-template-areas: "list map pane"; gap: 16px; padding: 16px 24px 32px; align-items: start; }
+  #list { grid-area: list; } #mapw { grid-area: map; } #pane { grid-area: pane; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .sec { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .sec-h { display: flex; align-items: center; gap: 12px; min-height: 20px; }
+  .sec-h h2 { font-size: 13px; color: var(--on-soft); }
+  .note { font-size: 12px; color: var(--on-soft); margin: 0; }
+  .li { min-height: 48px; width: 100%; display: grid; grid-template-columns: 4px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; text-align: left; background: var(--desk); color: var(--on); border: 0; border-radius: 4px; padding: 4px 10px 4px 0; overflow: hidden; }
+  .li:hover { background: #232940; }
+  .li.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  .li > i { align-self: stretch; margin: -4px 0; background: var(--c, var(--gross)); }
+  .li .t { display: block; font-weight: 700; font-size: 13px; }
+  .li .s { display: block; font-size: 12px; color: var(--on-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .li .r { font-family: var(--font-pixel); font-size: 12px; white-space: nowrap; }
+  .li .chev { color: var(--on-soft); }
+  .li.ringing { box-shadow: inset 0 0 0 1.5px var(--red-d); }
+  .li.ringing.on { box-shadow: 0 0 0 2px var(--marker); }
+
+  /* the town */
+  .mapw { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .map { position: relative; width: 100%; aspect-ratio: 100 / 64; border-radius: 6px; overflow: hidden; box-shadow: 0 0 0 1px var(--line-2); background: #1a2233; }
+  .map svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; user-select: none; }
+  .map .road { stroke: #2b3550; stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .map text { font-family: var(--font-body); font-size: 2.5px; fill: var(--on); pointer-events: none; }
+  .map text.sm { font-size: 2.1px; fill: var(--on-soft); }
+  .map .nd { cursor: pointer; }
+  .map .nd .hit { fill: transparent; }
+  .map .nd:hover .shape, .map .nd:focus-visible .shape { stroke: var(--on); }
+  .map .nd.on .shape { stroke: var(--marker); stroke-width: .8; }
+  .map .car { cursor: pointer; }
+  .map .car text { font-size: 2.2px; fill: var(--night); font-weight: 700; }
+  .map .car .ring { fill: none; stroke: var(--red-d); stroke-width: .7; opacity: 0; }
+  .map .car.calling .ring { opacity: 1; }
+  .map .car.on .body { stroke: var(--marker); stroke-width: .7; }
+  .map .route { stroke-width: .45; stroke-dasharray: 1.2 1; fill: none; opacity: .8; }
+  .feed .log { max-height: none; }
+  .feed .log p { margin: 0; font-size: 12.5px; color: var(--on); }
+  .feed .log p.warn { color: var(--marker); } .feed .log p.bad { color: var(--red-l); } .feed .log p.good { color: var(--green-l); }
+  .feed .log .w { font-family: var(--font-pixel); color: var(--on-soft); margin-right: 6px; white-space: nowrap; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11px; color: var(--on-soft); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .map .car.calling .ring { animation: ring 1s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes ring { from { transform: scale(.7); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+    .btn-main.ring { animation: shake 1.2s ease-in-out infinite; }
+    @keyframes shake { 0%, 70%, 100% { transform: none; } 75% { transform: translateX(-2px); } 85% { transform: translateX(2px); } }
+  }
+
+  /* tags */
+  .tag { font-family: var(--font-pixel); font-size: 12px; padding: 0 8px; border-radius: 2px; white-space: nowrap; background: var(--chip); color: var(--ink); }
+  .tag.bad { background: var(--red); color: #fff; }
+  .tag.warn { background: var(--marker); color: var(--ink); }
+  .tag.ok { background: #d6f2e4; color: #11633c; }
+
+  /* the detail of the selected object */
+  .pane { background: var(--paper); color: var(--ink); border-radius: 6px; display: flex; flex-direction: column; box-shadow: 0 0 0 2px var(--marker); min-width: 0; }
+  .pane-b { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 16px; }
+  .pane-f { margin-top: 16px; padding: 12px 16px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
+  .pane-f > .lbl { font-size: 11px; color: var(--ink-soft); }
+  .pane .note { color: var(--ink-soft); }
+  .oh { display: flex; flex-direction: column; gap: 4px; }
+  .oh-top { display: flex; align-items: center; gap: 8px; }
+  .oh-top .tag:last-child { margin-left: auto; }
+  .typ { font-family: var(--font-pixel); font-size: 11px; background: var(--ink); color: var(--paper); padding: 0 6px; border-radius: 2px; }
+  .oh h2 { font-size: 22px; line-height: 1.3; }
+  .oh-sub { font-size: 12px; color: var(--ink-soft); }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .tile { background: var(--card); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+  .tile .l { font-size: 11px; color: var(--ink-soft); }
+  .tile .v { font-family: var(--font-pixel); font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile.bad { box-shadow: inset 0 0 0 1.5px var(--red); }
+  .tile.bad .l, .tile.bad .v { color: var(--red); }
+  .tile.good { box-shadow: inset 0 0 0 1.5px var(--green); }
+  .tile.good .l, .tile.good .v { color: var(--green); }
+  .mut { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .me { width: 40px; height: 40px; border-radius: 3px; display: grid; place-items: center; background: var(--ink); color: var(--paper); font-family: var(--font-pixel); font-size: 11px; }
+  .mut-b { background: var(--card); border-radius: 4px; padding: 8px 12px; box-shadow: inset 4px 0 0 var(--tone, var(--gross)); }
+  .mut-b .l { font-size: 11px; color: var(--ink-soft); }
+  .mut-b .t { font-size: 15px; font-weight: 700; }
+  .tone-good { --tone: var(--green); } .tone-ok { --tone: var(--teal); } .tone-worry { --tone: var(--amber); } .tone-bad { --tone: var(--red); } .tone-mute { --tone: var(--gross); }
+  .psec { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--rule); padding-top: 16px; }
+  .psec h3 { font-size: 14px; }
+  .psec p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
+  .rows { display: flex; flex-direction: column; }
+  .row { min-height: 34px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; border-bottom: 1px dashed var(--rule); }
+  .row .v { font-weight: 700; text-align: right; }
+  .row .v small { font-weight: 400; color: var(--ink-soft); margin-left: 4px; }
+  .row .v.bad { color: var(--red); } .row .v.good { color: var(--green); } .row .v.mute { color: var(--ink-soft); }
+  .speech { background: var(--card); border-radius: 4px; padding: 10px 12px; font-size: 15px; margin: 0; color: var(--ink); }
+  .who { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: start; }
+  .who .ico { width: 40px; height: 40px; border-radius: 3px; display: grid; place-items: center; background: var(--c); color: var(--night); font-family: var(--font-pixel); font-size: 16px; }
+  .who .w { font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+  .who .w b { color: var(--ink); }
+  .acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .acts.one { grid-template-columns: minmax(0, 1fr); }
+  .act { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 4px; text-align: left; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
+  .act.pri { background: var(--ink); color: var(--paper); }
+  .act:hover:not(:disabled) { box-shadow: 0 2px 0 var(--ink); }
+  .act:disabled { color: #6f7484; border: 1.5px dashed #b9b4a6; background: transparent; }
+  .act .m { display: grid; line-height: 1.35; }
+  .act .m small { font-size: 11.5px; font-weight: 400; }
+  .act .m b { font-weight: 700; }
+  .cost { font-family: var(--font-pixel); font-size: 11px; padding: 0 6px; border-radius: 2px; white-space: nowrap; background: var(--chip); color: var(--ink); }
+  .act.pri .cost { background: #3a4158; color: var(--on); }
+  .pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .pick button { min-height: 48px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--card); color: var(--ink); display: grid; align-content: center; padding: 2px 6px; box-shadow: inset 4px 0 0 var(--c); }
+  .pick button small { font-size: 11px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pick button.on { background: var(--ink); color: var(--paper); }
+  .pick button.on small { color: #c9cedc; }
+  .step { display: grid; grid-template-columns: 44px 1fr 44px; height: 44px; border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; background: var(--card); max-width: 220px; }
+  .step button { border: 0; background: var(--chip); color: var(--ink); font-size: 18px; }
+  .step button:disabled { opacity: .35; }
+  .step span { display: grid; place-items: center; font-family: var(--font-pixel); }
+  .field { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 12.5px; }
+  .field > span { color: var(--ink-soft); }
+  .field select { min-height: 44px; padding: 0 8px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--card); color: var(--ink); color-scheme: light; min-width: 0; }
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; }
+  .seg button { border: 0; background: transparent; min-height: 44px; font-size: 12.5px; color: var(--ink); }
+  .seg button.on { background: var(--ink); color: var(--paper); }
+  .log { font-size: 12.5px; display: grid; gap: 4px; max-height: 240px; overflow-y: auto; }
+  .log p { margin: 0; color: var(--ink); }
+  .log p.warn { color: #8a5a00; } .log p.bad { color: var(--red); } .log p.good { color: var(--green); }
+  .log .w { font-family: var(--font-pixel); color: var(--ink-soft); margin-right: 6px; white-space: nowrap; }
+
+  /* dialogs use the same paper */
+  .modal-bg { position: fixed; inset: 0; background: rgba(8, 10, 18, .78); display: grid; place-items: center; padding: 16px; z-index: 20; overflow-y: auto; }
+  .dlg { width: min(560px, 100%); }
+  .dlg ul { margin: 0; padding-left: 20px; font-size: 13px; display: grid; gap: 6px; }
+  .big { font-family: var(--font-pixel); font-size: 56px; line-height: 1; }
+
+  @media (max-width: 1180px) {
+    .main { grid-template-columns: 260px minmax(0, 1fr); grid-template-areas: "list map" "list pane"; }
+  }
+  @media (max-width: 760px) {
+    .hdr { padding: 8px 16px; gap: 8px 12px; }
+    .brand { display: none; }
+    .wk { display: contents; }
+    .wk > div:first-child { flex: 1 1 auto; min-width: 0; }
+    .speed { order: 3; }
+    .hdr-r { margin-left: auto; order: 4; }
+    .hdr-r .btn-sys { padding: 0 10px; }
+    .hdr { flex-wrap: wrap; }
+    .main { grid-template-columns: minmax(0, 1fr); grid-template-areas: "map" "list" "pane"; padding: 12px 16px 32px; }
+    .map text { font-size: 3px; }
+    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .field { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  }
+  @media (max-width: 400px) {
+    .acts { grid-template-columns: minmax(0, 1fr); }
+    .speed button { min-width: 44px; }
+    .clock { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="hdr" id="hdr"></header>
+  <div class="main">
+    <div class="col" id="list"></div>
+    <div class="mapw" id="mapw">
+      <div class="map" id="map">
+        <svg viewBox="0 0 100 64" role="group" aria-label="街の地図">
+          <rect id="sky" x="0" y="0" width="100" height="64" fill="#1a2233"></rect>
+          <path class="road" d="M0 34 H100 M47 0 V64 M0 15 H100 M0 55 H100 M18 0 V64 M78 0 V64"></path>
+          <g id="mroutes"></g>
+          <g id="mstatic"></g>
+          <g id="mcars"></g>
+        </svg>
+      </div>
+      <div class="legend" id="legend"></div>
+      <section class="sec feed"><div class="sec-h"><h2>現場の記録</h2></div><div id="feed"></div></section>
+    </div>
+    <div id="pane"></div>
+  </div>
+  <div id="modal-root"></div>
+</div>
+<script id="engine">
+const Engine = (() => {
+  "use strict";
+  // time is in game minutes from 1日目 0:00. One real second at 等速 is 10 minutes.
+  const DAY = 1440, START = 9 * 60, DEADLINE = 7 * DAY + 18 * 60, RING = 90, BAGS = 24, CALLBUSY = 15;
+  const SPEED = 0.9, ROAD = 1.25, SHOT = 240, STUDIO_CAP = 2, WORK = 0.55;
+  const PLACES = [
+    { id: "hq", kind: "hq", name: "本社", x: 47, y: 34 },
+    { id: "studio", kind: "studio", name: "撮影スタジオ", x: 88, y: 55 },
+    { id: "fam1", kind: "fam", name: "駅前のファミレス", x: 25, y: 25 },
+    { id: "fam2", kind: "fam", name: "商店街の喫茶店", x: 66, y: 15 },
+  ];
+  // speed: hours of drawing per unit of difficulty. honesty: chance of not passing off an unfinished bag.
+  const ANIMS = [
+    { id: "a1", name: "高槻 透", x: 11, y: 11, rhythm: "night", speed: [7, 9], skill: [78, 88], honesty: [0.4, 0.6], wander: 0.5, fav: "fam1", busy: 0.1, known: true },
+    { id: "a2", name: "三好 かおる", x: 28, y: 52, rhythm: "morning", speed: [8, 10], skill: [62, 72], honesty: [0.85, 0.95], wander: 0.1, fav: "fam1", busy: 0.05, known: true },
+    { id: "a3", name: "芹沢 一馬", x: 8, y: 38, rhythm: "night", speed: [6, 8], skill: [70, 80], honesty: [0.3, 0.5], wander: 0.2, fav: "fam1", busy: 0.3, known: false },
+    { id: "a4", name: "小野寺 ゆう", x: 57, y: 56, rhythm: "loose", speed: [8, 11], skill: [55, 68], honesty: [0.6, 0.8], wander: 0.4, fav: "fam2", busy: 0.1, known: false },
+    { id: "a5", name: "柚木 瞳", x: 82, y: 31, rhythm: "morning", speed: [9, 11], skill: [80, 92], honesty: [0.8, 0.95], wander: 0.15, fav: "fam2", busy: 0.2, known: true },
+    { id: "a6", name: "黒川 仁", x: 90, y: 9, rhythm: "night", speed: [6, 8], skill: [58, 70], honesty: [0.35, 0.55], wander: 0.3, fav: "fam2", busy: 0.15, known: false },
+    { id: "a7", name: "日向 まどか", x: 42, y: 7, rhythm: "loose", speed: [7, 9], skill: [66, 76], honesty: [0.55, 0.75], wander: 0.55, fav: "fam2", busy: 0.05, known: false },
+    { id: "a8", name: "塩見 直", x: 69, y: 42, rhythm: "morning", speed: [10, 12], skill: [50, 62], honesty: [0.9, 1], wander: 0.05, fav: "fam1", busy: 0, known: true },
+  ];
+  const SHINKO = [
+    { id: "s1", name: "佐伯", rookie: true },
+    { id: "s2", name: "川口", rookie: false },
+    { id: "s3", name: "真壁", rookie: true },
+  ];
+  const RHY = { morning: "朝型", night: "夜型", loose: "不規則" };
+  const BASE = { morning: 23.5 * 60, night: 5 * 60, loose: 2 * 60 }; // when sleep starts
+  const STANDING = {
+    absent: [["ask", "その都度電話する"], ["wait", "1時間待つ"], ["note", "置き手紙して次へ"]],
+    blank: [["ask", "その都度電話する"], ["make", "描き上がるまで張りつく"], ["take", "そのまま持っていく"], ["leave", "置いて次へ"]],
+    jam: [["ask", "その都度電話する"], ["bypass", "抜け道を行く"], ["go", "そのまま行く"]],
+    limit: [["ask", "その都度電話する"], ["rest", "帰って寝る"], ["push", "もう少し頑張る"]],
+  };
+  const DEFAULT = { rookie: { absent: "wait", blank: "take", jam: "go", limit: "push" }, vet: { absent: "note", blank: "make", jam: "bypass", limit: "rest" } };
+
+  function rnd(s) {
+    let a = (s.r = (s.r + 0x6d2b79f5) | 0);
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const hourOf = (t) => Math.floor((((t % DAY) + DAY) % DAY) / 60);
+  const node = (s, id) => s.nodes.find((n) => n.id === id);
+  const anim = (s, id) => s.anims.find((a) => a.id === id);
+  const shOf = (s, id) => s.shinko.find((x) => x.id === id);
+  function log(s, text, tone = "") {
+    s.log.unshift({ t: s.t, text, tone });
+    if (s.log.length > 150) s.log.length = 150;
+  }
+
+  function newGame(seed = 1) {
+    const s = { v: 1, seed, r: (seed * 2654435761) >>> 0 || 1, t: START, phase: "play", busyUntil: 0, callSeq: 0, calls: [], log: [], queue: [], plans: {}, result: null,
+      stats: { calls: 0, missed: 0, auto: 0, out: 0, faint: 0, minSta: 100 } };
+    const R = (lo, hi) => lo + (hi - lo) * rnd(s);
+    s.nodes = PLACES.map((p) => ({ ...p }));
+    s.anims = ANIMS.map((d) => {
+      s.nodes.push({ id: "h_" + d.id, kind: "home", aid: d.id, name: d.name.split(" ")[0] + "さんの家", x: d.x, y: d.y });
+      return { id: d.id, name: d.name, home: "h_" + d.id, rhythm: d.rhythm, speed: R(...d.speed), skill: Math.round(R(...d.skill)), honesty: R(...d.honesty), wander: d.wander, fav: d.fav, busy: d.busy,
+        known: { seen: null, view: {}, phoned: null, pview: {}, rhythm: d.known, fav: d.known, liar: false, awayUntil: 0 } };
+    });
+    // each animator's days are decided up front, so looking at them never moves the dice
+    for (const a of s.anims) {
+      s.plans[a.id] = [];
+      for (let d = -2; d <= 10; d++) s.plans[a.id].push({ other: rnd(s) < a.busy, fam: rnd(s) < a.wander, off: a.rhythm === "loose" ? Math.round(R(-3, 4)) * 60 : 0 });
+    }
+    const diffs = [1, 1.5, 2];
+    s.bags = Array.from({ length: BAGS }, (_, i) => ({ id: i + 1, diff: diffs[Math.floor(rnd(s) * 3)], prog: 0, at: "hq", who: null, by: null, up: false, blank: false, shot: 0, q: null, hari: 0 }));
+    const hq = node(s, "hq");
+    s.shinko = SHINKO.map((d) => ({ id: d.id, name: d.name, rookie: d.rookie, sta: 100, x: hq.x, y: hq.y, node: "hq", steps: [], status: "idle", callId: null,
+      standing: { absent: "ask", blank: "ask", jam: "ask", limit: "ask" }, slow: 1, pushed: false, asked: false, fainted: false }));
+    log(s, `1日目 9:00。原画の袋が${BAGS}。局への納品は8日目の18時。`);
+    return s;
+  }
+
+  // ---------- animators: when they sleep, where they are ----------
+  const planOf = (s, a, d) => s.plans[a.id][clamp(d, -2, 10) + 2];
+  const sleepAt = (s, a, d) => d * DAY + BASE[a.rhythm] + planOf(s, a, d).off;
+  function asleep(s, a, t = s.t) {
+    const d = Math.floor(t / DAY);
+    for (const dd of [d + 1, d, d - 1]) { const st = sleepAt(s, a, dd); if (t >= st && t < st + 480) return true; }
+    return false;
+  }
+  function workOf(s, a, t = s.t) {
+    const d = Math.floor(t / DAY);
+    for (const dd of [d + 1, d, d - 1]) { const st = sleepAt(s, a, dd) + 570; if (t >= st && t < st + 660) return { st, plan: planOf(s, a, dd) }; }
+    return null;
+  }
+  function locOf(s, a, t = s.t) {
+    if (asleep(s, a, t)) return "home";
+    const w = workOf(s, a, t);
+    if (!w) return "home";
+    if (w.plan.other) return "other";
+    if (w.plan.fam && t >= w.st + 120 && t < w.st + 420) return a.fav;
+    return "home";
+  }
+  function present(s, a, at) {
+    const loc = locOf(s, a);
+    return at === a.home ? loc === "home" && !asleep(s, a) : loc === at;
+  }
+  function causeOf(s, a) {
+    if (asleep(s, a)) return "sleep";
+    const loc = locOf(s, a);
+    return loc === "other" ? "other" : loc === "home" ? "bell" : "fam";
+  }
+
+  // ---------- bags ----------
+  const animBags = (s, a) => s.bags.filter((b) => b.at === "anim" && b.who === a.id);
+  const carry = (s, sh) => s.bags.filter((b) => b.at === "car" && b.who === sh.id);
+  const carryNew = (s, sh) => carry(s, sh).filter((b) => !b.up);
+  const carryUp = (s, sh) => carry(s, sh).filter((b) => b.up);
+  const hqBags = (s) => s.bags.filter((b) => b.at === "hq");
+
+  function workAnim(s, a) {
+    const w = workOf(s, a);
+    if (!w || w.plan.other || asleep(s, a)) return;
+    const b = animBags(s, a).find((x) => x.prog < 1);
+    if (!b) return;
+    const loc = locOf(s, a), where = loc === "home" ? a.home : loc;
+    const hari = s.shinko.some((x) => x.status === "wait" && x.steps[0] && x.steps[0].kind === "hari" && x.steps[0].aid === a.id && x.node === where);
+    b.prog = Math.min(1, b.prog + (hari ? 1.5 : 1) / (b.diff * a.speed * 60 * WORK));
+    if (hari) b.hari++;
+    if (b.prog >= 1) b.q = Math.round(clamp(a.skill + (rnd(s) * 16 - 8) - (b.hari > 90 ? 4 : 0), 20, 99));
+  }
+  function workStudio(s) {
+    let n = 0;
+    for (const id of s.queue) {
+      const b = s.bags[id - 1];
+      if (b.at !== "studio") continue;
+      if (n++ >= STUDIO_CAP) break;
+      b.shot += 1 / SHOT;
+      if (b.shot >= 1) { b.at = "done"; b.doneAt = s.t; }
+    }
+    s.queue = s.queue.filter((id) => s.bags[id - 1].at === "studio");
+  }
+
+  // ---------- 制作進行 ----------
+  const traffic = (t) => { const h = hourOf(t); return h >= 17 && h < 20 ? 0.6 : h >= 23 || h < 6 ? 1.3 : 1; };
+  function travel(s, from, to) {
+    const n = node(s, to);
+    return Math.max(1, Math.round((Math.hypot(n.x - from.x, n.y - from.y) * ROAD) / (SPEED * traffic(s.t))));
+  }
+  function skip(s, sh, g) {
+    while (sh.steps[0] && sh.steps[0].g === g) sh.steps.shift();
+    if (!carryUp(s, sh).length) while (sh.steps[0] && sh.steps[0].g === "dlv") sh.steps.shift();
+  }
+  function leave(s, sh, a, n = 99) {
+    carryNew(s, sh).slice(0, n).forEach((b) => { b.at = "anim"; b.who = a.id; b.by = a.id; });
+  }
+  function visit(s, a) {
+    const k = a.known;
+    k.seen = s.t; k.view = {}; k.rhythm = true;
+    animBags(s, a).forEach((b) => (k.view[b.id] = b.prog));
+  }
+
+  function stepShinko(s, sh) {
+    const h = hourOf(s.t);
+    if (sh.status === "rest") sh.sta = Math.min(100, sh.sta + 15 / 60);
+    else if (sh.node === "hq" && !sh.steps.length) sh.sta = Math.min(100, sh.sta + 4 / 60);
+    else sh.sta = Math.max(0, sh.sta - ((sh.status === "idle" ? 1.5 : 4.5) + (h < 6 ? 2 : 0)) / 60);
+    s.stats.minSta = Math.min(s.stats.minSta, sh.sta);
+    if (sh.status === "call") return;
+    const resting = sh.steps[0] && sh.steps[0].g === "rest";
+    if (sh.sta <= 0 && !sh.fainted) {
+      sh.fainted = true; s.stats.faint++;
+      sh.steps = [{ k: "go", to: "hq", g: "rest" }, { k: "rest", g: "rest" }];
+      log(s, `${sh.name}が倒れかけた。本社に戻って休ませる。`, "bad");
+    } else if (sh.sta < 15 && !sh.pushed && !sh.asked && !resting) {
+      sh.asked = true;
+      raiseCall(s, sh, "limit", {});
+      if (sh.status === "call") return;
+    }
+    for (let guard = 0; guard < 8; guard++) {
+      const st = sh.steps[0];
+      if (!st) { sh.status = "idle"; return; }
+      if (st.k === "go") { if (moveStep(s, sh, st)) return; continue; }
+      if (st.k === "wait") {
+        if (!st.until) st.until = s.t + st.dur;
+        let done = false;
+        if (st.kind === "hari") { const a = anim(s, st.aid); done = st.ids ? st.ids.every((id) => s.bags[id - 1].prog >= 1 || s.bags[id - 1].at !== "anim") : animBags(s, a).every((b) => b.prog >= 1); }
+        if (s.t < st.until && !done) { sh.status = "wait"; return; }
+        sh.steps.shift(); continue;
+      }
+      if (st.k === "rest") {
+        if (sh.node !== "hq") { sh.steps.shift(); continue; }
+        if (sh.sta < 95) { sh.status = "rest"; return; }
+        sh.steps.shift(); sh.pushed = sh.asked = sh.fainted = false;
+        log(s, `${sh.name}が休んで戻った。`);
+        continue;
+      }
+      if (doStep(s, sh, st) === "stop") return;
+    }
+  }
+  function moveStep(s, sh, st) {
+    const n = node(s, st.to);
+    if (!st.started) {
+      st.started = true;
+      sh.slow = sh.fainted ? 0.6 : 1;
+      const d = Math.hypot(n.x - sh.x, n.y - sh.y) * ROAD, h = hourOf(s.t);
+      if (d > 12 && rnd(s) < (h >= 17 && h < 20 ? 0.3 : 0.04)) {
+        raiseCall(s, sh, "jam", { to: st.to });
+        if (sh.status === "call") return true;
+      }
+    }
+    sh.status = "move"; sh.node = null;
+    const v = (SPEED * traffic(s.t) * sh.slow * (sh.sta < 25 ? 0.85 : 1)) / ROAD;
+    const dx = n.x - sh.x, dy = n.y - sh.y, d = Math.hypot(dx, dy);
+    if (d <= v) { sh.x = n.x; sh.y = n.y; sh.node = n.id; sh.steps.shift(); sh.slow = 1; return false; }
+    sh.x += (dx / d) * v; sh.y += (dy / d) * v;
+    return true;
+  }
+  function doStep(s, sh, st) {
+    if (st.k === "pick") {
+      const need = Math.max(0, st.n - carryNew(s, sh).length);
+      hqBags(s).slice(0, need).forEach((b) => { b.at = "car"; b.who = sh.id; });
+      sh.steps.shift();
+      if (!carryNew(s, sh).length) { log(s, `${sh.name}：本社に渡せる袋がなかった。`); skip(s, sh, "visit"); }
+      return;
+    }
+    if (st.k === "give" || st.k === "collect" || st.k === "meet" || st.k === "takeback") {
+      const a = anim(s, st.aid);
+      if (!st.force && !present(s, a, sh.node)) return absent(s, sh, st, a);
+      if (!st.force && !st.checked) {
+        st.checked = true;
+        // a new hand sometimes gives up at the door of someone who is in
+        if (sh.rookie && sh.node === a.home && rnd(s) < 0.12) { raiseCall(s, sh, "absent", { aid: a.id, task: st.k, cause: "bell" }); return "stop"; }
+      }
+      if (st.k === "give") {
+        const n = Math.min(st.n, carryNew(s, sh).length);
+        leave(s, sh, a, st.n);
+        visit(s, a);
+        log(s, `${sh.name}が${a.name}さんに袋を${n}つ渡した。`);
+        sh.steps.shift();
+        return;
+      }
+      if (st.k === "meet") { visit(s, a); sh.steps.shift(); return; }
+      if (st.k === "takeback") {
+        // finished ones are collected as usual; unfinished ones come back to the desk as they are
+        const bs = animBags(s, a).filter((b) => b.prog < 1);
+        bs.forEach((b) => { b.at = "car"; b.who = sh.id; b.up = false; });
+        visit(s, a); sh.steps.shift();
+        log(s, `${sh.name}が${a.name}さんから描きかけの袋を${bs.length}つ引き上げた。`);
+        return;
+      }
+      return collect(s, sh, st, a);
+    }
+    if (st.k === "drop") {
+      sh.steps.shift();
+      if (sh.node !== "studio") return;
+      const bs = carryUp(s, sh);
+      bs.forEach((b) => {
+        b.at = "studio"; b.who = null;
+        if (b.blank) b.q = Math.round(clamp(anim(s, b.by).skill * b.prog - 15, 10, 99));
+        s.queue.push(b.id);
+      });
+      if (bs.length) log(s, `${sh.name}が撮影スタジオに袋を${bs.length}つ届けた。`);
+      return;
+    }
+    if (st.k === "ret") { carryNew(s, sh).forEach((b) => { b.at = "hq"; b.who = null; }); sh.steps.shift(); return; }
+    sh.steps.shift();
+  }
+  function collect(s, sh, st, a) {
+    const got = [], caught = [];
+    let fakes = 0;
+    for (const b of animBags(s, a)) {
+      if (b.prog >= 1) { got.push(b); continue; }
+      // "上がってます": an unfinished bag passed off as done
+      if (!st.strict && b.prog >= 0.45 && fakes < 2 && rnd(s) > a.honesty) {
+        fakes++;
+        if (rnd(s) < (sh.rookie ? 0.45 : 0.85) * (sh.pushed ? 0.6 : 1)) caught.push(b);
+        else { b.blank = true; got.push(b); }
+      }
+    }
+    got.forEach((b) => { b.at = "car"; b.who = sh.id; b.up = true; });
+    visit(s, a);
+    sh.steps.shift();
+    if (got.length) log(s, `${sh.name}が${a.name}さんから上がりの袋を${got.length}つ受け取った。`);
+    else if (!caught.length) log(s, `${sh.name}：${a.name}さんのところに上がっている袋はなかった。`);
+    if (caught.length) { raiseCall(s, sh, "blank", { aid: a.id, bags: caught.map((b) => b.id) }); return "stop"; }
+    if (!carryUp(s, sh).length) skip(s, sh, "dlv");
+  }
+  function absent(s, sh, st, a) {
+    if (sh.node !== a.home) {
+      log(s, `${node(s, sh.node).name}にも${a.name}さんはいなかった。`);
+      skip(s, sh, "visit");
+      return "stop";
+    }
+    if (st.retried) {
+      log(s, `${sh.name}：${a.name}さんはまだいない。${st.k === "give" ? "置き手紙をして、袋をポストに入れた" : "置き手紙をして引き上げた"}。`);
+      if (st.k === "give") leave(s, sh, a, st.n);
+      skip(s, sh, "visit");
+      return "stop";
+    }
+    raiseCall(s, sh, "absent", { aid: a.id, task: st.k, cause: causeOf(s, a) });
+    return "stop";
+  }
+
+  // ---------- the phone ----------
+  function raiseCall(s, sh, type, ctx) {
+    const c = { id: ++s.callSeq, sid: sh.id, type, ctx, t0: s.t, until: s.t + RING, state: "ring", at: sh.node, choice: null, result: "" };
+    s.calls.unshift(c);
+    s.calls = s.calls.filter((x) => x.state === "ring").concat(s.calls.filter((x) => x.state !== "ring").slice(0, 30)).sort((x, y) => y.id - x.id);
+    const std = sh.standing[type];
+    if (std && std !== "ask" && okChoice(s, c, std)) { s.stats.auto++; apply(s, c, std, "auto"); return; }
+    sh.status = "call"; sh.callId = c.id; s.stats.calls++;
+  }
+  function choicesOf(s, c) {
+    const sh = shOf(s, c.sid), a = c.ctx.aid ? anim(s, c.ctx.aid) : null, L = [];
+    const add = (k, label, cost, why = "") => L.push({ k, label, cost, ok: !why, why });
+    if (c.type === "absent") {
+      add("wait", "その場で1時間待て", "1時間");
+      for (const f of ["fam1", "fam2"]) add(f, `${node(s, f).name}を見てこい`, `移動 約${travel(s, sh, f)}分`);
+      add("note", c.ctx.task === "give" ? "置き手紙して、袋をポストに入れろ" : "置き手紙して引き上げろ", "すぐ");
+      if (c.ctx.task === "give") add("back", "袋を持って本社に戻れ", `移動 約${travel(s, sh, "hq")}分`);
+      add("phone", `${a.name}さんにこっちから電話する`, `あなた ${CALLBUSY}分`, c.ctx.phoned ? "もう電話した" : s.busyUntil > s.t ? "いま通話中" : "");
+    } else if (c.type === "blank") {
+      add("make", "描き上がるまで張りつけ", "最長8時間");
+      add("take", "そのまま撮影スタジオへ持っていけ", "出来が落ちる");
+      add("leave", "置いて次へ行け（あとで回収）", "すぐ");
+    } else if (c.type === "jam") {
+      add("bypass", "抜け道を行け", "運しだい");
+      add("go", "そのまま行け", "1時間ほど遅れる");
+      add("back", "本社に引き返せ", "用事は取り消し");
+    } else if (c.type === "limit") {
+      add("rest", "本社に戻って寝ろ", "休む");
+      add("push", "もう少しだけ頼む", "見落としが増える");
+    }
+    return L;
+  }
+  const okChoice = (s, c, k) => { const ch = choicesOf(s, c).find((x) => x.k === k); return !!(ch && ch.ok); };
+  function apply(s, c, k, how) {
+    const sh = shOf(s, c.sid), a = c.ctx.aid ? anim(s, c.ctx.aid) : null, st = sh.steps[0];
+    c.state = how; c.choice = k;
+    if (sh.callId === c.id) { sh.callId = null; sh.status = sh.steps.length ? "move" : "idle"; }
+    let res = "";
+    if (c.type === "absent") {
+      if (k === "wait") { if (st) { st.retried = true; sh.steps.unshift({ k: "wait", until: s.t + 60, g: "visit" }); } res = "その場で1時間待たせた。"; }
+      else if (k === "fam1" || k === "fam2") { if (st) { st.retried = true; sh.steps.unshift({ k: "go", to: k, g: "visit" }); } res = `${node(s, k).name}を見に行かせた。`; }
+      else if (k === "note") { if (c.ctx.task === "give") leave(s, sh, a, st && st.n); skip(s, sh, "visit"); res = c.ctx.task === "give" ? "袋をポストに入れて、引き上げさせた。" : "置き手紙をして引き上げさせた。"; }
+      else if (k === "back") { sh.steps = [{ k: "go", to: "hq", g: "back" }, { k: "ret", g: "back" }]; res = "袋を持って本社に戻らせた。"; }
+      else if (k === "phone") res = phoneAnim(s, sh, c, a);
+    } else if (c.type === "blank") {
+      const bs = c.ctx.bags.map((id) => s.bags[id - 1]).filter((b) => b.at === "anim");
+      a.known.liar = true;
+      if (k === "make") { sh.steps.unshift({ k: "wait", kind: "hari", aid: a.id, ids: bs.map((b) => b.id), dur: 480, g: "visit" }, { k: "collect", aid: a.id, strict: true, g: "visit" }); res = "描き上がるまで張りつかせた。"; }
+      else if (k === "take") { bs.forEach((b) => { b.at = "car"; b.who = sh.id; b.up = true; b.blank = true; }); res = "白いところが残ったまま、撮影スタジオへ持っていかせた。"; }
+      else res = "袋は置いて、次へ行かせた。";
+      if (k !== "make" && !carryUp(s, sh).length) skip(s, sh, "dlv");
+    } else if (c.type === "jam") {
+      if (k === "bypass") { const r = rnd(s); sh.slow = r < 0.5 ? 1.15 : r < 0.8 ? 0.7 : 0.35; res = r < 0.5 ? "抜け道で抜けられた。" : r < 0.8 ? "抜け道も少し混んでいた。" : "抜け道のほうが混んでいた……。"; }
+      else if (k === "go") { sh.slow = 0.45; res = "そのまま進ませた。"; }
+      else { sh.steps = [{ k: "go", to: "hq", g: "back", started: true }]; sh.slow = 0.8; res = "本社に引き返させた。"; }
+    } else if (c.type === "limit") {
+      if (k === "rest") { sh.steps = [{ k: "go", to: "hq", g: "rest" }, { k: "rest", g: "rest" }]; res = "本社に戻って休ませた。"; }
+      else { sh.pushed = true; res = "もう少し頑張ってもらうことにした。"; }
+    }
+    c.result = res;
+    const pre = how === "missed" ? `${sh.name}からの電話に出られなかった。${sh.name}は自分で決めた：` : how === "auto" ? `${sh.name}（決まった返事）：` : `${sh.name}に指示：`;
+    log(s, pre + res, how === "missed" ? "warn" : "");
+  }
+  function phoneAnim(s, sh, c, a) {
+    s.busyUntil = s.t + CALLBUSY; s.stats.out++;
+    const cause = c.ctx.cause, st = sh.steps[0];
+    const again = (msg) => { setTimeoutless(s, () => raiseCall(s, sh, "absent", { ...c.ctx, phoned: true })); return msg; };
+    c.ctx.phoned = true;
+    if (cause === "bell") { if (st) st.force = true; return `${a.name}さん「え、家にいますよ？ 今開けます」`; }
+    if (cause === "sleep") {
+      if (rnd(s) < 0.4) { if (st) st.force = true; return `${a.name}さん「……寝てました。今開けます」`; }
+      return again(`${a.name}さんは電話に出ない。寝ているのかもしれない。`);
+    }
+    if (cause === "fam") {
+      if (rnd(s) < 0.85) { a.known.fav = true; if (st) { st.retried = true; sh.steps.unshift({ k: "go", to: a.fav, g: "visit" }); } return `${a.name}さん「今、${node(s, a.fav).name}で描いてます」。${sh.name}を向かわせた。`; }
+      return again(`${a.name}さんは電話に出ない。`);
+    }
+    if (rnd(s) < 0.5) { const w = workOf(s, a); a.known.awayUntil = (w ? w.st : s.t) + 660; return again(`${a.name}さん「すみません、別の現場に缶詰めで……今日は戻れません」`); }
+    return again(`${a.name}さんは電話に出ない。`);
+  }
+  // a follow-up call is raised after the current answer has been recorded
+  function setTimeoutless(s, fn) { (s._after || (s._after = [])).push(fn); }
+  function flushAfter(s) { const q = s._after; if (!q) return; delete s._after; q.forEach((fn) => fn()); }
+
+  function answer(s, id, k) {
+    const c = s.calls.find((x) => x.id === id);
+    if (!c || c.state !== "ring" || s.busyUntil > s.t || !okChoice(s, c, k)) return false;
+    apply(s, c, k, "done");
+    flushAfter(s);
+    return true;
+  }
+  function callOut(s, aid) {
+    if (s.busyUntil > s.t || s.phase !== "play") return null;
+    const a = anim(s, aid), k = a.known;
+    s.busyUntil = s.t + CALLBUSY; s.stats.out++;
+    let text;
+    const loc = locOf(s, a);
+    if (asleep(s, a)) text = `${a.name}さんは電話に出ない。寝ているのかもしれない。`;
+    else if (loc === "other" && rnd(s) < 0.5) text = `${a.name}さんは電話に出ない。`;
+    else {
+      k.phoned = s.t; k.pview = {}; k.rhythm = true;
+      const bs = animBags(s, a);
+      bs.forEach((b) => (k.pview[b.id] = Math.min(1, b.prog + (1 - a.honesty) * 0.6 * rnd(s))));
+      const avg = bs.length ? bs.reduce((t, b) => t + k.pview[b.id], 0) / bs.length : 0;
+      const where = loc === "other" ? "今は別の現場に詰めてます。" : loc !== "home" ? `今、${node(s, loc).name}です。` : "";
+      if (loc === "other") { const w = workOf(s, a); k.awayUntil = (w ? w.st : s.t) + 660; }
+      if (loc === "fam1" || loc === "fam2") k.fav = true;
+      text = `${a.name}さん「${where}${!bs.length ? "うちにはもう袋はないですよ" : avg >= 0.95 ? "上がってます、取りに来てください" : avg >= 0.6 ? "もうすぐ上がります" : avg >= 0.25 ? "半分くらいですね" : "これから描きます"}」`;
+    }
+    log(s, `あなたが電話：${text}`);
+    return text;
+  }
+  function expire(s) {
+    for (const c of s.calls) {
+      if (c.state !== "ring" || s.t < c.until) continue;
+      const sh = shOf(s, c.sid);
+      let k = DEFAULT[sh.rookie ? "rookie" : "vet"][c.type];
+      if (!okChoice(s, c, k)) k = choicesOf(s, c).find((x) => x.ok).k;
+      s.stats.missed++;
+      apply(s, c, k, "missed");
+    }
+    flushAfter(s);
+  }
+
+  // ---------- orders ----------
+  function canOrder(s, sid, kind, aid) {
+    const sh = shOf(s, sid);
+    if (s.phase !== "play") return "現場は終わった";
+    if (sh.status === "call") return "電話の返事待ち";
+    if (kind === "hatchu" && !carryNew(s, sh).length && !hqBags(s).length) return "渡せる袋がない";
+    if ((kind === "kaishu" || kind === "hari") && !animBags(s, anim(s, aid)).length) return "預けている袋がない";
+    if (kind === "hikiage" && !animBags(s, anim(s, aid)).some((b) => b.prog < 1)) return "描きかけの袋がない";
+    if (kind === "deliver" && !carryUp(s, sh).length) return "上がりの袋を持っていない";
+    if (kind === "cancel" && !sh.steps.length) return "いまは用事がない";
+    if (kind === "rest" && sh.status === "rest") return "もう休んでいる";
+    return "";
+  }
+  function order(s, sid, kind, aid, n = 2) {
+    if (canOrder(s, sid, kind, aid)) return false;
+    const sh = shOf(s, sid), a = aid ? anim(s, aid) : null;
+    const go = (to, g) => ({ k: "go", to, g });
+    if (kind === "hatchu") {
+      const st = [];
+      if (carryNew(s, sh).length < n && hqBags(s).length) st.push(go("hq", "pick"), { k: "pick", n, g: "pick" });
+      st.push(go(a.home, "visit"), { k: "give", aid, n, g: "visit" });
+      sh.steps = st;
+    } else if (kind === "kaishu") sh.steps = [go(a.home, "visit"), { k: "collect", aid, g: "visit" }, go("studio", "dlv"), { k: "drop", g: "dlv" }];
+    else if (kind === "hari") sh.steps = [go(a.home, "visit"), { k: "meet", aid, g: "visit" }, { k: "wait", kind: "hari", aid, dur: 240, g: "visit" }, { k: "collect", aid, strict: true, g: "visit" }, go("studio", "dlv"), { k: "drop", g: "dlv" }];
+    else if (kind === "hikiage") sh.steps = [go(a.home, "visit"), { k: "takeback", aid, g: "visit" }, go("hq", "back"), { k: "ret", g: "back" }];
+    else if (kind === "deliver") sh.steps = [go("studio", "dlv"), { k: "drop", g: "dlv" }];
+    else if (kind === "rest") sh.steps = [go("hq", "rest"), { k: "rest", g: "rest" }];
+    else if (kind === "cancel") sh.steps = [];
+    sh.status = sh.steps.length ? "move" : "idle";
+    return true;
+  }
+  function setStanding(s, sid, type, k) {
+    const sh = shOf(s, sid);
+    if (STANDING[type] && STANDING[type].some(([v]) => v === k)) sh.standing[type] = k;
+  }
+
+  // ---------- what you can tell without looking ----------
+  function viewOf(s, a, b) {
+    const k = a.known, seen = k.seen != null && b.id in k.view, ph = k.phoned != null && b.id in k.pview;
+    if (ph && (!seen || k.phoned > k.seen)) return { p: k.pview[b.id], src: "phone", t: k.phoned };
+    if (seen) return { p: k.view[b.id], src: "seen", t: k.seen };
+    return null;
+  }
+  const say = (tone, t) => ({ tone, t });
+  function estimate(s) {
+    if (s.phase !== "play") return null;
+    const left = (DEADLINE - s.t) / DAY, hq = hqBags(s).length;
+    if (hq === BAGS) return s.t > START + 180 ? say("bad", "まだ1袋も渡していない・・・") : say("mute", "まず原画マンに袋を撒かないと");
+    let W = 0, unknown = 0;
+    const load = {};
+    for (const b of s.bags) if (b.at === "hq" || (b.at === "car" && !b.up)) W += b.diff * 8.5;
+    for (const a of s.anims) {
+      const bs = animBags(s, a);
+      if (!bs.length) continue;
+      let seenRest = 0, unseenRest = 0, last = null;
+      for (const b of bs) {
+        const v = viewOf(s, a, b);
+        if (v) { seenRest += b.diff * 8.5 * (1 - v.p); last = Math.max(last || 0, v.t); } else { unseenRest += b.diff * 8.5; unknown++; }
+      }
+      // assume the drawing went on at the usual pace since you last knew
+      const rest = (last == null ? 0 : Math.max(seenRest * 0.15, seenRest - ((s.t - last) / 60) * 0.27)) + unseenRest;
+      load[a.id] = rest; W += rest;
+    }
+    const holders = Object.keys(load).length, eff = Math.min(8, holders + (hq ? 8 - holders : 0)) || 1;
+    const maxLoad = Math.max(0, ...Object.values(load));
+    const work = Math.max(W / (6.5 * eff), maxLoad / 6.5) + (W > 0 ? 0.4 : 0);
+    const shots = s.bags.filter((b) => b.at !== "done").length;
+    const r = Math.max(work, (shots * SHOT) / STUDIO_CAP / DAY) / Math.max(0.05, left);
+    if (unknown > 6) return say("mute", "様子が分からない袋が多い・・・見に行かないと");
+    if (r > 1.15) return say("bad", "このままじゃ落ちる・・・");
+    if (r > 0.95) return say("worry", "ギリギリだ・・・");
+    if (s.t > START + 3 * DAY && !s.bags.some((b) => b.at === "studio" || b.at === "done")) return say("worry", "撮影スタジオに何も入っていない・・・");
+    if (r > 0.7) return say("ok", "このペースなら、なんとか");
+    return say("good", "良い感じだ。余裕がある");
+  }
+  // your read of an absent animator, from what you know of them (never from what is true)
+  function hintOf(s, c) {
+    const sh = shOf(s, c.sid), a = anim(s, c.ctx.aid), k = a.known;
+    if (k.awayUntil > s.t) return say("worry", "別の現場に缶詰めだと言っていた・・・");
+    if (k.rhythm && a.rhythm === "loose") return say("mute", "生活が読めない人だ・・・");
+    if (k.rhythm && asleep(s, a)) return say("ok", `${RHY[a.rhythm]}の人だ。この時間は寝ている・・・`);
+    if (k.fav && workOf(s, a)) return say("ok", `この時間は${node(s, a.fav).name}で描いていることがある`);
+    if (sh.rookie) return say("mute", `${sh.name}はまだ新人だ。本当にいないのか・・・？`);
+    return say("mute", "分からない。あまり知らない人だ");
+  }
+
+  function result(s) {
+    const done = s.bags.filter((b) => b.at === "done"), ok = done.length === BAGS;
+    const avgQ = done.length ? Math.round(done.reduce((t, b) => t + b.q, 0) / done.length) : 0;
+    const rank = !ok ? "落" : avgQ >= 80 ? "S" : avgQ >= 72 ? "A" : avgQ >= 64 ? "B" : "C";
+    return { ok, avgQ, rank, done: done.length, at: s.t, blank: s.bags.filter((b) => b.blank && (b.at === "done" || b.at === "studio")).length, ...s.stats, minSta: Math.round(s.stats.minSta) };
+  }
+  function step(s) {
+    s.t++;
+    for (const a of s.anims) workAnim(s, a);
+    workStudio(s);
+    for (const sh of s.shinko) stepShinko(s, sh);
+    flushAfter(s);
+    expire(s);
+    const all = s.bags.every((b) => b.at === "done");
+    if (all || s.t >= DEADLINE) {
+      s.phase = "end"; s.result = result(s);
+      log(s, all ? "全部の袋の撮影が終わった。納品！" : "納品の時間が来た。間に合わなかった。", all ? "good" : "bad");
+    }
+  }
+  function tick(s, n) { for (let i = 0; i < n && s.phase === "play"; i++) step(s); }
+
+  return { DAY, START, DEADLINE, RING, BAGS, CALLBUSY, RHY, STANDING, newGame, tick, order, canOrder, answer, choicesOf, callOut, setStanding, estimate, hintOf, viewOf,
+    animBags, carryNew, carryUp, hqBags, travel, node, anim, shOf, asleep, locOf, workOf, result };
+})();
+if (typeof module !== "undefined") module.exports = Engine;
+</script>
+<script>
+(() => {
+  "use strict";
+  const E = Engine;
+  const SAVE_KEY = "animep.rts";
+  const SPEEDS = { 1: 10, 2: 20, 4: 40 }; // game minutes per real second
+  const KIND_NAME = { absent: "原画さんいません", blank: "袋の中が白紙", jam: "渋滞", limit: "もう限界" };
+  const LINES = {
+    absent: ["原画さんいません！ 何回押しても出てこないです！", "{a}さん、留守みたいです。どうします？"],
+    blank: ["あの……上がりって言われた袋、半分白いんですけど……", "上がりって言われた袋、半分白紙です。"],
+    jam: ["渋滞です！ 全然動かないです！", "道が詰まってます。1時間は遅れますね。"],
+    limit: ["すいません……もう目が開かないです……", "そろそろ限界です。一回帰っていいですか。"],
+  };
+  const STATE_NAME = { ring: "鳴っている", done: "返事した", missed: "出られなかった", auto: "決まった返事" };
+  const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  let s = null;
+  const ui = { speed: 1, paused: true, onRing: "slow", sel: { k: "hq", id: "hq" }, pick: null, n: 2, modal: null, seenCall: 0 };
+  let pressing = false;
+
+  // ---------- save ----------
+  function save() {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify({ s, ui: { speed: ui.speed, onRing: ui.onRing, sel: ui.sel, pick: ui.pick, n: ui.n, modal: ui.modal } })); } catch (e) { /* storage may be off */ }
+  }
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+      if (d && d.s && d.s.v === 1 && d.s.shinko) { s = d.s; Object.assign(ui, d.ui || {}); ui.paused = true; ui.seenCall = s.callSeq; return true; }
+    } catch (e) { /* broken save: start over */ }
+    return false;
+  }
+  function fresh(seed) {
+    s = E.newGame(seed);
+    Object.assign(ui, { sel: { k: "hq", id: "hq" }, pick: null, paused: true, modal: "intro", seenCall: 0, speed: 1 });
+    save();
+  }
+
+  // ---------- words ----------
+  const pad = (n) => String(n).padStart(2, "0");
+  const clock = (t) => `${Math.floor(t / E.DAY) + 1}日目 ${pad(Math.floor((t % E.DAY) / 60))}:${pad(t % 60)}`;
+  function leftText() {
+    const m = Math.max(0, E.DEADLINE - s.t), d = Math.floor(m / E.DAY), h = Math.floor((m % E.DAY) / 60);
+    return d ? `${d}日と${h}時間` : `${h}時間${pad(m % 60)}分`;
+  }
+  function ago(t0) {
+    const m = s.t - t0;
+    return m < 60 ? "さっき" : m < E.DAY ? `${Math.floor(m / 60)}時間前` : `${Math.floor(m / E.DAY)}日前`;
+  }
+  const placeName = (id) => (id ? E.node(s, id).name : "路上");
+  const animOf = (id) => E.anim(s, id);
+  const shOf = (id) => E.shOf(s, id);
+  const famName = (a) => a.name.split(" ")[0];
+  const progWord = (p) => (p >= 1 ? "上がり" : p >= 0.7 ? "もうすぐ" : p >= 0.35 ? "半分くらい" : p > 0.02 ? "描きはじめ" : "手つかず");
+  const diffWord = (d) => (d >= 2 ? "重い" : d >= 1.5 ? "ふつう" : "軽い");
+  const skillWord = (q) => (q >= 80 ? "うまい" : q >= 66 ? "確か" : "荒い");
+  function shortOf(c) {
+    const sh = shOf(c.sid);
+    if (c.type === "absent") return sh.rookie ? "原画さんいません！" : "留守みたいです";
+    if (c.type === "blank") return "袋の中が白紙です";
+    if (c.type === "jam") return "渋滞です";
+    return "もう限界です";
+  }
+  function lineOf(c) {
+    const sh = shOf(c.sid), a = c.ctx.aid ? animOf(c.ctx.aid) : null;
+    return LINES[c.type][sh.rookie ? 0 : 1].replace("{a}", a ? famName(a) : "");
+  }
+  function statusOf(sh) {
+    if (sh.status === "call") return "電話の返事待ち";
+    const st = sh.steps[0];
+    if (!st) return `待機中（${placeName(sh.node)}）`;
+    if (st.k === "rest") return "本社で休憩中";
+    if (st.k === "wait") return st.kind === "hari" ? `${famName(animOf(st.aid))}さんに張り込み中` : `${placeName(sh.node)}で待っている`;
+    const next = sh.steps.find((x) => x.k !== "go");
+    const why = !next ? "" : { pick: "袋を取りに", give: "発注", collect: "回収", meet: "張り込み", takeback: "引き上げ", drop: "届ける", rest: "休む", ret: "袋を戻す" }[next.k] || "";
+    if (st.k === "go") return `${placeName(st.to)}へ移動中${why ? `（${why}）` : ""}`;
+    return why;
+  }
+  const ringing = () => s.calls.filter((c) => c.state === "ring");
+  const selIs = (k, id) => ui.sel.k === k && String(ui.sel.id) === String(id);
+  function pickId() {
+    if (ui.pick && shOf(ui.pick)) return ui.pick;
+    const free = s.shinko.find((x) => x.status !== "call" && !x.steps.length);
+    return (free || s.shinko[0]).id;
+  }
+
+  // ---------- parts every pane reuses ----------
+  const tile = (l, v, cls = "") => `<div class="tile ${cls}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
+  const tagHtml = (t, cls = "") => (t ? `<span class="tag ${cls}">${esc(t)}</span>` : "");
+  const oh = (type, name, sub, tag = "") => `<div class="oh"><div class="oh-top"><span class="typ">${esc(type)}</span>${tag}</div><h2 id="paneT">${esc(name)}</h2>${sub ? `<span class="oh-sub">${sub}</span>` : ""}</div>`;
+  const mut = (m, label = "あなたの見立て") => (m ? `<div class="mut"><span class="me" aria-hidden="true">あなた</span><div class="mut-b tone-${m.tone}"><div class="l">${label}</div><div class="t">${esc(m.t)}</div></div></div>` : "");
+  function li({ c, t, sub = "", r = "", on = false, attrs = "", cls = "" }) {
+    return `<button class="li ${on ? "on" : ""} ${cls}" style="--c:${c}" ${attrs}><i></i><span><span class="t">${t}</span>${sub ? `<span class="s">${sub}</span>` : ""}</span><span class="r">${r}</span><span class="chev" aria-hidden="true">›</span></button>`;
+  }
+  function act({ label, sub = "", cost = null, attrs = "", pri = false, disabled = false }) {
+    return `<button class="act ${pri ? "pri" : ""}" ${attrs} ${disabled ? "disabled" : ""}><span class="m"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>${cost ? `<span class="cost">${esc(cost)}</span>` : ""}</button>`;
+  }
+  const foot = (name, acts, note = "", one = false) => `<div class="pane-f"><span class="lbl">${esc(name)}にできること</span>${acts ? `<div class="acts ${one ? "one" : ""}">${acts}</div>` : ""}${note ? `<p class="note">${note}</p>` : ""}</div>`;
+  const pane = (body, f) => `<aside class="pane" aria-labelledby="paneT"><div class="pane-b">${body}</div>${f}</aside>`;
+  const row = (l, v, cls = "") => `<div class="row"><span>${l}</span><span class="v ${cls}">${v}</span></div>`;
+  const logHtml = (n = 40) => `<div class="log">${s.log.slice(0, n).map((l) => `<p class="${l.tone}"><span class="w">${clock(l.t).replace("日目 ", "日 ")}</span>${esc(l.text)}</p>`).join("")}</div>`;
+
+  // ---------- header ----------
+  function header() {
+    const r = ringing();
+    const main = r.length
+      ? `<button class="btn-main ring" data-act="main">電話に出る（${r.length}）</button>`
+      : `<button class="btn-main" data-act="main">${s.phase !== "play" ? "結果を見る" : ui.paused ? "動かす" : "止める"}</button>`;
+    const sp = [1, 2, 4].map((v) => `<button class="${ui.speed === v ? "on" : ""}" data-act="speed" data-v="${v}" aria-pressed="${ui.speed === v}">${v === 1 ? "等速" : v + "倍"}</button>`).join("");
+    return `<div class="brand"><b>進行RTS</b><span>深夜アニメP ・ 小さな試作（1話だけ）</span></div>
+      <div class="wk"><div><div class="clock">${clock(s.t)}${ui.paused && s.phase === "play" ? "<small>止めています</small>" : ""}</div><div class="dl">局納品（8日目 18:00）まで <b>${leftText()}</b></div></div>${main}<div class="speed" role="group" aria-label="時間の速さ">${sp}</div></div>
+      <div class="hdr-r"><button class="btn-sys" data-act="help">遊び方</button><button class="btn-sys" data-act="restartAsk">最初から</button></div>`;
+  }
+
+  // ---------- collections ----------
+  function list() {
+    const r = ringing(), past = s.calls.filter((c) => c.state !== "ring").slice(0, 3);
+    const callLi = (c) => li({
+      c: c.state === "ring" ? "var(--red-d)" : "var(--gross)", t: `${shOf(c.sid).name}「${shortOf(c)}」`,
+      sub: c.state === "ring" ? `鳴っている ・ あと${Math.max(0, c.until - s.t)}分` : `${STATE_NAME[c.state]} ・ ${ago(c.t0)}`,
+      on: selIs("call", c.id), attrs: `data-act="sel" data-k="call" data-v="${c.id}"`, cls: c.state === "ring" ? "ringing" : "",
+    });
+    const calls = r.length || past.length ? r.concat(past).map(callLi).join("") : `<p class="note">まだ鳴っていない。</p>`;
+    const sh = s.shinko.map((x) => li({ c: `var(--${x.id})`, t: `${x.name}${x.rookie ? "（新人）" : "（ベテラン）"}`, sub: statusOf(x), r: `体力${Math.round(x.sta)}`, on: selIs("sh", x.id), attrs: `data-act="sel" data-k="sh" data-v="${x.id}"`, cls: x.status === "call" ? "ringing" : "" })).join("");
+    const an = s.anims.map((a) => {
+      const bs = E.animBags(s, a), k = a.known;
+      const vs = bs.map((b) => E.viewOf(s, a, b)).filter(Boolean);
+      const best = vs.length ? Math.max(...vs.map((v) => v.p)) : null;
+      const r2 = !bs.length ? "" : best == null ? "？" : progWord(best);
+      return li({ c: !bs.length ? "var(--line-2)" : best >= 1 ? "var(--green-d)" : "var(--gross)", t: a.name, sub: `袋${bs.length} ・ ${k.seen != null ? `見たのは${ago(k.seen)}` : "まだ会っていない"}`, r: r2, on: selIs("anim", a.id), attrs: `data-act="sel" data-k="anim" data-v="${a.id}"` });
+    }).join("");
+    const done = s.bags.filter((b) => b.at === "done").length;
+    const places = [
+      li({ c: "var(--marker)", t: "本社（制作デスク）", sub: "あなたの席", r: `袋${E.hqBags(s).length}`, on: selIs("hq", "hq"), attrs: `data-act="sel" data-k="hq" data-v="hq"` }),
+      li({ c: "var(--teal)", t: "撮影スタジオ", sub: "仕上げ・撮影", r: `${done}/${E.BAGS}`, on: selIs("studio", "studio"), attrs: `data-act="sel" data-k="studio" data-v="studio"` }),
+      ...["fam1", "fam2"].map((f) => li({ c: "var(--amber)", t: E.node(s, f).name, sub: "原画マンの作業場になることがある", on: selIs("fam", f), attrs: `data-act="sel" data-k="fam" data-v="${f}"` })),
+    ].join("");
+    const sec = (h, body) => `<section class="sec"><div class="sec-h"><h2>${h}</h2></div>${body}</section>`;
+    return sec(`電話${r.length ? `（${r.length}件 鳴っている）` : ""}`, calls) + sec("制作進行", sh) + sec("原画マン", an) + sec("場所", places);
+  }
+
+  // ---------- the town ----------
+  function mapStatic() {
+    const out = [];
+    for (const n of s.nodes) {
+      let shape = "", label = n.name, sub = "", k = n.kind;
+      const sel = k === "home" ? selIs("anim", n.aid) : k === "hq" ? selIs("hq", "hq") : k === "studio" ? selIs("studio", "studio") : selIs("fam", n.id);
+      if (k === "hq") shape = `<rect class="shape" x="${n.x - 3}" y="${n.y - 3}" width="6" height="6" rx=".6" fill="var(--marker)" stroke="var(--night)" stroke-width=".4"/><text x="${n.x}" y="${n.y + 0.9}" text-anchor="middle" style="fill:var(--night);font-weight:700">${E.hqBags(s).length}</text>`;
+      else if (k === "studio") { const d = s.bags.filter((b) => b.at === "done").length; shape = `<rect class="shape" x="${n.x - 3}" y="${n.y - 3}" width="6" height="6" rx=".6" fill="var(--teal)" stroke="var(--night)" stroke-width=".4"/>`; sub = `撮影済 ${d}/${E.BAGS}`; }
+      else if (k === "fam") shape = `<circle class="shape" cx="${n.x}" cy="${n.y}" r="2.2" fill="var(--amber)" stroke="var(--night)" stroke-width=".4"/>`;
+      else {
+        const a = animOf(n.aid), bs = E.animBags(s, a), vs = bs.map((b) => E.viewOf(s, a, b)).filter(Boolean);
+        const up = vs.some((v) => v.p >= 1), col = !bs.length ? "#3a4560" : up ? "var(--green-d)" : "var(--gross)";
+        shape = `<circle class="shape" cx="${n.x}" cy="${n.y}" r="2.6" fill="${col}" stroke="var(--night)" stroke-width=".4"/><text x="${n.x}" y="${n.y + 0.9}" text-anchor="middle" style="fill:var(--night);font-weight:700">${bs.length || ""}</text>`;
+        label = famName(a);
+      }
+      const ty = n.y + (k === "fam" ? 4.6 : 5.6), anchor = n.x < 10 ? "start" : n.x > 90 ? "end" : "middle", tx = n.x < 10 ? n.x - 2.6 : n.x > 90 ? n.x + 2.6 : n.x;
+      const kk = k === "home" ? "anim" : k === "fam" ? "fam" : k, vv = k === "home" ? n.aid : n.id;
+      out.push(`<g class="nd ${sel ? "on" : ""}" data-act="sel" data-k="${kk}" data-v="${vv}" data-node="${n.id}" tabindex="-1"><circle class="hit" cx="${n.x}" cy="${n.y}" r="6.2"/>${shape}<text x="${tx}" y="${ty}" text-anchor="${anchor}">${esc(label)}</text>${sub ? `<text class="sm" x="${tx}" y="${ty + 2.6}" text-anchor="${anchor}">${sub}</text>` : ""}</g>`);
+    }
+    return out.join("");
+  }
+  function drawCars() {
+    if (!s) return;
+    const g = document.getElementById("mcars"), rg = document.getElementById("mroutes");
+    for (const sh of s.shinko) {
+      let el = document.getElementById("car-" + sh.id);
+      if (!el) {
+        el = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        el.id = "car-" + sh.id; el.setAttribute("class", "car"); el.setAttribute("data-act", "sel"); el.setAttribute("data-k", "sh"); el.setAttribute("data-v", sh.id);
+        el.innerHTML = `<circle class="hit" r="5.5" fill="transparent"/><circle class="ring" r="3.4"/><circle class="body" r="2" fill="var(--${sh.id})" stroke="var(--night)" stroke-width=".4"/><text y=".8" text-anchor="middle">${esc(sh.name[0])}</text>`;
+        g.appendChild(el);
+        const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        ln.id = "route-" + sh.id; ln.setAttribute("class", "route"); ln.setAttribute("stroke", `var(--${sh.id})`);
+        rg.appendChild(ln);
+      }
+      // cars at the same place sit side by side
+      const same = s.shinko.filter((o) => o.node && o.node === sh.node);
+      const off = sh.node ? (same.indexOf(sh) - (same.length - 1) / 2) * 3.6 : 0;
+      el.setAttribute("transform", `translate(${(sh.x + off).toFixed(2)} ${(sh.y - (sh.node ? 4 : 0)).toFixed(2)})`);
+      el.classList.toggle("calling", sh.status === "call");
+      el.classList.toggle("on", selIs("sh", sh.id));
+      const go = sh.steps.find((x) => x.k === "go"), ln = document.getElementById("route-" + sh.id);
+      if (go && sh.status !== "rest") { const n = E.node(s, go.to); ln.setAttribute("x1", sh.x); ln.setAttribute("y1", sh.y); ln.setAttribute("x2", n.x); ln.setAttribute("y2", n.y); ln.style.display = ""; }
+      else ln.style.display = "none";
+    }
+    const h = Math.floor((s.t % E.DAY) / 60);
+    document.getElementById("sky").setAttribute("fill", h >= 20 || h < 5 ? "#121827" : h >= 17 || h < 7 ? "#161e2e" : "#1a2233");
+  }
+  const legend = () => `<span><i style="background:var(--marker)"></i>本社（数字＝まだ渡していない袋）</span><span><i style="background:var(--gross)"></i>原画マン（数字＝預けている袋）</span><span><i style="background:var(--green-d)"></i>上がりがあると分かっている</span><span><i style="background:var(--teal)"></i>撮影スタジオ</span>`;
+
+  // ---------- details ----------
+  function paneHq() {
+    const c = { hq: 0, car: 0, anim: 0, studio: 0, done: 0 };
+    s.bags.forEach((b) => c[b.at]++);
+    const lt = (E.DEADLINE - s.t) / E.DAY;
+    const body = oh("本社", "制作デスク（あなた）", `原画の袋 ${E.BAGS} ・ 局納品 8日目 18:00`, tagHtml(s.phase === "play" ? "制作中" : "終わった", s.phase === "play" ? "" : "ok"))
+      + `<div class="tiles">${tile("局納品まで", leftText(), lt < 1.5 ? "bad" : "")}${tile("撮影済み", `${c.done}/${E.BAGS}`, c.done === E.BAGS ? "good" : "")}${tile("本社の袋", c.hq)}</div>`
+      + mut(E.estimate(s), "あなたの見立て（この話数）")
+      + `<section class="psec"><h3>袋のいま</h3><div class="rows">${row("本社（まだ渡していない）", c.hq)}${row("進行の車の中", c.car)}${row("原画マンのところ", c.anim)}${row("撮影スタジオ（撮影中・待ち）", c.studio)}${row("撮影済み", c.done, c.done ? "good" : "")}</div></section>`
+      + `<section class="psec"><h3>電話が鳴ったとき</h3><div class="seg">${[["pause", "止める"], ["slow", "等速に落とす"], ["keep", "そのまま"]].map(([v, t]) => `<button class="${ui.onRing === v ? "on" : ""}" data-act="onRing" data-v="${v}" aria-pressed="${ui.onRing === v}">${t}</button>`).join("")}</div></section>`
+      + `<section class="psec"><h3>現場の記録（くわしく）</h3>${logHtml()}</section>`;
+    const acts = s.phase === "play" ? act({ label: ui.paused ? "時間を動かす" : "時間を止める", cost: "スペース", attrs: `data-act="main"`, pri: true }) + act({ label: "遊び方を見る", attrs: `data-act="help"` }) : act({ label: "結果を見る", attrs: `data-act="main"`, pri: true });
+    return pane(body, foot("本社", acts, "進行への指示は、原画マンか進行を選んで出します。"));
+  }
+  function paneSh(sh) {
+    const st = sh.steps, cn = E.carryNew(s, sh).length, cu = E.carryUp(s, sh).length;
+    const tag = sh.status === "call" ? tagHtml("電話の返事待ち", "bad") : sh.sta < 25 ? tagHtml("限界が近い", "warn") : tagHtml(statusOf(sh).replace(/（.*/, ""));
+    let m;
+    if (sh.sta < 25) m = { tone: "bad", t: "もう限界だ・・・休ませないと" };
+    else if (sh.pushed) m = { tone: "worry", t: "無理をさせている・・・見落としが増えそうだ" };
+    else m = sh.rookie ? { tone: "mute", t: "張り切っているが、早とちりが多い" } : { tone: "ok", t: "落ち着いている。任せられる" };
+    const stepWords = st.map((x) => {
+      if (x.k === "go") return `${placeName(x.to)}へ行く`;
+      return { pick: `本社で袋を${x.n}つ取る`, give: `${famName(animOf(x.aid))}さんに袋を渡す`, collect: `${famName(animOf(x.aid))}さんから上がりを受け取る`, meet: `${famName(animOf(x.aid))}さんに会う`, takeback: `${famName(animOf(x.aid))}さんから描きかけを引き上げる`, wait: x.kind === "hari" ? "張り込む（描き上がるまで）" : "待つ", drop: "撮影スタジオに袋を届ける", rest: "休む", ret: "袋を本社に戻す" }[x.k];
+    });
+    const std = Object.entries(E.STANDING).map(([type, opts]) => `<label class="field"><span>${KIND_NAME[type]}</span><select data-act="standing" data-sid="${sh.id}" data-type="${type}">${opts.map(([v, t]) => `<option value="${v}" ${sh.standing[type] === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>`).join("");
+    const body = oh("制作進行", sh.name, `${sh.rookie ? "新人" : "ベテラン"} ・ ${statusOf(sh)}`, tag)
+      + `<div class="tiles">${tile("体力", Math.round(sh.sta), sh.sta < 25 ? "bad" : "")}${tile("渡す袋", cn)}${tile("上がりの袋", cu, cu ? "good" : "")}</div>`
+      + mut(m, `あなたの見立て（${sh.name}）`)
+      + `<section class="psec"><h3>いまの用事</h3>${stepWords.length ? `<div class="rows">${stepWords.map((w, i) => row(`${i + 1}. ${w}`, "")).join("")}</div>` : `<p>なし。指示を待っている。</p>`}</section>`
+      + `<section class="psec"><h3>決まった返事</h3><p>よくある電話に、あらかじめ返事を決めておく。決めた電話は鳴らずに、結果だけ記録に残る。</p>${std}</section>`;
+    const call = sh.status === "call" ? s.calls.find((c) => c.id === sh.callId) : null;
+    const why = (k) => E.canOrder(s, sh.id, k);
+    const acts = (call ? act({ label: "電話に出る", sub: `「${shortOf(call)}」`, attrs: `data-act="sel" data-k="call" data-v="${call.id}"`, pri: true }) : "")
+      + act({ label: "撮影スタジオに届ける", sub: why("deliver"), cost: why("deliver") ? null : `移動 約${E.travel(s, sh, "studio")}分`, attrs: `data-act="order" data-v="deliver" data-sid="${sh.id}"`, disabled: !!why("deliver"), pri: !call && cu > 0 })
+      + act({ label: "本社に戻って休む", sub: why("rest"), cost: why("rest") ? null : `移動 約${E.travel(s, sh, "hq")}分`, attrs: `data-act="order" data-v="rest" data-sid="${sh.id}"`, disabled: !!why("rest") })
+      + act({ label: "用事を取り消す", sub: why("cancel"), cost: "すぐ", attrs: `data-act="order" data-v="cancel" data-sid="${sh.id}"`, disabled: !!why("cancel") });
+    return pane(body, foot(sh.name, acts, "原画マンへの発注・回収は、原画マンを選んで指示します。"));
+  }
+  function animMut(a) {
+    const k = a.known, bs = E.animBags(s, a);
+    if (k.awayUntil > s.t) return { tone: "worry", t: "別の現場に缶詰めだと言っていた・・・" };
+    if (!bs.length) return { tone: "mute", t: "いまは何も預けていない" };
+    if (k.seen == null && k.phoned == null) return { tone: "mute", t: "渡してから、まだ一度も様子を見ていない" };
+    const vs = bs.map((b) => E.viewOf(s, a, b)).filter(Boolean), last = Math.max(k.seen || 0, k.phoned || 0);
+    if (vs.some((v) => v.p >= 1 && v.src === "seen")) return { tone: "good", t: "上がっている袋がある。取りに行かないと" };
+    if (k.liar && vs.some((v) => v.p >= 1)) return { tone: "worry", t: "「上がってます」と言うが、この人のは当てにならない・・・" };
+    if (s.t - last > E.DAY) return { tone: "worry", t: "しばらく様子を見ていない・・・" };
+    if (vs.some((v) => v.p >= 0.7)) return { tone: "ok", t: "そろそろ上がっている頃だ" };
+    return { tone: "ok", t: "描いている途中のはずだ" };
+  }
+  function paneAnim(a) {
+    const k = a.known, bs = E.animBags(s, a), sid = pickId(), sh = shOf(sid);
+    const sub = `生活：${k.rhythm ? E.RHY[a.rhythm] : "分からない"}${k.fav ? ` ・ よく${E.node(s, a.fav).name}にいる` : ""}`;
+    const tag = k.liar ? tagHtml("「上がり」が怪しい", "warn") : bs.length ? tagHtml(`袋${bs.length}`) : tagHtml("袋なし");
+    const rows = bs.length ? bs.map((b) => {
+      const v = E.viewOf(s, a, b);
+      return row(`袋${b.id}（${diffWord(b.diff)}）`, v ? `${progWord(v.p)}<small>${v.src === "phone" ? "電話で聞いた" : "見た"}・${ago(v.t)}</small>` : "分からない<small>ポストに入れた</small>", v && v.p >= 1 && v.src === "seen" ? "good" : v ? "" : "mute");
+    }).join("") : "";
+    const pick = `<div class="pick" role="group" aria-label="行かせる進行">${s.shinko.map((x) => `<button class="${x.id === sid ? "on" : ""}" style="--c:var(--${x.id})" data-act="pick" data-v="${x.id}" aria-pressed="${x.id === sid}"><b>${x.name}</b><small>${x.status === "call" ? "電話待ち" : x.steps.length ? "用事あり" : "空いている"}</small></button>`).join("")}</div>`;
+    const body = oh("原画マン", a.name, sub, tag)
+      + `<div class="tiles">${tile("預けている袋", bs.length)}${tile("最後に見た", k.seen != null ? ago(k.seen) : "まだ")}${tile("腕", skillWord(a.skill))}</div>`
+      + mut(animMut(a), `あなたの見立て（${famName(a)}さん）`)
+      + (bs.length ? `<section class="psec"><h3>預けている袋</h3><p>本当の進み具合は、進行が会いに行くまで分からない。電話の答えは当てにならないことがある。</p><div class="rows">${rows}</div></section>` : "")
+      + `<section class="psec"><h3>行かせる進行</h3>${pick}${sh.steps.length && sh.status !== "call" ? `<p>${sh.name}はいま「${esc(statusOf(sh))}」。指示すると、いまの用事は取り消される。</p>` : ""}
+        <div class="field"><span>渡す袋の数</span><div class="step"><button data-act="n" data-v="-1" aria-label="減らす" ${ui.n <= 1 ? "disabled" : ""}>−</button><span>${ui.n}袋</span><button data-act="n" data-v="1" aria-label="増やす" ${ui.n >= 4 ? "disabled" : ""}>＋</button></div></div></section>`;
+    const home = a.home;
+    const trip = (viaHq) => (viaHq ? E.travel(s, sh, "hq") + E.travel(s, E.node(s, "hq"), home) : E.travel(s, sh, home));
+    const needHq = E.carryNew(s, sh).length < ui.n && E.hqBags(s).length > 0;
+    const why = (kind) => E.canOrder(s, sid, kind, a.id);
+    const busy = s.busyUntil > s.t;
+    const acts = act({ label: `発注に行かせる（${ui.n}袋）`, sub: why("hatchu") || (needHq ? "本社で袋を取ってから行く" : ""), cost: why("hatchu") ? null : `移動 約${trip(needHq)}分`, attrs: `data-act="order" data-v="hatchu" data-arg="${a.id}"`, disabled: !!why("hatchu"), pri: !bs.length })
+      + act({ label: "回収に行かせる", sub: why("kaishu") || "上がりを受け取って撮影スタジオへ", cost: why("kaishu") ? null : `移動 約${trip(false)}分`, attrs: `data-act="order" data-v="kaishu" data-arg="${a.id}"`, disabled: !!why("kaishu"), pri: bs.length > 0 })
+      + act({ label: "張り込ませる", sub: why("hari") || "そばにいると早く描く。最長4時間", cost: why("hari") ? null : `移動＋4時間`, attrs: `data-act="order" data-v="hari" data-arg="${a.id}"`, disabled: !!why("hari") })
+      + act({ label: "描きかけを引き上げさせる", sub: why("hikiage") || "本社に戻して、ほかの人に回す", cost: why("hikiage") ? null : `移動 約${trip(false)}分`, attrs: `data-act="order" data-v="hikiage" data-arg="${a.id}"`, disabled: !!why("hikiage") })
+      + act({ label: "あなたが電話する", sub: busy ? `いま通話中（あと${s.busyUntil - s.t}分）` : s.phase !== "play" ? "現場は終わった" : "進み具合を聞く。答えは当てにならない", cost: `あなた ${E.CALLBUSY}分`, attrs: `data-act="callOut" data-v="${a.id}"`, disabled: busy || s.phase !== "play" });
+    return pane(body, foot(a.name, acts, `行かせる進行：${sh.name}（上で選ぶ）`, true));
+  }
+  function paneStudio() {
+    const inS = s.bags.filter((b) => b.at === "studio"), done = s.bags.filter((b) => b.at === "done").length;
+    const m = done === E.BAGS ? { tone: "good", t: "全部撮り終えた" } : !inS.length && s.t > E.START + 3 * E.DAY ? { tone: "worry", t: "撮影スタジオに何も入っていない・・・" } : inS.length > 4 ? { tone: "worry", t: "撮影が詰まってきた" } : { tone: "ok", t: "撮影は回っている" };
+    const body = oh("場所", "撮影スタジオ", "仕上げ・撮影 ・ 2袋ずつ、1袋に約4時間", tagHtml(`${done}/${E.BAGS}`, done === E.BAGS ? "ok" : ""))
+      + `<div class="tiles">${tile("撮影中", Math.min(2, inS.length))}${tile("待ち", Math.max(0, inS.length - 2))}${tile("撮影済み", `${done}/${E.BAGS}`, done === E.BAGS ? "good" : "")}</div>`
+      + mut(m, "あなたの見立て（撮影）")
+      + (inS.length ? `<section class="psec"><h3>入っている袋</h3><div class="rows">${s.queue.map((id, i) => row(`袋${id}`, i < 2 ? "撮影中" : "待ち")).join("")}</div></section>` : "");
+    const carriers = s.shinko.filter((x) => E.carryUp(s, x).length);
+    const acts = carriers.map((x) => act({ label: `${x.name}に届けさせる`, sub: E.canOrder(s, x.id, "deliver") || `上がりの袋${E.carryUp(s, x).length}つ`, cost: `移動 約${E.travel(s, x, "studio")}分`, attrs: `data-act="order" data-v="deliver" data-sid="${x.id}"`, disabled: !!E.canOrder(s, x.id, "deliver") })).join("");
+    return pane(body, foot("撮影スタジオ", acts, acts ? "" : "上がりの袋を持っている進行がいない。"));
+  }
+  function paneFam(id) {
+    const n = E.node(s, id), regs = s.anims.filter((a) => a.known.fav && a.fav === id);
+    const body = oh("場所", n.name, "原画マンが作業場にしていることがある", "")
+      + mut({ tone: "mute", t: regs.length ? `${regs.map((a) => famName(a) + "さん").join("・")}がよくいる` : "誰がいるかは、行ってみないと分からない" })
+      + `<section class="psec"><h3>使いかた</h3><p>進行から「原画さんいません！」と電話が来たとき、ここを見に行かせることができる。</p></section>`;
+    return pane(body, foot(n.name, "", "ここで直接できることはない。"));
+  }
+  function paneCall(c) {
+    const sh = shOf(c.sid), a = c.ctx.aid ? animOf(c.ctx.aid) : null, ring = c.state === "ring", busy = s.busyUntil > s.t;
+    const tag = ring ? tagHtml(`鳴っている あと${Math.max(0, c.until - s.t)}分`, "bad") : tagHtml(STATE_NAME[c.state], c.state === "missed" ? "warn" : c.state === "done" ? "ok" : "");
+    const where = c.type === "jam" ? `${placeName(c.ctx.to)}へ向かう途中` : placeName(c.at);
+    let hint = null;
+    if (ring) {
+      if (c.type === "absent") hint = E.hintOf(s, c);
+      else if (c.type === "blank") hint = a.known.liar ? { tone: "worry", t: "前にもやられた。この人の「上がり」は怪しい" } : { tone: "mute", t: "白いまま撮影に回すと、出来が落ちる・・・" };
+      else if (c.type === "jam") hint = { tone: "mute", t: Math.floor((s.t % E.DAY) / 60) >= 17 && Math.floor((s.t % E.DAY) / 60) < 20 ? "夕方の道は混む・・・" : "運が悪い・・・" };
+      else hint = { tone: "worry", t: "倒れられたら、もっと困る・・・" };
+    }
+    const body = oh("電話", `${sh.name}から`, `${esc(where)} ・ ${clock(c.t0)}`, tag)
+      + `<div class="who"><span class="ico" style="--c:var(--${sh.id})" aria-hidden="true">${esc(sh.name[0])}</span><div><div class="w"><b>${sh.name}</b>（${sh.rookie ? "新人" : "ベテラン"}）${a ? ` ・ ${a.name}さんの件` : ""}</div><p class="speech">「${esc(lineOf(c))}」</p></div></div>`
+      + (hint ? mut(hint) : "")
+      + (!ring ? `<section class="psec"><h3>どうなったか</h3><p>${esc(c.result || "")}</p></section>` : "");
+    if (!ring) return pane(body, foot("この電話", act({ label: `${sh.name}を見る`, attrs: `data-act="sel" data-k="sh" data-v="${sh.id}"` }), "", true));
+    const acts = E.choicesOf(s, c).map((ch) => act({ label: ch.label, sub: busy ? `いま通話中（あと${s.busyUntil - s.t}分）` : ch.why, cost: ch.cost, attrs: `data-act="answer" data-v="${ch.k}" data-arg="${c.id}"`, disabled: !ch.ok || busy })).join("");
+    return pane(body, foot("この電話（返事）", acts, `出ないでいると、${sh.name}が自分で決める（${sh.rookie ? "新人は待ち続けがち" : "ベテランは無理をしない"}）。`, true));
+  }
+  function paneHtml() {
+    const { k, id } = ui.sel;
+    if (k === "sh" && shOf(id)) return paneSh(shOf(id));
+    if (k === "anim" && animOf(id)) return paneAnim(animOf(id));
+    if (k === "studio") return paneStudio();
+    if (k === "fam" && (id === "fam1" || id === "fam2")) return paneFam(id);
+    if (k === "call") { const c = s.calls.find((x) => String(x.id) === String(id)); if (c) return paneCall(c); }
+    return paneHq();
+  }
+
+  // ---------- dialogs ----------
+  const dlg = (body, f) => `<div class="modal-bg"><div class="pane dlg" role="dialog" aria-modal="true" aria-labelledby="paneT"><div class="pane-b">${body}</div>${f}</div></div>`;
+  function helpBody() {
+    return `<section class="psec" style="border:0;padding:0"><ul>
+      <li>原画の袋が${E.BAGS}。8人の原画マンに描いてもらい、上がった袋を撮影スタジオへ運ぶ。<b>8日目の18時</b>までに全部の撮影が終われば納品。</li>
+      <li>動かせるのは制作進行の3人だけ。原画マンを選んで「発注」「回収」「張り込み」「引き上げ」を指示する。</li>
+      <li>原画マンが本当にどこまで描いたかは、進行が会いに行くまで分からない。電話の「もうすぐ上がります」は当てにならない。</li>
+      <li>原画マンには朝型・夜型がいる。寝ている時間に行っても出てこない。ファミレスや喫茶店で描いていることもある。</li>
+      <li>進行から電話が来る。出て返事をする。出ないでいると、進行が自分で決める（新人は待ち続けがち）。よくある電話には、進行ごとに「決まった返事」を設定できる。</li>
+      <li>操作：<b>スペース</b>で時間を止める・動かす。<b>1〜3</b>で進行を選ぶ。進行を選んだまま地図の原画マンを<b>右クリック</b>すると、回収（袋がなければ発注）。</li>
+    </ul></section>`;
+  }
+  function modalHtml() {
+    if (ui.modal === "intro" || ui.modal === "help") {
+      const intro = ui.modal === "intro";
+      return dlg(oh("遊び方", intro ? "進行RTS（小さな試作）" : "遊び方", "1話だけの現場。時間は流れ続ける。") + helpBody(),
+        foot("この画面", act({ label: intro ? "はじめる" : "閉じる", sub: intro ? "1日目 9:00 から" : "Esc でも閉じる", attrs: `data-act="${intro ? "start" : "close"}"`, pri: true }), "", true));
+    }
+    if (ui.modal === "restart") {
+      return dlg(oh("最初から", "最初からやり直しますか？", "いまの現場は消える。"),
+        foot("この画面", act({ label: "同じ配置でやり直す", sub: "原画マンの性格・予定が同じ", attrs: `data-act="retry"`, pri: true }) + act({ label: "別の配置でやり直す", sub: "原画マンの予定が変わる", attrs: `data-act="restart"` }) + act({ label: "やめる", sub: "続ける", attrs: `data-act="close"` }), "", true));
+    }
+    if (ui.modal === "result" && s.result) {
+      const r = s.result;
+      const m = !r.ok ? { tone: "bad", t: "落とした・・・総集編だ" } : r.rank === "S" ? { tone: "good", t: "完璧だ。良い話数になった" } : r.rank === "A" ? { tone: "good", t: "良い感じに仕上がった" } : r.rank === "B" ? { tone: "ok", t: "なんとか形になった" } : { tone: "worry", t: "間に合ったが、出来は荒い・・・" };
+      const body = oh("結果", r.ok ? "納品できた" : "落とした", `${clock(r.at)} ・ 撮影済み ${r.done}/${E.BAGS}`, tagHtml(r.ok ? "納品" : "落とした", r.ok ? "ok" : "bad"))
+        + `<div style="display:flex;align-items:center;gap:16px"><span class="big">${esc(r.rank)}</span><span class="note" style="color:var(--ink-soft)">${r.ok ? `作画の出来 ${r.avgQ}` : "全部の撮影が終わらなかった"}</span></div>`
+        + mut(m, "あなたの見立て（この話数）")
+        + `<section class="psec"><h3>現場の記録</h3><div class="rows">${row("取った電話", `${r.calls - r.missed}本`)}${row("出られなかった電話", `${r.missed}本`, r.missed ? "bad" : "")}${row("決まった返事で済んだ電話", `${r.auto}本`)}${row("あなたからかけた電話", `${r.out}本`)}${row("白いところが残ったまま撮影に回った袋", `${r.blank}袋`, r.blank ? "bad" : "")}${row("倒れかけた進行", `${r.faint}回`, r.faint ? "bad" : "")}</div></section>`;
+      return dlg(body, foot("この画面", act({ label: "同じ配置でもう一度", attrs: `data-act="retry"`, pri: true }) + act({ label: "別の配置で", attrs: `data-act="restart"` }) + act({ label: "現場を振り返る", sub: "結果を閉じて記録を見る", attrs: `data-act="close"` }), "", true));
+    }
+    return "";
+  }
+
+  // ---------- rendering ----------
+  const cache = {};
+  function put(id, html) {
+    if (cache[id] === html) return;
+    const el = document.getElementById(id);
+    const ae = document.activeElement;
+    if (ae && ae.tagName === "SELECT" && el.contains(ae)) return; // don't close an open menu
+    let key = null;
+    if (ae && el.contains(ae) && ae.dataset && ae.dataset.act) key = ["act", "v", "arg", "sid", "type", "k"].map((k) => ae.dataset[k] || "").join("|");
+    cache[id] = html;
+    el.innerHTML = html;
+    if (key) {
+      const again = [...el.querySelectorAll("[data-act]")].find((x) => ["act", "v", "arg", "sid", "type", "k"].map((k) => x.dataset[k] || "").join("|") === key);
+      if (again && !again.disabled) again.focus({ preventScroll: true });
+    }
+  }
+  function render() {
+    if (pressing || !s) return;
+    put("hdr", header());
+    put("list", list());
+    put("pane", paneHtml());
+    put("mstatic", mapStatic());
+    put("legend", legend());
+    put("feed", `<div class="log">${s.log.slice(0, window.matchMedia("(max-width: 760px)").matches ? 5 : 10).map((l) => `<p class="${l.tone}"><span class="w">${clock(l.t).replace("日目 ", "日 ")}</span>${esc(l.text)}</p>`).join("")}</div>`);
+    put("modal-root", modalHtml());
+    drawCars();
+  }
+
+  // ---------- time ----------
+  let last = performance.now(), acc = 0, lastRender = 0, lastSave = 0;
+  function frame(now) {
+    const dt = Math.min(0.25, (now - last) / 1000);
+    last = now;
+    if (s && s.phase === "play" && !ui.paused && !ui.modal) {
+      acc += dt * SPEEDS[ui.speed];
+      const n = Math.floor(acc);
+      if (n > 0) { acc -= n; E.tick(s, n); afterTick(); }
+    }
+    drawCars();
+    if (now - lastRender > 200) { lastRender = now; render(); }
+    if (now - lastSave > 3000) { lastSave = now; save(); }
+    requestAnimationFrame(frame);
+  }
+  function afterTick() {
+    if (s.callSeq > ui.seenCall) {
+      const fresh = s.calls.filter((c) => c.id > ui.seenCall && c.state === "ring");
+      ui.seenCall = s.callSeq;
+      if (fresh.length) { if (ui.onRing === "pause") ui.paused = true; else if (ui.onRing === "slow") ui.speed = 1; }
+    }
+    if (s.phase !== "play") { ui.modal = "result"; ui.paused = true; save(); render(); }
+  }
+
+  // ---------- input ----------
+  function select(k, id) {
+    ui.sel = { k, id };
+    if (k === "sh") ui.pick = id;
+    render();
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      const p = document.getElementById("pane");
+      p.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    }
+  }
+  function doAct(el, ev) {
+    const a = el.dataset.act, v = el.dataset.v;
+    if (a === "sel") return select(el.dataset.k, el.dataset.k === "call" ? Number(v) : v);
+    if (a === "main") {
+      if (s.phase !== "play") { ui.modal = "result"; return render(); }
+      const r = ringing();
+      if (r.length) { ui.sel = { k: "call", id: r[r.length - 1].id }; if (ui.onRing === "pause") ui.paused = true; return select("call", r[r.length - 1].id); }
+      ui.paused = !ui.paused; return render();
+    }
+    if (a === "speed") { ui.speed = Number(v); ui.paused = false; return render(); }
+    if (a === "pick") { ui.pick = v; return render(); }
+    if (a === "n") { ui.n = Math.max(1, Math.min(4, ui.n + Number(v))); return render(); }
+    if (a === "onRing") { ui.onRing = v; save(); return render(); }
+    if (a === "order") {
+      const sid = el.dataset.sid || pickId();
+      E.order(s, sid, v, el.dataset.arg || null, ui.n);
+      save(); return render();
+    }
+    if (a === "answer") { E.answer(s, Number(el.dataset.arg), v); save(); return render(); }
+    if (a === "callOut") { E.callOut(s, v); save(); return render(); }
+    if (a === "help") { ui.modal = "help"; return render(); }
+    if (a === "start") { ui.modal = null; ui.paused = false; save(); return render(); }
+    if (a === "close") { ui.modal = null; return render(); }
+    if (a === "restartAsk") { ui.modal = "restart"; return render(); }
+    if (a === "retry") { fresh(s.seed); ui.modal = null; ui.paused = false; save(); return render(); }
+    if (a === "restart") { fresh((s.seed % 100000) + 1 + Math.floor(Math.random() * 1000)); ui.modal = null; ui.paused = false; save(); return render(); }
+  }
+  document.addEventListener("pointerdown", (ev) => { if (ev.target.closest && ev.target.closest("[data-act]")) pressing = true; });
+  document.addEventListener("pointerup", () => { setTimeout(() => { pressing = false; }, 0); });
+  document.addEventListener("pointercancel", () => { pressing = false; });
+  document.addEventListener("click", (ev) => {
+    const el = ev.target.closest && ev.target.closest("[data-act]");
+    if (!el || el.disabled || el.tagName === "SELECT") return;
+    pressing = false;
+    doAct(el, ev);
+  });
+  document.addEventListener("change", (ev) => {
+    const el = ev.target;
+    if (el.dataset && el.dataset.act === "standing") { E.setStanding(s, el.dataset.sid, el.dataset.type, el.value); save(); el.blur(); render(); }
+  });
+  // right-click a place on the map with a 進行 selected: the obvious order for that place
+  document.getElementById("map").addEventListener("contextmenu", (ev) => {
+    const g = ev.target.closest && ev.target.closest("[data-node]");
+    if (!g || ui.sel.k !== "sh" || !s || s.phase !== "play") return;
+    ev.preventDefault();
+    const sid = ui.sel.id, n = E.node(s, g.dataset.node);
+    if (n.kind === "home") E.order(s, sid, E.animBags(s, animOf(n.aid)).length && !E.canOrder(s, sid, "kaishu", n.aid) ? "kaishu" : "hatchu", n.aid, ui.n);
+    else if (n.kind === "studio") E.order(s, sid, "deliver");
+    else if (n.kind === "hq") E.order(s, sid, "rest");
+    save(); render();
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (!s) return;
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (ev.key === "Escape" && ui.modal) { if (ui.modal === "intro") { ui.modal = null; ui.paused = false; } else ui.modal = null; render(); return; }
+    if (ui.modal || tag === "SELECT" || tag === "INPUT") return;
+    if (ev.key === " " && tag !== "BUTTON") { ev.preventDefault(); if (s.phase === "play") { ui.paused = !ui.paused; render(); } }
+    if (["1", "2", "3"].includes(ev.key)) select("sh", s.shinko[Number(ev.key) - 1].id);
+  });
+  window.addEventListener("pagehide", save);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
+
+  if (!load()) fresh(1 + Math.floor(Math.random() * 100000));
+  if (s.phase !== "play" && s.result) ui.modal = "result";
+  render();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
