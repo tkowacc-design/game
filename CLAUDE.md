@@ -2,7 +2,7 @@
 
 - ゲーム本体は `anime-producer.html` の1ファイル。計算部分（`<script id="engine">`）と画面（その下の `<script>`）は分かれている。
 - 画面は「左に一覧 → 選ぶと右に詳細 → 詳細のいちばん下に、それにできること」で統一している。品質の見込みは数字で出さず、制作デスクの「あなたの見立て」のひとことで出す。
-- RTS版の試作は `anime-rts.html`（制作デスクの一人称・1週＝120秒・進行3人に指示）。作りは本体と同じ（計算部分は `<script id="engine">`）。テストのルートは `tools/qa/routes-rts.md`、ランダム操作は `node tools/qa/fuzz.js --page anime-rts.html --live`（時間で書き換わる画面なので `--live` を付ける）。
+- RTS版の試作は `anime-rts.html`（制作デスクの一人称・1週＝120秒・進行3人に指示。絵は `assets/rts/`）。**PCゲーム**なので、スマホ（端末）向けの画面は作らない。作りは本体と同じ（計算部分は `<script id="engine">`）。テストのルートは `tools/qa/routes-rts.md`、ランダム操作は `node tools/qa/fuzz.js --page anime-rts.html --live`（時間で書き換わる画面なので `--live` を付ける）。
 
 ## 大きな修正のあとのテスト（必ずやる）
 
@@ -11,9 +11,9 @@
 1. デバッグ担当（`.claude/agents/debugger.md`、Haiku）を呼び、`tools/qa/routes.md` の**全ルート**を実際のブラウザで試させる（RTS版を直したときは `tools/qa/routes-rts.md`）。
    - 呼ぶときは `subagent_type: "debugger"`。使えないときは general-purpose に `model: "haiku"` を指定し、`.claude/agents/debugger.md` の本文をそのまま渡す。
 2. 並行して、自分でも次を確かめる。
-   - `node tools/qa/fuzz.js`（PC幅・スマホ幅）
-   - 横スクロールの有無（1440 / 1024 / 768 / 390 / 320 px）
-   - 文字と背景のコントラスト、タップ領域（スマホ幅で44px以上）
+   - `node tools/qa/fuzz.js`（PC幅・スマホ幅。RTS版はPC幅だけ）
+   - 横スクロールの有無（1440 / 1024 / 768 / 390 / 320 px。RTS版は 1920×1080 / 1440×900 / 1280×720 / 1024×768）
+   - 文字と背景のコントラスト、タップ領域（スマホ幅で44px以上。RTS版はなし）
    - 保存と再開（制作中・ダイアログ表示中の再読み込み）
    - 計算部分を変えたときは、Node で多数の seed を回して破綻がないか
 3. 見つかった問題を直し、もう一度テストしてからプッシュする。直さなかったものは理由と一緒に報告する。

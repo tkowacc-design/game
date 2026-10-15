@@ -72,18 +72,6 @@
   .ctl button { height: 60px; min-width: 76px; padding: 0 18px; background: rgba(31, 42, 68, .94); border: 0; color: #fff; font-size: 24px; font-weight: 700; }
   .ctl button.on { color: var(--yellow); }
 
-  /* phones held upright: the clock and the buttons above the picture, at their real size */
-  .mtop { display: none; position: absolute; left: 0; right: 0; top: 0; padding: 12px 14px; flex-direction: column; gap: 10px; }
-  .mtop .mh { background: rgba(31, 42, 68, .94); padding: 10px 14px; font-weight: 700; display: flex; flex-direction: column; gap: 2px; }
-  .mtop .mh b { font-size: 18px; } .mtop .mh span { font-size: 16px; } .mtop .mh span.on { color: #ffb3b3; }
-  .mtop .mb { display: flex; gap: 8px; flex-wrap: wrap; }
-  .mtop .mb button { flex: 1 1 0; min-height: 48px; background: rgba(31, 42, 68, .94); border: 0; color: #fff; font-size: 16px; font-weight: 700; }
-  .mtop .mb button.on { color: var(--yellow); }
-  .mtop .hint { font-size: 13px; color: #a9b1c7; }
-  @media (orientation: portrait) and (max-width: 900px) {
-    .mtop { display: flex; }
-    .stage .hud, .stage .ctl { display: none; }
-  }
 
   /* what you can tell a 進行: beside them, unscaled enough to read */
   .ui { position: absolute; left: 0; top: 0; width: 0; height: 0; }
@@ -157,7 +145,6 @@
       <div id="ovb"></div>
     </div>
   </div>
-  <div class="mtop" id="mtop"></div>
   <div class="ui" id="ui"></div>
   <img class="ghost" id="ghost" src="assets/rts/car-keys.webp" alt="">
   <div id="toast"></div>
@@ -626,13 +613,6 @@ if (typeof module !== "undefined") module.exports = Engine;
       return `<button class="bubble ${b[2]} ${sh.report.tone === "bad" ? "bad" : ""}" data-act="sel" data-v="${sh.id}" style="${style}">${esc(sh.report.short || sh.report.text)}</button>`;
     }).join("");
   }
-  function mtop() {
-    const a = E.airStatus(s), unread = s.phone.filter((m) => !m.read).length;
-    const secLeft = Math.max(0, Math.ceil((E.WEEK - (s.t % E.WEEK)) / MIN_PER_SEC));
-    return `<div class="mh"><b>第${Math.min(s.week, E.weekOf(s.t))}週　${clock(s.t)}　残り${secLeft}秒</b><span class="${a.airing ? "on" : ""}">${esc(a.main)}${a.sub ? ` ・ ${esc(a.sub)}` : ""}</span></div>
-      <div class="mb"><button data-act="pause">${ui.paused || ui.modal || s.phase !== "play" ? "▶ 再開" : "Ⅱ 停止"}</button><button data-act="speed" class="${ui.speed === 2 ? "on" : ""}" aria-pressed="${ui.speed === 2}">×${ui.speed}</button><button data-act="phone">スマホ${unread ? `（${unread}）` : ""}</button><button data-act="help">遊び方</button></div>
-      <span class="hint">横向きにすると大きく表示されます。進行を押すと指示が出ます。</span>`;
-  }
   function drawArt() {
     const h = E.hourOf(s.t), bg = h < 6 || h >= 19 ? "night" : h >= 17 ? "evening" : "day";
     const bgEl = document.getElementById("bg"), src = `assets/rts/bg-${bg}.webp`;
@@ -733,7 +713,6 @@ if (typeof module !== "undefined") module.exports = Engine;
     put("wb", whiteboard());
     put("ov", overlay());
     put("ovb", bubbles());
-    put("mtop", mtop());
     if (put("ui", menuHtml())) placeMenu();
     put("modal-root", phoneHtml() + modalHtml());
     placePhone();
@@ -744,13 +723,11 @@ if (typeof module !== "undefined") module.exports = Engine;
     const W = window.innerWidth, H = window.innerHeight;
     k = Math.min(W / 1920, H / 1080);
     const bw = 1920 * k, bh = 1080 * k, box = document.getElementById("box");
-    const portrait = H > W && W <= 900, topH = portrait ? (document.getElementById("mtop").offsetHeight || 170) + 8 : 0;
-    box.style.width = `${bw}px`; box.style.height = `${bh}px`; box.style.left = `${(W - bw) / 2}px`;
-    box.style.top = `${portrait ? topH : Math.max(0, (H - bh) / 2)}px`;
+    box.style.width = `${bw}px`; box.style.height = `${bh}px`; box.style.left = `${(W - bw) / 2}px`; box.style.top = `${Math.max(0, (H - bh) / 2)}px`;
     document.getElementById("stage").style.transform = `scale(${k})`;
     placeMenu(); placePhone();
   }
-  // the menu stays readable: never smaller than 0.6 of its drawn size, kept inside the window
+  // the menu stays readable in a small window: never below 0.72 of its drawn size, kept inside the window
   function placeMenu() {
     if (!ui.sel) return;
     const box = document.getElementById("box").getBoundingClientRect(), p = P[ui.sel];
