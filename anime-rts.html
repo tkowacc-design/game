@@ -6,233 +6,161 @@
 <title>進行RTS 試作</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=BIZ+UDPGothic:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
 <style>
-  /* The desk, seen from your chair. Press a 進行 who is back at the desk and tell them what to do next.
-     The detail of whatever you pressed opens beside it, with what you can do at the bottom (same as 深夜アニメP). */
+  /* The desk, seen from your chair, drawn at 1920x1080 and scaled to the window. No fixed panels:
+     press a 進行 and what you can tell them appears beside them; press the phone and it comes up in front of you. */
   :root {
-    --night: #12151f; --desk: #1c2130; --desk-2: #262c40; --line: #2a3146; --line-2: #323a52;
-    --on: #e8eaf1; --on-soft: #a1a9be;
-    --paper: #f4f2ec; --card: #ffffff; --rule: #dcd8cc; --ink: #1a1c24; --ink-soft: #5a6072; --chip: #e3dfd3;
-    --marker: #ffe14a; --marker-d: #b89e1e;
-    --red: #c8323a; --red-l: #ff9a9d; --green: #167a4d; --green-l: #8fe0b5; --amber: #e0b400; --teal: #1f7f7f; --gross: #8a93ab;
-    --s1: #ff9f43; --s2: #4fc3f7; --s3: #c792ea;
-    --font-pixel: "DotGothic16", "IPAGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
-    --font-body: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "IPAPGothic", sans-serif;
+    --navy: #1f2a44; --navy-2: #2a3654; --cream: #fdf3dc; --cream-2: #f5ead0; --ink: #1d2236; --ink-soft: #4d5470;
+    --yellow: #ffe082; --line: #1a2036; --red: #c8323a; --orange: #a35a00; --blue: #1f5fbf; --green: #167a4d; --gray: #b9bfcc;
+    --font: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "IPAPGothic", sans-serif;
     color-scheme: dark;
   }
-  html, body { height: 100%; }
-  body { margin: 0; background: var(--night); color: var(--on); font-family: var(--font-body); font-size: 14px; line-height: 1.5; -webkit-tap-highlight-color: transparent; }
-  #app { max-width: 1440px; margin: 0 auto; }
-  h1, h2, h3 { font-family: var(--font-pixel); font-weight: 400; letter-spacing: .04em; margin: 0; }
-  button, select { font: inherit; color: inherit; cursor: pointer; }
-  button:focus-visible { outline: 2px solid var(--marker); outline-offset: 2px; }
-  button:disabled { cursor: not-allowed; }
+  html, body { height: 100%; margin: 0; background: #0f1320; overflow: hidden; }
+  body { color: #fff; font-family: var(--font); -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+  #app { position: relative; width: 100%; height: 100%; }
+  .box { position: absolute; overflow: hidden; }
+  .stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+  .stage img.art { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: none; user-select: none; -webkit-user-drag: none; }
 
-  /* header: the week, how far the broadcast is, the clock of this week */
-  .hud { min-height: 64px; box-sizing: border-box; padding: 8px 24px; display: flex; align-items: center; gap: 10px 24px; border-bottom: 1px solid var(--line); flex-wrap: wrap; background: var(--night); }
-  .hud-l { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
-  .wk { font-family: var(--font-pixel); font-size: 26px; line-height: 1; color: var(--marker); white-space: nowrap; }
-  .air { font-family: var(--font-pixel); font-size: 16px; white-space: nowrap; }
-  .air.on { color: var(--red-l); }
-  .air small { font-size: 12px; color: var(--on-soft); margin-left: 8px; }
-  .gauge { flex: 1 1 280px; max-width: 520px; display: grid; gap: 3px; }
-  .gauge .bars, .gauge .lbls { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
-  .gauge .bars span { height: 10px; border-radius: 1px; background: var(--line-2); overflow: hidden; }
-  .gauge .bars span i { display: block; height: 100%; background: var(--marker); }
-  .gauge .lbls span { font-size: 11px; color: var(--on-soft); text-align: center; }
-  .gauge .lbls span.now { color: var(--marker); }
-  .sec-left { font-size: 13px; white-space: nowrap; }
-  .sec-left b { font-family: var(--font-pixel); font-weight: 400; font-size: 20px; color: var(--marker); }
-  .hud-r { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
-  .btn-main { min-height: 44px; padding: 0 18px; font-family: var(--font-pixel); font-size: 15px; background: var(--marker); color: var(--night); border: 0; border-radius: 4px; box-shadow: 0 3px 0 var(--marker-d); white-space: nowrap; }
-  .btn-sys { min-height: 44px; padding: 0 14px; background: transparent; color: var(--on); border: 1px solid var(--line-2); border-radius: 4px; white-space: nowrap; }
-  .btn-sys:hover { border-color: var(--on-soft); }
-  .btn-sys.on { background: var(--desk-2); color: var(--marker); }
+  /* whiteboard: the twelve episodes, drawn as text on the board in the picture */
+  .wb { position: absolute; left: 770px; top: 84px; width: 400px; height: 390px; box-sizing: border-box; padding: 14px 18px 0; color: var(--ink); pointer-events: none; }
+  .wb h2 { margin: 0 0 6px; text-align: center; font-size: 25px; font-weight: 700; letter-spacing: .02em; }
+  .wb table { width: 100%; border-collapse: collapse; font-size: 19px; font-weight: 700; line-height: 1.12; color: var(--ink); }
+  .wb th { font-size: 18px; border: 1px solid #9aa2b8; padding: 2px 4px; background: rgba(255, 255, 255, .35); }
+  .wb td { border-left: 1px solid #9aa2b8; border-right: 1px solid #9aa2b8; border-bottom: 1px solid #c3c8d6; padding: 1px 6px; white-space: nowrap; }
+  .wb td:first-child { text-align: center; width: 46px; }
+  .wb td:last-child { text-align: center; width: 120px; }
+  .wb .red { color: var(--red); } .wb .org { color: var(--orange); } .wb .blu { color: var(--blue); } .wb .grn { color: var(--green); } .wb .mut { color: #6a7088; font-weight: 400; }
+  .wb tr.now td { background: rgba(255, 224, 130, .45); }
 
-  /* the scene: drawn at 1440x900 and scaled to fit */
-  .main { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 16px; padding: 12px 24px 24px; align-items: start; }
-  .wrap { position: relative; min-width: 0; }
-  .stage-box { position: relative; overflow: hidden; margin: 0 auto; }
-  .stage { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; transform-origin: 0 0; }
-  .stage svg { position: absolute; left: 0; top: 0; display: block; }
-  .ov { position: absolute; inset: 0; font-family: var(--font-pixel); pointer-events: none; }
-  .ov > * { pointer-events: auto; }
-  .ov .tag, .ov .chip, .ov .zzz, .ov .tray-l, .ov .note, .ov .plate { pointer-events: none; }
-  .ov button { font-family: inherit; }
-  .zone { position: absolute; width: 192px; height: 380px; top: 196px; background: transparent; border: 2px solid transparent; border-radius: 6px; padding: 0; }
-  .zone:hover, .zone:focus-visible { border-color: rgba(232, 234, 241, .45); }
-  .zone.att { border: 2px dashed var(--marker); }
-  .zone.on { border: 3px solid var(--marker); box-shadow: 0 0 0 4px rgba(255, 225, 74, .25); }
-  .zone.drop { border: 3px solid var(--marker); background: rgba(255, 225, 74, .12); }
-  .zone.nodrop { border: 3px dashed #8a93ab; }
-  .tag { position: absolute; top: 530px; width: 200px; box-sizing: border-box; padding: 4px 10px; font-size: 19px; border-radius: 2px; background: var(--night); color: var(--on); display: flex; justify-content: space-between; gap: 6px; pointer-events: none; white-space: nowrap; }
-  .tag.att { background: var(--marker); color: var(--night); box-shadow: none !important; }
-  .chip { position: absolute; top: 452px; width: 264px; box-sizing: border-box; padding: 6px 10px; background: var(--night); border-radius: 3px; display: flex; flex-direction: column; gap: 4px; font-size: 18px; pointer-events: none; }
-  .chip .bar { height: 6px; background: var(--line-2); border-radius: 1px; overflow: hidden; display: block; }
-  .chip .bar i { display: block; height: 100%; }
-  .chip small { color: var(--on-soft); font-size: 16px; }
-  .bubble { position: absolute; top: 578px; width: 400px; box-sizing: border-box; padding: 8px 12px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; text-align: left; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); font-family: var(--font-body) !important; }
-  .bubble .w { font-family: var(--font-pixel); font-size: 16px; color: var(--ink-soft); }
-  .bubble .t { font-size: 19px; font-weight: 700; line-height: 1.35; }
-  .bubble .h { font-size: 15px; color: var(--ink-soft); }
-  .bubble::after { content: ""; position: absolute; left: 190px; top: -11px; width: 18px; height: 18px; background: var(--paper); border-left: 2px solid var(--ink); border-top: 2px solid var(--ink); transform: rotate(45deg); }
-  .bubble.good { box-shadow: inset 5px 0 0 var(--green), 0 4px 0 rgba(0, 0, 0, .35); }
-  .bubble.warn, .bubble.bad { box-shadow: inset 5px 0 0 var(--red), 0 4px 0 rgba(0, 0, 0, .35); }
-  .zzz { position: absolute; top: 350px; font-size: 30px; color: var(--on-soft); line-height: 1; pointer-events: none; }
-  .zzz span:nth-child(2) { font-size: 32px; } .zzz span:nth-child(3) { font-size: 40px; }
-  .wb { position: absolute; left: 676px; top: 84px; width: 520px; height: 228px; box-sizing: border-box; padding: 10px 16px; background: transparent; border: 0; text-align: left; color: var(--ink); display: flex; flex-direction: column; gap: 2px; font-size: 19px; line-height: 1.4; }
-  .wb:hover, .wb:focus-visible { outline: 2px solid rgba(26, 28, 36, .4); }
-  .wb .hd { font-size: 20px; border-bottom: 2px solid var(--ink); align-self: flex-start; padding-right: 20px; margin-bottom: 2px; }
-  .wb .bad { color: var(--red); } .wb .done { color: #5a6072; }
-  .mon { position: absolute; left: 1052px; top: 604px; width: 344px; height: 240px; box-sizing: border-box; padding: 10px 14px; background: transparent; border: 0; text-align: left; color: var(--ink); display: flex; flex-direction: column; gap: 4px; font-family: var(--font-body) !important; font-size: 18px; }
-  .mon:hover, .mon:focus-visible { outline: 3px solid var(--marker); }
-  .mon .tabs { display: flex; gap: 4px; font-family: var(--font-pixel); font-size: 15px; }
-  .mon .tabs span { background: var(--chip); padding: 0 6px; border-radius: 2px; }
-  .mon .tabs span:first-child { background: var(--ink); color: var(--paper); }
-  .mon .r { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--rule); }
-  .mon .r.bad { color: var(--red); font-weight: 700; }
-  .phone { position: absolute; left: 64px; top: 724px; width: 76px; height: 124px; background: transparent; border: 2px solid transparent; border-radius: 6px; padding: 0; }
-  .phone:hover, .phone:focus-visible { border-color: var(--marker); }
-  .phone .badge { position: absolute; right: -10px; top: -10px; min-width: 28px; height: 28px; border-radius: 14px; background: var(--red); color: #fff; font-size: 16px; display: grid; place-items: center; }
-  .car { position: absolute; left: 264px; top: 716px; width: 200px; height: 104px; background: transparent; border: 2px solid transparent; border-radius: 6px; padding: 0; touch-action: none; cursor: grab; }
-  .car:hover, .car:focus-visible { border-color: var(--marker); }
-  .car svg { position: absolute; left: 36px; top: 18px; }
-  .tray-l { position: absolute; left: 216px; top: 826px; width: 296px; text-align: center; font-size: 18px; color: var(--on); pointer-events: none; }
-  .stage svg.ghost { position: absolute; width: 120px; height: 72px; pointer-events: none; filter: drop-shadow(0 6px 0 rgba(0, 0, 0, .35)); display: none; }
-  .note { position: absolute; left: 714px; top: 700px; width: 116px; color: var(--ink); font-size: 15px; line-height: 1.4; pointer-events: none; font-family: var(--font-body); }
-  .plate { position: absolute; left: 1288px; top: 160px; width: 88px; height: 32px; display: grid; place-items: center; color: var(--ink); font-size: 14px; pointer-events: none; }
-  .toast { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); max-width: 90%; background: var(--night); color: var(--on); border: 1px solid var(--marker); border-radius: 4px; padding: 8px 14px; font-size: 14px; z-index: 6; pointer-events: none; }
+  /* who you can press */
+  .zone { position: absolute; background: transparent; border: 0; padding: 0; border-radius: 8px; }
+  .zone:hover, .zone:focus-visible { box-shadow: inset 0 0 0 4px rgba(255, 224, 130, .55); outline: none; }
+  .zone.on { box-shadow: inset 0 0 0 5px var(--yellow); }
+  .zone.drop { box-shadow: inset 0 0 0 6px var(--yellow); background: rgba(255, 224, 130, .14); }
+  .zone.nodrop { box-shadow: inset 0 0 0 6px #8a93ab; }
+  .obj { position: absolute; background: transparent; border: 0; padding: 0; border-radius: 10px; }
+  .obj:hover, .obj:focus-visible { box-shadow: 0 0 0 4px rgba(255, 224, 130, .7); outline: none; }
+  .keys { touch-action: none; cursor: grab; }
+  .badge { position: absolute; right: -8px; top: -14px; min-width: 48px; height: 48px; padding: 0 6px; box-sizing: border-box; background: var(--red); color: #fff; font-size: 28px; font-weight: 700; display: grid; place-items: center; box-shadow: 0 0 0 4px var(--line); }
 
-  /* below the scene: everything you can press, also as plain buttons (keyboard, phones) */
-  .bar2 { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0 0; align-items: stretch; }
-  .who { min-height: 52px; min-width: 168px; display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 10px; align-items: center; text-align: left; background: var(--desk); color: var(--on); border: 0; border-radius: 4px; padding: 4px 12px 4px 0; overflow: hidden; }
-  .who > i { align-self: stretch; margin: -4px 0; background: var(--c); }
-  .who b { display: block; font-size: 13px; }
-  .who small { display: block; font-size: 12px; color: var(--on-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
-  .who.att { box-shadow: inset 0 0 0 2px var(--marker); }
-  .who.on { background: var(--desk-2); box-shadow: 0 0 0 2px var(--marker); }
+  /* status tag and report bubble over each person */
+  .tag { position: absolute; height: 42px; padding: 0 16px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; background: var(--navy); color: #fff; font-size: 22px; font-weight: 700; white-space: nowrap; pointer-events: none; box-shadow: 0 0 0 3px var(--line); }
+  .tag.att { background: var(--yellow); color: var(--ink); }
+  .tag .bar { width: 72px; height: 8px; background: #46506e; display: block; }
+  .tag .bar i { display: block; height: 100%; background: var(--yellow); }
+  .bubble { position: absolute; min-width: 260px; max-width: 360px; box-sizing: border-box; padding: 14px 22px; background: var(--cream); color: var(--ink); font-size: 28px; font-weight: 700; line-height: 1.3; text-align: center; border: 0; box-shadow: 0 0 0 5px var(--line), 6px 6px 0 5px rgba(0, 0, 0, .25); }
+  .bubble::after { content: ""; position: absolute; left: 60px; bottom: -22px; border: 11px solid transparent; border-top: 12px solid var(--line); }
+  .bubble.r::after { left: auto; right: 60px; }
+  .bubble.bad { background: #ffe1e1; }
+  .zzz { position: absolute; font-size: 40px; font-weight: 700; color: #dfe4f0; text-shadow: 0 3px 0 var(--line); pointer-events: none; }
 
-  /* the detail of what you pressed */
-  .dock { min-width: 0; position: sticky; top: 12px; }
-  .pane { background: var(--paper); color: var(--ink); border-radius: 6px; display: flex; flex-direction: column; box-shadow: 0 0 0 2px var(--marker), 0 12px 32px rgba(0, 0, 0, .45); min-width: 0; max-height: inherit; overflow-y: auto; }
-  .pane-b { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 14px; }
-  .pane-f { margin-top: 14px; padding: 12px 16px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
-  .pane-f > .lbl { font-size: 11px; color: var(--ink-soft); }
-  .pane .note2 { margin: 0; font-size: 12px; color: var(--ink-soft); }
-  .oh { display: flex; flex-direction: column; gap: 4px; }
-  .oh-top { display: flex; align-items: center; gap: 8px; }
-  .typ { font-family: var(--font-pixel); font-size: 11px; background: var(--ink); color: var(--paper); padding: 0 6px; border-radius: 2px; }
-  .ptag { margin-left: auto; font-family: var(--font-pixel); font-size: 12px; padding: 0 8px; border-radius: 2px; background: var(--chip); color: var(--ink); white-space: nowrap; }
-  .ptag.att { background: var(--marker); }
-  .ptag.bad { background: var(--red); color: #fff; }
-  .x { width: 44px; height: 44px; border: 0; background: transparent; color: var(--ink); font-size: 22px; margin: -10px -8px -10px 0; }
-  .oh h2 { font-size: 22px; line-height: 1.3; }
-  .oh-sub { font-size: 12px; color: var(--ink-soft); }
-  .said { background: var(--card); border-radius: 4px; padding: 8px 12px; font-size: 14px; line-height: 1.5; }
-  .said small { display: block; font-size: 11px; color: var(--ink-soft); }
-  .mut { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 10px; align-items: center; }
-  .me { width: 40px; height: 40px; border-radius: 3px; display: grid; place-items: center; background: var(--ink); color: var(--paper); font-family: var(--font-pixel); font-size: 11px; }
-  .mut-b { background: var(--card); border-radius: 4px; padding: 8px 12px; box-shadow: inset 4px 0 0 var(--tone, var(--gross)); }
-  .mut-b .l { font-size: 11px; color: var(--ink-soft); }
-  .mut-b .t { font-size: 15px; font-weight: 700; }
-  .tone-good { --tone: var(--green); } .tone-ok { --tone: var(--teal); } .tone-worry { --tone: var(--amber); } .tone-bad { --tone: var(--red); } .tone-mute { --tone: var(--gross); }
-  .psec { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--rule); padding-top: 14px; }
-  .psec h3 { font-size: 14px; }
-  .psec p { margin: 0; font-size: 12.5px; color: var(--ink-soft); }
-  .eps { display: flex; flex-wrap: wrap; gap: 6px; }
-  .eps button { min-height: 44px; min-width: 64px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--card); color: var(--ink); display: grid; align-content: center; padding: 2px 8px; }
-  .eps button small { font-size: 11px; color: var(--ink-soft); }
-  .eps button.on { background: var(--ink); color: var(--paper); }
-  .eps button.on small { color: #c9cedc; }
-  .eps button.bad { box-shadow: inset 0 -4px 0 var(--red); }
-  .rows { display: flex; flex-direction: column; }
-  .row { min-height: 32px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 12.5px; border-bottom: 1px dashed var(--rule); text-align: left; background: transparent; border-left: 0; border-right: 0; border-top: 0; color: var(--ink); padding: 0 2px; }
-  button.row { min-height: 44px; }
-  button.row:hover { background: rgba(26, 28, 36, .05); }
-  .row .v { font-weight: 700; text-align: right; }
-  .row .v.bad { color: var(--red); } .row .v.good { color: var(--green); } .row .v.warn { color: #8a5a00; } .row .v.mute { color: var(--ink-soft); font-weight: 400; }
-  .acts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .act { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 4px; text-align: left; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
-  .act.pri { background: var(--ink); color: var(--paper); }
-  .act:hover:not(:disabled) { box-shadow: 0 2px 0 var(--ink); }
-  .act:disabled { color: var(--ink-soft); border: 1.5px dashed #b9b4a6; }
-  .act .m { display: grid; line-height: 1.35; }
-  .act .m b { font-size: 14px; }
-  .act .m small { font-size: 11.5px; }
-  .cost { font-family: var(--font-pixel); font-size: 11px; padding: 0 6px; border-radius: 2px; white-space: nowrap; background: var(--chip); color: var(--ink); }
-  .act.pri .cost { background: #3a4158; color: var(--on); }
-  .tabs2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1.5px solid var(--ink); border-radius: 4px; overflow: hidden; }
-  .tabs2 button { min-height: 44px; border: 0; background: transparent; color: var(--ink); font-size: 13px; }
-  .tabs2 button.on { background: var(--ink); color: var(--paper); }
-  .msgs { display: flex; flex-direction: column; gap: 6px; }
-  .msg { background: var(--card); border-radius: 4px; padding: 8px 10px; font-size: 13px; box-shadow: inset 4px 0 0 var(--gross); }
-  .msg.bad { box-shadow: inset 4px 0 0 var(--red); }
-  .msg small { display: block; color: var(--ink-soft); font-size: 11px; }
-  .log { font-size: 12.5px; display: grid; gap: 4px; max-height: 300px; overflow-y: auto; }
-  .log p { margin: 0; }
-  .log p.warn { color: #8a5a00; } .log p.bad { color: var(--red); } .log p.good { color: var(--green); }
-  .log .w { font-family: var(--font-pixel); color: var(--ink-soft); margin-right: 6px; white-space: nowrap; }
-  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-  .tile { background: var(--card); border-radius: 4px; padding: 8px 10px; min-width: 0; }
-  .tile .l { font-size: 11px; color: var(--ink-soft); }
-  .tile .v { font-family: var(--font-pixel); font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tile.bad .l, .tile.bad .v { color: var(--red); }
-  .tile.bad { box-shadow: inset 0 0 0 1.5px var(--red); }
-  .tile.good .l, .tile.good .v { color: var(--green); }
-  .tile.good { box-shadow: inset 0 0 0 1.5px var(--green); }
+  /* clock (top left) and controls (top right) */
+  .hud { position: absolute; left: 28px; top: 24px; width: 485px; min-height: 112px; box-sizing: border-box; padding: 14px 22px 12px; background: rgba(31, 42, 68, .94); color: #fff; font-weight: 700; pointer-events: none; }
+  .hud .l1 { font-size: 30px; display: flex; gap: 22px; align-items: baseline; }
+  .hud .l1 small { margin-left: auto; font-size: 18px; color: #c9d0e4; }
+  .hud .l2 { font-size: 30px; }
+  .hud .l2.on { color: #ffb3b3; }
+  .hud .l2 small { font-size: 18px; color: #c9d0e4; margin-left: 10px; }
+  .hud .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
+  .hud .days span { height: 8px; background: #46506e; }
+  .hud .days span i { display: block; height: 100%; background: var(--yellow); }
+  .ctl { position: absolute; right: 28px; top: 24px; display: flex; gap: 6px; }
+  .ctl button { height: 60px; min-width: 76px; padding: 0 18px; background: rgba(31, 42, 68, .94); border: 0; color: #fff; font-size: 24px; font-weight: 700; }
+  .ctl button.on { color: var(--yellow); }
 
-  /* dialogs */
-  .modal-bg { position: fixed; inset: 0; background: rgba(8, 10, 18, .78); display: grid; place-items: center; padding: 16px; z-index: 20; overflow-y: auto; }
-  .dlg { width: min(580px, 100%); max-height: none; }
-  .dlg ul { margin: 0; padding-left: 20px; font-size: 13px; display: grid; gap: 6px; }
-  .big { font-family: var(--font-pixel); font-size: 30px; line-height: 1.2; }
-  .big.on { color: var(--red); }
-  .rank { font-family: var(--font-pixel); font-size: 64px; line-height: 1; }
-
-  @media (max-width: 1099px) {
-    .hud { padding: 8px 16px; }
-    .main { grid-template-columns: minmax(0, 1fr); padding: 12px 16px 32px; }
-    .dock { position: static; }
+  /* phones held upright: the clock and the buttons above the picture, at their real size */
+  .mtop { display: none; position: absolute; left: 0; right: 0; top: 0; padding: 12px 14px; flex-direction: column; gap: 10px; }
+  .mtop .mh { background: rgba(31, 42, 68, .94); padding: 10px 14px; font-weight: 700; display: flex; flex-direction: column; gap: 2px; }
+  .mtop .mh b { font-size: 18px; } .mtop .mh span { font-size: 16px; } .mtop .mh span.on { color: #ffb3b3; }
+  .mtop .mb { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mtop .mb button { flex: 1 1 0; min-height: 48px; background: rgba(31, 42, 68, .94); border: 0; color: #fff; font-size: 16px; font-weight: 700; }
+  .mtop .mb button.on { color: var(--yellow); }
+  .mtop .hint { font-size: 13px; color: #a9b1c7; }
+  @media (orientation: portrait) and (max-width: 900px) {
+    .mtop { display: flex; }
+    .stage .hud, .stage .ctl { display: none; }
   }
-  @media (max-width: 640px) {
-    .hud-l { flex: 1 1 100%; flex-wrap: wrap; row-gap: 2px; }
-    .gauge { flex: 1 1 100%; }
-    .hud-r { margin-left: 0; flex: 1 1 100%; }
-    .hud-r .btn-main { flex: 1 1 auto; }
-    .who { flex: 1 1 100%; }
-    .bar2 > .btn-sys { flex: 1 1 calc(50% - 8px); }
-    .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  .arm-mid { display: none; }
+
+  /* what you can tell a 進行: beside them, unscaled enough to read */
+  .ui { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+  .menu { position: absolute; transform-origin: 0 0; display: flex; flex-direction: column; gap: 8px; width: 260px; }
+  .menu .head { background: var(--cream); color: var(--ink); padding: 10px 14px; box-shadow: 0 0 0 4px var(--line), 6px 6px 0 4px rgba(0, 0, 0, .25); font-size: 15px; line-height: 1.4; display: flex; flex-direction: column; gap: 4px; }
+  .menu .head b { font-size: 18px; }
+  .menu .head .said { border-top: 2px dashed #d9caa6; padding-top: 4px; }
+  .menu .head .me { color: var(--ink-soft); }
+  .menu .head .me.worry { color: var(--orange); } .menu .head .me.bad { color: var(--red); } .menu .head .me.good { color: var(--green); }
+  .cmd { height: 64px; width: 260px; box-sizing: border-box; padding: 0 10px; border: 0; background: var(--cream); color: var(--ink); font-size: 24px; font-weight: 700; box-shadow: 0 0 0 4px var(--line), inset 0 -5px 0 var(--cream-2); display: flex; align-items: center; justify-content: center; gap: 6px; line-height: 1.1; text-align: center; }
+  .cmd small { font-size: 14px; font-weight: 700; color: var(--ink-soft); display: block; }
+  .cmd:hover:not(:disabled), .cmd.on { background: var(--yellow); }
+  .cmd:disabled { background: var(--gray); color: #4d5470; box-shadow: 0 0 0 4px var(--line); cursor: not-allowed; font-size: 20px; }
+  .cmd.sub { height: 56px; font-size: 20px; flex-direction: column; gap: 0; }
+  .cmd .stack { display: flex; flex-direction: column; }
+  .menu.eps { width: 260px; }
+  .menu .cap { font-size: 15px; font-weight: 700; color: #fff; background: var(--navy); padding: 4px 10px; box-shadow: 0 0 0 4px var(--line); }
+
+  /* the phone, brought up in front of you */
+  .phone-bg { position: fixed; inset: 0; z-index: 30; background: rgba(8, 10, 18, .35); }
+  .phone { position: absolute; left: 50%; top: 50%; width: 460px; height: 820px; transform-origin: 50% 50%; }
+  .phone img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+  .scr { position: absolute; left: 32px; top: 66px; width: 396px; height: 678px; background: #f5efe0; color: var(--ink); display: flex; flex-direction: column; }
+  .scr .bar { background: var(--navy); color: #fff; height: 74px; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; font-size: 24px; font-weight: 700; flex: none; }
+  .scr .bar small { font-size: 20px; }
+  .scr .list { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+  .scr .m { display: flex; flex-direction: column; gap: 6px; }
+  .scr .m .who { font-size: 17px; font-weight: 700; color: #6a7088; }
+  .scr .m .txt { background: #e3e5ea; padding: 12px 14px; font-size: 19px; font-weight: 700; line-height: 1.5; }
+  .scr .m.bad .txt { background: #f6dcdc; }
+  .scr .m .at { font-size: 14px; color: #6a7088; }
+  .scr .empty { color: #6a7088; font-size: 18px; padding: 20px 0; text-align: center; }
+  .scr .back { margin: 0 18px 18px; height: 64px; flex: none; border: 0; background: var(--navy); color: #fff; font-size: 22px; font-weight: 700; }
+
+  /* dialogs (help, end of week, end of the season) */
+  .modal-bg { position: fixed; inset: 0; z-index: 40; background: rgba(8, 10, 18, .7); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+  .card { width: min(620px, 100%); background: var(--cream); color: var(--ink); box-shadow: 0 0 0 5px var(--line), 10px 10px 0 5px rgba(0, 0, 0, .3); padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .card .k { display: inline-block; align-self: flex-start; background: var(--navy); color: #fff; font-size: 13px; font-weight: 700; padding: 2px 10px; }
+  .card h2 { margin: 0; font-size: 28px; }
+  .card .big { font-size: 34px; font-weight: 700; }
+  .card .big.on { color: var(--red); }
+  .card .rows { display: flex; flex-direction: column; }
+  .card .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 6px 2px; border-bottom: 2px dashed #e0d2ae; font-size: 15px; font-weight: 700; }
+  .card .row .v.good { color: var(--green); } .card .row .v.warn { color: var(--orange); } .card .row .v.bad { color: var(--red); } .card .row .v.mute { color: var(--ink-soft); }
+  .card ul { margin: 0; padding-left: 22px; display: grid; gap: 7px; font-size: 15px; line-height: 1.55; }
+  .card .acts { display: flex; flex-wrap: wrap; gap: 10px; }
+  .card .acts .cmd { width: auto; min-width: 220px; padding: 0 20px; flex: 1 1 220px; }
+  .card .acts .cmd.pri { background: var(--yellow); }
+  .rank { font-size: 72px; font-weight: 700; line-height: 1; }
+  .toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 35; background: var(--navy); color: #fff; padding: 10px 18px; font-size: 15px; font-weight: 700; box-shadow: 0 0 0 3px var(--line); pointer-events: none; max-width: 90vw; }
+  .ghost { position: fixed; z-index: 36; width: 200px; pointer-events: none; image-rendering: pixelated; display: none; filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .35)); }
   @media (prefers-reduced-motion: no-preference) {
-    .arm-up { animation: wave-a .8s steps(1) infinite; }
-    .arm-mid { display: inline; animation: wave-b .8s steps(1) infinite; }
-    @keyframes wave-a { 0% { opacity: 1; } 50% { opacity: 0; } }
-    @keyframes wave-b { 0% { opacity: 0; } 50% { opacity: 1; } }
     .bubble { animation: pop .25s ease-out; }
-    @keyframes pop { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes pop { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
   }
 </style>
 </head>
 <body>
 <div id="app">
-  <header class="hud" id="hud"></header>
-  <div class="main" id="main">
-  <div class="wrap" id="wrap">
-    <div class="stage-box" id="box">
-      <div class="stage" id="stage">
-        <svg id="scene" viewBox="0 0 360 225" width="1440" height="900" shape-rendering="crispEdges" aria-hidden="true"></svg>
-        <div class="ov" id="ov"></div>
-        <div class="ov" id="ovb"></div>
-        <svg class="ghost" id="ghost" viewBox="0 0 30 18" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="6" width="28" height="9" fill="#e8eaf1"/><rect x="16" y="1" width="12" height="6" fill="#e8eaf1"/><rect x="18" y="2" width="8" height="4" fill="#86b6da"/><rect x="1" y="10" width="28" height="2" fill="#c8323a"/><rect x="4" y="14" width="5" height="3" fill="#1a1c24"/><rect x="20" y="14" width="5" height="3" fill="#1a1c24"/></svg>
-      </div>
-      <div id="toast"></div>
+  <div class="box" id="box">
+    <div class="stage" id="stage">
+      <img class="art" id="bg" src="assets/rts/bg-day.webp" alt="" style="left:0;top:0;width:1920px;height:1080px">
+      <div class="wb" id="wb"></div>
+      <img class="art" id="c-s2" alt="" style="left:1300px;top:235px;width:430px;height:430px">
+      <img class="art" id="c-s1" alt="" style="left:0px;top:242px;width:640px;height:640px">
+      <img class="art" id="c-s3" alt="" style="left:1375px;top:344px;width:640px;height:640px">
+      <img class="art" src="assets/rts/fg.webp" alt="" style="left:0;top:0;width:1920px;height:1080px">
+      <img class="art" src="assets/rts/phone-desk.webp" alt="" style="left:50px;top:932px;width:286px">
+      <img class="art" id="keys-art" src="assets/rts/car-keys.webp" alt="" style="left:352px;top:916px;width:280px">
+      <div id="ov"></div>
+      <div id="ovb"></div>
     </div>
-    <div class="bar2" id="bar2"></div>
   </div>
-  <div class="dock" id="dock"></div>
-  </div>
+  <div class="mtop" id="mtop"></div>
+  <div class="ui" id="ui"></div>
+  <img class="ghost" id="ghost" src="assets/rts/car-keys.webp" alt="">
+  <div id="toast"></div>
   <div id="modal-root"></div>
 </div>
 <script id="engine">
@@ -241,13 +169,11 @@ const Engine = (() => {
   // Time is in game minutes from 第1週 月曜 0:00. One week (10080 min) is 120 real seconds: 84 min per second.
   const HOUR = 60, DAY = 1440, WEEK = 7 * DAY, START = 9 * HOUR, EPS = 12, SCHEDULE = 4;
   const TASK = {
-    eigyo: { label: "カット表を埋める（原画マン営業）", short: "営業", hours: 16, ep: true },
-    meet: { label: "作打ちの段取り", short: "作打ち", hours: 8, ep: true },
-    shinko: { label: "進行表を作る", short: "進行表", hours: 10, ep: true, sheet: true },
-    hatchu: { label: "発注表を作る", short: "発注表", hours: 10, ep: true, sheet: true },
-    kouban: { label: "香盤表を作る", short: "香盤表", hours: 10, ep: true, sheet: true },
-    soto: { label: "外回り（回収・届け）", short: "外回り", hours: 16, car: true },
-    rest: { label: "寝かせる", short: "休む", hours: 0 },
+    eigyo: { label: "原画マン営業", short: "営業", hours: 16, ep: true },
+    meet: { label: "作打ち", short: "作打ち", hours: 8, ep: true },
+    shinko: { label: "進行表", short: "進行表", hours: 10, ep: true, sheet: true },
+    soto: { label: "回収へ", short: "回収", hours: 16, car: true },
+    rest: { label: "休ませる", short: "休憩", hours: 0 },
   };
   const NAMES = ["高槻 透", "三好 かおる", "芹沢 一馬", "小野寺 ゆう", "柚木 瞳", "黒川 仁", "日向 まどか", "塩見 直", "久住 梓", "早瀬 涼", "蓮見 楓", "宇佐美 圭", "榎本 一花", "真田 航"];
   const SHINKO = [
@@ -255,7 +181,7 @@ const Engine = (() => {
     { id: "s2", name: "川口", rookie: false },
     { id: "s3", name: "真壁", rookie: true },
   ];
-  const DOUGA_PER_DAY = 70, DOUGA_LAG = 36 * HOUR, SHOT_PER_DAY = 90, SHOT_LAG = 12 * HOUR, CAR_CAP = 70, ANIM_CAP = 40;
+  const DOUGA_PER_DAY = 70, DOUGA_LAG = 36 * HOUR, SHOT_PER_DAY = 90, SHOT_LAG = 12 * HOUR, CAR_CAP = 60, ANIM_CAP = 40;
 
   function rnd(s) {
     let a = (s.r = (s.r + 0x6d2b79f5) | 0);
@@ -271,7 +197,7 @@ const Engine = (() => {
   function log(s, text, tone = "") { s.log.unshift({ t: s.t, text, tone }); if (s.log.length > 200) s.log.length = 200; }
 
   function newGame(seed = 1) {
-    const s = { v: 1, seed, r: (seed * 2654435761) >>> 0 || 1, t: START, phase: "play", week: 1, eps: [], anims: [], shinko: [], car: null, pipe: [], phone: [], log: [], weekEnd: null, result: null, acc: { douga: 0, shot: 0 },
+    const s = { v: 2, seed, r: (seed * 2654435761) >>> 0 || 1, t: START, phase: "play", week: 1, eps: [], anims: [], shinko: [], car: null, pipe: [], phone: [], log: [], weekEnd: null, result: null, acc: { douga: 0, shot: 0 },
       stats: { orders: 0, waited: 0, blank: 0, drops: 0 } };
     s.anims = NAMES.map((name, i) => ({ id: "a" + (i + 1), name, rate: 2.0 + rnd(s) * 1.2, acc: 0, queue: [] }));
     s.shinko = SHINKO.map((d) => ({ ...d, sta: 100, task: null, report: null, idleSince: START, asleep: false }));
@@ -281,7 +207,7 @@ const Engine = (() => {
   }
   function startEp(s, n) {
     const cuts = 180 + Math.floor(rnd(s) * 41);
-    s.eps.push({ n, cuts, empty: cuts, drawn: 0, coll: 0, douga: 0, dDone: 0, shooting: 0, shot: 0, meet: false, sheets: { shinko: false, hatchu: false, kouban: false }, air: airOf(n), result: null });
+    s.eps.push({ n, cuts, empty: cuts, drawn: 0, coll: 0, douga: 0, dDone: 0, shooting: 0, shot: 0, meet: false, sheets: { shinko: false, hatchu: true, kouban: true } /* 香盤表・発注表 are made as the episode starts */, air: airOf(n), result: null });
   }
   const live = (s) => s.eps.filter((e) => !e.result);
   const epOf = (s, n) => s.eps.find((e) => e.n === n);
@@ -337,11 +263,11 @@ const Engine = (() => {
 
   function finish(s, sh) {
     const T = sh.task, e = T.ep ? epOf(s, T.ep) : null;
-    let text = "", tone = "";
-    if (e && e.result) text = `${e.n}話はもう放送されていた……。`;
+    let text = "", tone = "", short = "";
+    if (e && e.result) { text = `${e.n}話はもう放送されていた……。`; short = "もう放送されてました……"; }
     else if (T.kind === "eigyo") {
       // fill the cut table: the animators with room take some cuts
-      let want = Math.round((15 + rnd(s) * 12) * (sh.rookie ? 0.85 : 1));
+      let want = Math.round((12 + rnd(s) * 10) * (sh.rookie ? 0.85 : 1));
       want = Math.min(want, e.empty);
       const free = s.anims.map((a) => ({ a, room: ANIM_CAP - animLoad(a) })).filter((x) => x.room > 0).sort((x, y) => y.room - x.room + (rnd(s) - 0.5) * 8);
       const took = [];
@@ -352,19 +278,19 @@ const Engine = (() => {
         e.empty -= k; want -= k; took.push([a, k]);
       }
       const got = took.reduce((t, [, k]) => t + k, 0);
-      if (got) { text = `${e.n}話の営業、終わりました！ ${took.map(([a]) => famName(a.name) + "さん").join("と")}で${got}カット埋まりました！`; tone = "good"; }
-      else { text = `${e.n}話の営業……みんな手一杯で、取れませんでした。`; tone = "bad"; }
+      if (got) { text = `${e.n}話の営業、終わりました！ ${took.map(([a]) => famName(a.name) + "さん").join("と")}で${got}カット埋まりました！`; tone = "good"; short = `${e.n}話、${got}カット埋まりました！`; }
+      else { text = `${e.n}話の営業……みんな手一杯で、取れませんでした。`; tone = "bad"; short = "取れませんでした……"; }
       if (got && !e.meet) text += "（作打ちはまだです）";
     } else if (T.kind === "meet") {
-      e.meet = true; text = `${e.n}話の作打ち、終わりました。原画、描き始めてもらいます！`; tone = "good";
+      e.meet = true; text = `${e.n}話の作打ち、終わりました。原画、描き始めてもらいます！`; tone = "good"; short = `${e.n}話の作打ち、終わりました！`;
     } else if (TASK[T.kind].sheet) {
-      e.sheets[T.kind] = true; text = `${e.n}話の${TASK[T.kind].short}、できました！`; tone = "good";
+      e.sheets[T.kind] = true; text = `${e.n}話の${TASK[T.kind].short}、できました！`; tone = "good"; short = text;
     } else if (T.kind === "soto") {
       s.car = null;
-      text = collect(s, sh); tone = /白紙/.test(text) ? "warn" : "good";
+      text = collect(s, sh); tone = /白紙/.test(text) ? "warn" : /ありませんでした/.test(text) ? "bad" : "good"; short = "戻りました！";
     }
     log(s, `${sh.name}：${text}`, tone);
-    sh.report = { text, tone, t: s.t };
+    sh.report = { text, tone, short: short || text, t: s.t };
     sh.task = null; sh.idleSince = s.t;
   }
   function collect(s, sh) {
@@ -416,7 +342,7 @@ const Engine = (() => {
       if (T.kind === "rest") {
         sh.asleep = true;
         sh.sta = Math.min(100, sh.sta + 14 / HOUR);
-        if (sh.sta >= 95) { sh.task = null; sh.idleSince = s.t; sh.report = { text: "寝ました！ 次、なにやりますか", tone: "", t: s.t }; }
+        if (sh.sta >= 95) { sh.task = null; sh.idleSince = s.t; sh.report = { text: "寝ました！ 次、なにやりますか", short: "寝ました！", tone: "", t: s.t }; }
         continue;
       }
       sh.asleep = false;
@@ -578,309 +504,214 @@ if (typeof module !== "undefined") module.exports = Engine;
   const E = Engine;
   const SAVE_KEY = "animep.desk";
   const MIN_PER_SEC = E.WEEK / 120; // one week is 120 seconds
-  const SEAT = { s1: 80, s2: 180, s3: 280 }; // x of each 進行's seat, in scene units (x4 = px)
-  const HAIR = { s1: "#4a3020", s2: "#1a1c24", s3: "#2a2a3a" };
-  const SLEEP_SIDE = { s1: -1, s2: -1, s3: 1 };
   const DOW = ["月", "火", "水", "木", "金", "土", "日"];
+  // positions on the 1920x1080 picture (from the art's layout)
+  const P = {
+    s1: { zone: [80, 272, 560, 860], tag: [150, 830], bubble: [95, 152, "l"], zzz: [430, 300], menu: [560, 300], side: 1 },
+    s2: { zone: [1360, 262, 1700, 640], tag: [1430, 212], bubble: [1540, 96, "r"], zzz: [1690, 260], menu: [1050, 250], side: -1 },
+    s3: { zone: [1500, 390, 1920, 960], tag: [1630, 336], bubble: [1540, 290, "r"], zzz: [1440, 420], menu: [1180, 360], side: -1 },
+  };
+  const KEYS = [352, 916, 280, 151], PHONE = [50, 932, 286, 140];
+  // where each pose is actually drawn (32x32 cells of the 640px frame), so pressing picks the person under the pointer
+  const MASKS = {"s1":{"idle":"AAAAAAAAYAAAAPAAAAD+AwCA/wMA4P8DAOD/AwDw/wMA+P8HAPj/BwD8/wcA/P8DAPj/AwD4/wMA+P8BAPD/AADwfwAA8P8BAPD/AQD4/wMA/P8DAPz/AwD+/wMA/v8DAP//B4D//weA//8HAP//B4D//w+A//8PwP//BwAAAAA=","work":"AAAAAAAAGAAAAHwAAID/AADg/wAA+P8AAPj/AAD8/wAA/v8BAP7/AQD//wEA//8BAP7/AAD+fwAA/j8AAPx/AAD8fwAA+P8AAPj/AQD4/wEA/P8DAP7/A4D//wOA//8D4P//A/D//wNw//8HAPz/BwD+/wcA/v8HAP//BwAAAAA=","report":"AAAAAAAABgAAgB8AAMA/AADwPwAA+D8AAPw/AAD+PwAA/n8AAP9/AAD/fwAA/38AAP9/AAD+PwAA/z8AAPwfAMD0HwD4/D8A+P9/APD//wDA//8D4P//A+D//wHg//8D4P//B+D//wfA//8HgP//B4D//wOA//8BwP//AQAACAA=","tired":"AAAAAAAAAAAAAAAAAMABAADgDwAA8A8AAPAPAAD8DwAA/h8AAP8/AAD/fwCA/38AgP8/AID/PwDA/z8AgP9/AID//wCA//8BAP//AwD+/wMA/P8DAP7/BwD+/wcA//8HAP//DwD//w8A//8PAP7/HwD+/x8A//8fAP//HwAAAAA=","sleep":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAAB8AADA/wEA4P8DAPj/AwD8/wMA/P8DAP7/AwD//wOA//8HAP//AwD//wOA//8DgP//B8D//wfA//8H4P//D8D//w/A//8HAP//AwD//wOA//8DwP//B8D//weA//8HgP//BwAAAAA=","phone":"AAAAAAAAAAAAAB4AAAB/AADwfwAA+P8AAPx/AAD+fwAA/v8AAP//AAD//wCA//8AAP9/AAD/fwAA/38AAP5/AAD8fwAA/v8AAP7/AQD//wEA//8DgP//A8D//wfA//8H4P//B+D//wPg//8B4P//AcD//wHg//8D4P//AQAAAAA="},"s2":{"idle":"AAAAAAAAAAAAAAwAAIAfAADgfwAA8P8AAPD/AQDw/wAA+P8BAPD/AQDw/wAA8P8AAOB/AADgPwAAwD8AAPgfAAD8fwAA/n8AAP7/AAD+/wAA/v8AAP//AQD//wEA//8DAP//AwD//wMA/v8DAP7/AwD8/w8A/P8fAPz/HwAAAAA=","work":"AAAAAAAAAAAAAAAAAMAHAADgHwAA8D8AAPh/AAD8fwAA/H8AAPx/AAD4fwAA+D8AAPg/AAD4HwAA/B8AAP4PAAD/BwCA/wcAgP8PAID/DwCA/x8AwP9/AMD//w/A//8fwP//H8D//wPA/48BwP9/AID//wCA//8BgP//AQAAAAA=","report":"AAAAAAAAAAAAAAAAAPgBAAD8BwAA/gcAAP8PAAD/DwAA/w8AgP8PAID/DwAA/w8AAP4PAAD+BwAA/AMAAPgDAAD+HwkA/z8PgP+/D+D//wfg//8HwP//A8D//wPg//8D4P//A/D//wHw/88A4P8/AMD//wEA/v8DAP7/AwAAAAA=","tired":"AAAAAAAAAAAAAAQAAIA/AACAfwAA4P8BAOD/AQDg/wEA8P8DAOD/AQDg/wEA8P8BAPz/AAD+/wAA//8AAP//AID//wCA//8BgP//AcD//wPA//8DwP//B8D//wfA//8DwP//B8D//w/A//8PwP//D8D//x8AAAAAAAAAAAAAAAA=","sleep":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAfAAAAP8BAID/AQDw/wMA/P8HAP7/BwD//w+A//8HgP//B8D//w/A//8fwP//H8D//x/g//8f4P/fH+D/AwDg/wEA4P8fAOD//wDg//8A4P//AeD//wEAAAAAAAAAAAAAAAA=","phone":"AAAAAAAAAAAA8AEAAPgPAAD+DwAA/h8AAP4fAAD/HwAA/x8AAP8fAAD+DwAA/g8AAPwPAAD+BwAA/x8AgP8/AID/PwDA/z8AwP9/AMD/fwDA/38AwP//AMD//wDA//8BgP//AYD//wOA//8HgP//B4D//w8AAAAAAAAAAAAAAAA="},"s3":{"idle":"AAAAAAAAAAAAwAcAAPAfAAD4PwAA/H8AAP5/AAD+/wAA/v8BAP//AQD//wAA/v8BAP7/AwD+/wMA/v8DAOz/AQD4/wAA+P8AAPj/AQD8/wEA/P8BAP7/AwD+/wMA/v8DAP//BwD//wcA//8HAP//BwD//wcA//8HgP//BwAAAAA=","work":"AAAAAAAAAAAA4AcAAPgfAAD8PwAA/n8AAP7/AAD//wAA//8BgP//AYD//wEA//8AAP//AQD//wMA/v8DAPz/AwDs/wEA6P8AAPD/AQDw/wEA+P8BAPz/AwD+/wPA//8D8P//A/j//wf4//8HgP//DwD4/wcA/v8HAP7/BwAAAAA=","report":"AAAAAAAAAAAAwA8AAPAfAAD4PwAA/H8AAPx/AAD+/wAA/v8AAP//AQD//wEA/v8BAP5/AAD+/wAA/P8AAOz/AQD4/wFA+P8A+Pz/Afz//wf4//8H8P//A8D//wPA//8HwP//B8D//w/A//8PgP//BwD+/wMA/v8DAP7/AwAAAAA=","tired":"AAAAAAAAAAAAAAAAAOADAAD4DwAA/B8AAP4/AAD/PwAA/38AgP//AID//wCA//8AgP//AQD//wEA//8DAP//AQD//wMA//8DAP7/BwD8/wcA/P8HAP7/DwD+/w8A//8PAP//HwD//x8A/v8fAPz/HwD+/x8A//8fAAAAAAAAAAA=","sleep":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADwAAAA/AMAAP8PAID/HwCA/x8AwP8/AMD//wDg//8B4P//A/D//wHw//8D8P//A/D//wfg//8H8P//B/D//w/w//8P8P//D+D//x+A//8PwP//D8D//w/g//8PAAAAAAAAAAA=","phone":"AAAAAAAAAAAAwB8AAPB/AAD4/wAA/P8AAPz/AQD+/wEA/v8BAP7/AwD+/wMA/v8BAP7/AQD8/wEA7P8DAPj/AwD4/wMA/P8BAPz/AQD+/wEA/v8DAP//AwD//wcA//8HgP//B4D//weA//8DAP//A4D//wfA//8HAAAAAAAAAAA="}};
+  const FRAME = { s1: [0, 242, 640], s2: [1300, 235, 430], s3: [1375, 344, 640] };
+  const maskBits = {};
+  function drawnAt(sh, pt) {
+    const [fx, fy, fw] = FRAME[sh.id], pose = poseOf(sh);
+    if (stateOf(sh) === "out") return false;
+    const cx = Math.floor(((pt.x - fx) / fw) * 32), cy = Math.floor(((pt.y - fy) / fw) * 32);
+    if (cx < 0 || cy < 0 || cx >= 32 || cy >= 32) return false;
+    const key = sh.id + pose;
+    if (!maskBits[key]) maskBits[key] = Uint8Array.from(atob(MASKS[sh.id][pose]), (c) => c.charCodeAt(0));
+    const i = cy * 32 + cx;
+    return !!(maskBits[key][i >> 3] & (1 << (i & 7)));
+  }
   const esc = (v) => String(v).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  let s = null;
-  const ui = { speed: 1, paused: true, sel: null, epSel: null, tab: "eps", modal: null };
-  let pressing = false, dragging = null, toastTimer = 0;
+  let s = null, k = 1;
+  const ui = { speed: 1, paused: true, sel: null, pick: null, phone: false, modal: null };
+  let pressing = false, dragging = null, suppressClick = false, toastTimer = 0;
 
   // ---------- save ----------
-  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ s, ui: { speed: ui.speed, sel: ui.sel, epSel: ui.epSel, tab: ui.tab, modal: ui.modal } })); } catch (e) { /* storage may be off */ } }
+  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify({ s, ui: { speed: ui.speed, modal: ui.modal } })); } catch (e) { /* storage may be off */ } }
   function load() {
     try {
       const d = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
-      if (d && d.s && d.s.v === 1 && d.s.shinko) { s = d.s; Object.assign(ui, d.ui || {}); ui.paused = true; return true; }
+      if (d && d.s && d.s.v === 2 && d.s.shinko) { s = d.s; Object.assign(ui, d.ui || {}); ui.paused = true; return true; }
     } catch (e) { /* a broken save: start over */ }
     return false;
   }
-  function fresh(seed) { s = E.newGame(seed); Object.assign(ui, { sel: null, epSel: null, tab: "eps", paused: true, modal: "intro", speed: 1 }); save(); }
+  function fresh(seed) { s = E.newGame(seed); Object.assign(ui, { sel: null, pick: null, phone: false, paused: true, modal: "intro", speed: 1 }); save(); }
 
   // ---------- words ----------
   const pad = (n) => String(n).padStart(2, "0");
   const dayOf = (t) => Math.floor((t % E.WEEK) / E.DAY);
   const clock = (t) => `${DOW[dayOf(t)]}曜 ${pad(E.hourOf(t))}:${pad(t % 60)}`;
-  const stamp = (t) => `${E.weekOf(t)}週 ${DOW[dayOf(t)]} ${pad(E.hourOf(t))}:${pad(t % 60)}`;
   const hrs = (m) => (m < 60 ? `${Math.max(1, Math.round(m))}分` : `${Math.round(m / 60)}時間`);
   const daysTo = (t) => { const d = (t - s.t) / E.DAY; return d >= 1 ? `${Math.floor(d)}日` : `${Math.max(0, Math.round(d * 24))}時間`; };
   const shOf = (id) => E.shOf(s, id);
-  const isNight = () => E.hourOf(s.t) < 7;
   function stateOf(sh) {
     if (sh.task && sh.task.kind === "soto") return "out";
-    if (sh.task && sh.task.kind !== "rest") return "work";
-    if (sh.asleep || (sh.task && sh.task.kind === "rest")) return "sleep";
+    if (sh.task && sh.task.kind === "rest") return "sleep";
+    if (sh.task) return "work";
+    if (sh.asleep) return "sleep";
     return "wait";
+  }
+  function poseOf(sh) {
+    const st = stateOf(sh);
+    if (st === "sleep") return "sleep";
+    if (sh.report) return "report";
+    if (st === "work") return sh.task.kind === "eigyo" ? "phone" : sh.sta < 25 ? "tired" : "work";
+    return sh.sta < 25 ? "tired" : "idle";
   }
   function tagOf(sh) {
     const st = stateOf(sh);
     if (sh.report) return { t: "報告あり", att: true };
     if (st === "out") return { t: "外回り中", att: false };
-    if (st === "work") return { t: "作業中", att: false };
-    if (st === "sleep") return { t: "寝ている", att: false };
-    return { t: `指示待ち ${hrs(s.t - sh.idleSince)}`, att: true };
+    if (st === "sleep") return { t: "休憩中", att: false };
+    if (st === "work") return { t: sh.sta < 25 ? "疲労" : "作業中", att: false, task: sh.task };
+    return { t: sh.sta < 25 ? "疲労・指示待ち" : "指示待ち", att: true };
   }
   const taskName = (T) => (T.ep ? `${T.ep}話の${E.TASK[T.kind].short}` : E.TASK[T.kind].short);
 
-  // ---------- the scene ----------
-  const R = (x, y, w, h, f, extra = "") => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}" ${extra}/>`;
-  function person(id) {
-    const cx = SEAT[id], sh = `var(--${id})`, hair = HAIR[id], skin = "#f2c9a0", ink = "#1a1c24";
-    const glasses = (y) => (id === "s2" ? R(cx - 6, y, 12, 1, ink) + R(cx - 5, y + 1, 4, 2, "#9fd3f0") + R(cx + 1, y + 1, 4, 2, "#9fd3f0") : "");
-    const stand = R(cx - 18, 92, 36, 34, sh) + R(cx - 2, 90, 4, 2, skin) + R(cx - 7, 74, 14, 16, skin) + R(cx - 8, 72, 16, 5, hair) + R(cx - 8, 77, 2, 6, hair) + R(cx + 6, 77, 2, 6, hair)
-      + R(cx - 4, 81, 2, 2, ink) + R(cx + 2, 81, 2, 2, ink) + R(cx - 1, 86, 3, 2, "#8a3a2a") + glasses(80)
-      + `<g class="arm-up">${R(cx + 18, 80, 4, 14, sh) + R(cx + 18, 76, 4, 4, skin)}</g><g class="arm-mid">${R(cx + 18, 86, 4, 10, sh) + R(cx + 22, 84, 4, 4, skin)}</g>`;
-    const seat = R(cx - 18, 102, 36, 24, sh) + R(cx - 2, 100, 4, 2, skin) + R(cx - 7, 86, 14, 15, skin) + R(cx - 8, 84, 16, 5, hair) + R(cx - 8, 89, 2, 4, hair) + R(cx + 6, 89, 2, 4, hair)
-      + R(cx - 4, 93, 2, 2, ink) + R(cx + 2, 93, 2, 2, ink) + R(cx - 1, 98, 3, 1, "#8a3a2a") + glasses(92);
-    const x0 = SLEEP_SIDE[id] < 0 ? cx - 38 : cx + 14;
-    const sleep = R(x0, 108, 24, 18, sh) + R(SLEEP_SIDE[id] < 0 ? x0 - 6 : x0, 120, 30, 6, sh) + R(x0 + 2, 112, 18, 9, hair) + R(x0 + 4, 120, 14, 2, skin);
-    const chair = R(cx - 18, 98, 36, 28, "#3a4158") + R(cx - 16, 96, 32, 2, "#3a4158");
-    const lamp = R(cx + 20, 106, 2, 18, "#8d95a8") + R(cx + 16, 104, 10, 3, "#ffe14a") + R(cx - 20, 107, 44, 19, "#ffe14a", 'opacity="0.14"');
-    return `<g id="p-${id}-chair">${chair}</g><g id="p-${id}-stand">${stand}</g><g id="p-${id}-seat">${seat}</g><g id="p-${id}-sleep">${sleep}</g><g id="p-${id}-lamp">${lamp}</g>`;
+  // ---------- the picture ----------
+  function stage(e) {
+    const c = E.counts(s, e), m = E.epMut(s, e);
+    if (c.shot >= e.cuts) return ["完成", "完了", "grn"];
+    let step = "営業";
+    if (c.filled > 0 && !e.meet) step = "作打ち";
+    else if (e.meet && c.queued + c.drawn > 0) step = "原画";
+    else if (c.coll + c.douga > 0 && c.queued + c.drawn === 0) step = "動画・仕上げ";
+    else if (c.dDone + c.shooting > 0 && c.queued + c.drawn + c.coll + c.douga === 0) step = "撮影";
+    if (c.empty > 0 && c.filled === 0) step = "営業";
+    const st = m.tone === "bad" ? ["要確認", "red"] : m.tone === "worry" ? ["遅れ気味", "org"] : e.sheets.shinko && c.drawn > 0 ? ["回収待ち", "blu"] : ["進行中", ""];
+    return [step, st[0], st[1]];
   }
-  function sceneSvg() {
-    const env = R(0, 0, 360, 124, "#2b3350", 'id="wall"') + R(0, 0, 360, 3, "#1d2236") + [40, 150, 260].map((x) => R(x, 3, 60, 2, "#cfd6e6", 'class="tube"')).join("")
-      + R(0, 121, 360, 3, "#20263a") + R(0, 124, 360, 44, "#1a1f30", 'id="floor"') + R(0, 136, 360, 1, "#20263a") + R(0, 150, 360, 1, "#20263a");
-    const win = R(10, 22, 62, 46, "#4a5372") + R(13, 25, 56, 40, "#86b6da", 'id="sky"') + R(18, 30, 12, 3, "#d6e7f3", 'class="cloud"') + R(20, 28, 8, 2, "#d6e7f3", 'class="cloud"') + R(50, 34, 10, 2, "#d6e7f3", 'class="cloud"')
-      + [[13, 50, 10, 15], [24, 44, 8, 21], [33, 52, 12, 13], [46, 40, 9, 25], [56, 47, 13, 18]].map(([x, y, w, h], i) => R(x, y, w, h, i % 2 ? "#4c5f7e" : "#5b7193", `class="bldg${i % 2}"`)).join("")
-      + [[26, 47], [26, 53], [48, 44], [51, 50], [59, 51], [16, 54], [36, 56]].map(([x, y]) => R(x, y, 2, 2, "#5b7193", 'class="lit"')).join("")
-      + R(40, 25, 2, 40, "#4a5372") + R(13, 44, 56, 2, "#4a5372") + R(8, 68, 66, 3, "#5a6382");
-    const shelf = R(80, 28, 48, 93, "#4e3e2e") + R(82, 30, 44, 89, "#2a2420") + R(80, 56, 48, 3, "#6b5640") + R(80, 86, 48, 3, "#6b5640")
-      + [[84, 36, 6, 20, "#c9a46a"], [91, 34, 6, 22, "#b8915a"], [98, 37, 6, 19, "#d4b47c"], [105, 35, 6, 21, "#c9a46a"], [112, 38, 6, 18, "#b8915a"], [84, 64, 6, 22, "#d4b47c"], [91, 66, 6, 20, "#c9a46a"], [98, 63, 6, 23, "#b8915a"], [110, 70, 14, 16, "#c9a46a"], [84, 94, 6, 25, "#c9a46a"], [91, 96, 6, 23, "#d4b47c"], [100, 104, 22, 15, "#b8915a"]].map((a) => R(...a)).join("");
-    const clockR = R(140, 22, 16, 16, "#8d95a8") + R(142, 24, 12, 12, "#e8ecf2") + R(147, 25, 2, 6, "#1a1c24", 'id="hand-h"') + R(147, 30, 5, 2, "#1a1c24");
-    const board = R(168, 20, 132, 62, "#8d95a8") + R(170, 22, 128, 58, "#eef1f5") + R(180, 82, 110, 3, "#8d95a8") + R(196, 80, 8, 2, "#c8323a") + R(208, 80, 8, 2, "#1f5fbf") + R(286, 24, 8, 8, "#c8323a");
-    const door = R(314, 28, 38, 93, "#3a3230") + R(317, 31, 32, 90, "#4a3f36") + R(320, 56, 26, 1, "#3a3230") + R(320, 90, 26, 1, "#3a3230") + R(321, 76, 3, 4, "#c9a46a") + R(322, 40, 22, 8, "#e8ecf2");
-    const people = ["s1", "s2", "s3"].map(person).join("");
-    const island = ["s1", "s2", "s3"].map((id) => R(SEAT[id] - 14, 102, 28, 22, "#2e3448") + R(SEAT[id] - 3, 124, 6, 2, "#1f2433")).join("")
-      + R(30, 126, 300, 6, "#a6aec2") + R(30, 132, 300, 26, "#7c8499") + R(130, 132, 1, 26, "#626a80") + R(230, 132, 1, 26, "#626a80") + R(30, 158, 300, 2, "#141826")
-      + R(100, 122, 12, 4, "#eef1f5") + R(204, 120, 5, 6, "#e8eaf1") + R(144, 122, 14, 4, "#eef1f5") + R(240, 119, 14, 7, "#c9a46a");
-    const desk = R(0, 168, 360, 57, "#6e5238") + R(0, 168, 360, 3, "#8a6a48") + R(0, 171, 360, 1, "#5e4430")
-      + R(18, 184, 15, 26, "#1f2433") + R(19, 186, 13, 21, "#2e3448", 'id="phscr"') + R(20, 189, 11, 4, "#2e3448", 'id="phnote"') + R(24, 208, 3, 1, "#3a4158")
-      + R(40, 192, 11, 13, "#e8eaf1") + R(41, 193, 9, 2, "#5a3a22") + R(51, 195, 3, 6, "#e8eaf1")
-      + R(64, 178, 54, 28, "#2a2f42") + R(66, 180, 50, 24, "#20253a")
-      + R(124, 192, 42, 7, "#c9a46a") + R(127, 185, 40, 7, "#b8915a") + R(125, 178, 41, 7, "#d4b47c") + R(131, 180, 10, 3, "#eef1f5") + R(133, 187, 10, 3, "#eef1f5")
-      + R(178, 174, 30, 24, "#ffe14a") + R(178, 174, 30, 2, "#e8c93a")
-      + R(140, 204, 90, 13, "#c9ced9") + R(143, 207, 84, 2, "#aab1c0") + R(143, 211, 84, 2, "#aab1c0")
-      + R(262, 150, 88, 62, "#1f2433") + R(265, 153, 82, 52, "#f4f2ec") + R(302, 212, 8, 5, "#1f2433") + R(296, 216, 20, 3, "#1f2433");
-    return env + win + shelf + clockR + board + door + people + island + desk;
-  }
-  function drawScene() {
-    const h = E.hourOf(s.t), night = h < 6 || h >= 20, dusk = !night && (h >= 17 || h < 7);
-    const set = (sel, attr, v) => document.querySelectorAll(sel).forEach((el) => el.setAttribute(attr, v));
-    set("#sky", "fill", night ? "#1d2a4a" : dusk ? "#e39a6a" : "#86b6da");
-    set(".cloud", "fill", night ? "#1d2a4a" : dusk ? "#f2c29a" : "#d6e7f3");
-    set(".bldg0", "fill", night ? "#121a30" : dusk ? "#5a4a62" : "#5b7193");
-    set(".bldg1", "fill", night ? "#0e1528" : dusk ? "#4a3d55" : "#4c5f7e");
-    set(".lit", "fill", night || dusk ? "#f7e08a" : "#5b7193");
-    set("#wall", "fill", night ? "#1e2438" : "#2b3350");
-    set("#floor", "fill", night ? "#151a28" : "#1a1f30");
-    set(".tube", "fill", night ? "#3a4364" : "#cfd6e6");
-    const unread = s.phone.filter((m) => !m.read).length;
-    set("#phscr", "fill", unread ? "#4fc3f7" : "#2e3448");
-    set("#phnote", "fill", unread ? "#ffffff" : "#2e3448");
-    for (const sh of s.shinko) {
-      const st = stateOf(sh), show = (part, on) => { const g = document.getElementById(`p-${sh.id}-${part}`); if (g) g.setAttribute("display", on ? "inline" : "none"); };
-      show("chair", st === "out"); show("stand", st === "wait"); show("seat", st === "work"); show("sleep", st === "sleep"); show("lamp", st === "work" && isNight());
+  function whiteboard() {
+    const next = E.live(s).sort((a, b) => a.air - b.air)[0];
+    const rows = [];
+    for (let n = 1; n <= E.EPS; n++) {
+      const e = E.epOf(s, n);
+      if (!e) { rows.push(`<tr><td>${pad(n)}</td><td class="mut">未着手</td><td class="mut">—</td></tr>`); continue; }
+      if (e.result) { const cls = e.result.key === "full" ? "grn" : e.result.key === "still" ? "org" : "red"; rows.push(`<tr><td>${pad(n)}</td><td class="mut">放送済</td><td class="${cls}">${e.result.key === "full" ? "完成" : e.result.key === "still" ? "止め絵" : "落とした"}</td></tr>`); continue; }
+      const [step, st, cls] = stage(e);
+      rows.push(`<tr class="${next && next.n === n ? "now" : ""}"><td>${pad(n)}</td><td>${step}</td><td class="${cls}">${st}</td></tr>`);
     }
+    return `<h2>TVアニメ 進行表</h2><table><thead><tr><th>話数</th><th>工程</th><th>状況</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
   }
   function overlay() {
     const out = [];
-    // whiteboard: the episodes in production
-    const live = E.live(s).sort((a, b) => a.air - b.air);
-    const wbRows = live.map((e) => { const m = E.epMut(s, e); return `<span class="${m.tone === "bad" ? "bad" : ""}">${e.n}話　放送まで${daysTo(e.air)}　撮影 ${e.shot}/${e.cuts}</span>`; }).join("");
-    const aired = s.eps.filter((e) => e.result).slice(-1).map((e) => `<span class="done">${e.n}話　${e.result.label}</span>`).join("");
-    out.push(`<button class="wb" data-act="sel" data-k="monitor" data-v="eps" aria-label="ホワイトボード：放送スケジュール"><span class="hd">放送スケジュール（1話4週）</span>${wbRows}${aired}</button>`);
-    out.push(`<div class="plate">制作部</div>`);
-    // the three 進行
+    const a = E.airStatus(s), d = dayOf(s.t), part = (s.t % E.DAY) / E.DAY;
+    const secLeft = Math.max(0, Math.ceil((E.WEEK - (s.t % E.WEEK)) / MIN_PER_SEC));
+    out.push(`<div class="hud"><div class="l1"><span>第${Math.min(s.week, E.weekOf(s.t))}週</span><span>${clock(s.t)}</span><small>残り${secLeft}秒</small></div><div class="l2 ${a.airing ? "on" : ""}">${esc(a.main)}${a.sub ? `<small>${esc(a.sub)}</small>` : ""}</div><div class="days">${DOW.map((_, i) => `<span><i style="width:${i < d ? 100 : i === d ? Math.round(part * 100) : 0}%"></i></span>`).join("")}</div></div>`);
+    out.push(`<div class="ctl"><button data-act="pause" aria-label="${ui.paused || ui.modal ? "時間を動かす" : "時間を止める"}">${ui.paused || ui.modal || s.phase !== "play" ? "▶ 再開" : "Ⅱ 停止"}</button><button data-act="speed" class="${ui.speed === 2 ? "on" : ""}" aria-pressed="${ui.speed === 2}">×${ui.speed}</button><button data-act="help" aria-label="遊び方">？</button></div>`);
     for (const sh of s.shinko) {
-      const cx = SEAT[sh.id] * 4, st = stateOf(sh), tg = tagOf(sh), on = ui.sel && ui.sel.k === "sh" && ui.sel.id === sh.id;
-      out.push(`<button class="zone ${on ? "on" : tg.att ? "att" : ""}" style="left:${cx - 96}px" data-act="sel" data-k="sh" data-v="${sh.id}" data-zone="${sh.id}" aria-label="${sh.name}（${tg.t}）"></button>`);
-      out.push(`<div class="tag ${tg.att ? "att" : ""}" style="left:${cx - 100}px;box-shadow:inset 3px 0 0 var(--${sh.id})"><span>${sh.name}</span><span>${esc(tg.t)}</span></div>`);
-      if (sh.task && sh.task.kind !== "rest") {
-        const p = Math.min(1, sh.task.done / sh.task.need), left = (sh.task.need - sh.task.done) / Math.max(0.3, sh.sta <= 0 ? 0.3 : sh.sta < 25 ? 0.6 : 1);
-        out.push(`<div class="chip" style="left:${cx - 132}px;box-shadow:inset 3px 0 0 var(--${sh.id})"><span>${esc(taskName(sh.task))}${st === "out" ? "（社用車）" : ""}</span><span class="bar"><i style="width:${Math.round(p * 100)}%;background:var(--${sh.id})"></i></span><small>あと 約${hrs(left)}${sh.sta < 25 ? " ・ へとへと" : ""}</small></div>`);
-      }
-      if (st === "sleep") out.push(`<div class="zzz" style="left:${SLEEP_SIDE[sh.id] < 0 ? cx - 190 : cx + 100}px"><span>z</span><span>Z</span><span>Z</span></div>`);
+      const p = P[sh.id], st = stateOf(sh), tg = tagOf(sh), on = ui.sel === sh.id;
+      const [x1, y1, x2, y2] = p.zone;
+      out.push(`<button class="zone ${on ? "on" : ""}" data-act="sel" data-v="${sh.id}" data-zone="${sh.id}" style="left:${x1}px;top:${y1}px;width:${x2 - x1}px;height:${y2 - y1}px" aria-label="${sh.name}（${tg.t}）"></button>`);
+      let extra = "";
+      if (tg.task) { const pr = Math.min(1, tg.task.done / tg.task.need); extra = `<span>${esc(taskName(tg.task))}</span><span class="bar"><i style="width:${Math.round(pr * 100)}%"></i></span>`; }
+      if (st === "out") extra = `<span>あと${hrs(sh.task.need - sh.task.done)}</span>`;
+      out.push(`<div class="tag ${tg.att ? "att" : ""}" style="left:${p.tag[0]}px;top:${p.tag[1]}px"><span>${sh.name}</span><span>${tg.t}</span>${extra}</div>`);
+      if (st === "sleep") out.push(`<div class="zzz" style="left:${p.zzz[0]}px;top:${p.zzz[1]}px">z Z Z</div>`);
     }
-    // your desk
     const unread = s.phone.filter((m) => !m.read).length;
-    out.push(`<button class="phone" data-act="sel" data-k="phone" data-v="phone" aria-label="スマホ${unread ? `（未読${unread}件）` : ""}">${unread ? `<span class="badge">${unread}</span>` : ""}</button>`);
-    if (!s.car) out.push(`<button class="car" data-act="car" data-car="1" aria-label="社用車（進行にドラッグすると外回りへ）"><svg viewBox="0 0 30 18" width="120" height="72" shape-rendering="crispEdges" aria-hidden="true">${R(1, 6, 28, 9, "#e8eaf1")}${R(16, 1, 12, 6, "#e8eaf1")}${R(18, 2, 8, 4, "#86b6da")}${R(1, 10, 28, 2, "#c8323a")}${R(4, 14, 5, 3, "#1a1c24")}${R(20, 14, 5, 3, "#1a1c24")}</svg></button>`);
-    out.push(`<div class="tray-l">${s.car ? `社用車：${shOf(s.car).name}が使用中` : "社用車（ドラッグで外回り）"}</div>`);
-    const h = E.hint(s);
-    out.push(`<div class="note">${esc(h.t)}</div>`);
-    const top = live.slice(0, 4);
-    out.push(`<button class="mon" data-act="sel" data-k="monitor" data-v="eps" aria-label="モニター：話数の状況"><span class="tabs"><span>話数</span><span>原画マン</span><span>記録</span></span>${top.map((e) => { const c = E.counts(s, e), m = E.epMut(s, e); return `<span class="r ${m.tone === "bad" ? "bad" : ""}"><span>${e.n}話 空き${c.empty}</span><span>撮影 ${c.shot}/${e.cuts}</span></span>`; }).join("")}</button>`);
+    out.push(`<button class="obj" data-act="phone" style="left:${PHONE[0]}px;top:${PHONE[1] - 10}px;width:${PHONE[2]}px;height:${PHONE[3] + 20}px" aria-label="スマホ${unread ? `（未読${unread}件）` : ""}">${unread ? `<span class="badge">${unread}</span>` : ""}</button>`);
+    if (!s.car) out.push(`<button class="obj keys" data-act="keys" data-keys="1" style="left:${KEYS[0]}px;top:${KEYS[1]}px;width:${KEYS[2]}px;height:${KEYS[3]}px" aria-label="社用車の鍵（進行にドラッグすると回収へ）"></button>`);
     return out.join("");
   }
-
-  // report bubbles: under each 進行's name tag, so the whiteboard stays readable
+  // report bubbles in their own layer: redrawn only when a report comes or goes
   function bubbles() {
     return s.shinko.filter((sh) => sh.report).map((sh) => {
-      const cx = SEAT[sh.id] * 4;
-      return `<button class="bubble ${sh.report.tone}" style="left:${Math.max(8, Math.min(1432 - 400, cx - 200))}px" data-act="sel" data-k="sh" data-v="${sh.id}"><span class="w">${sh.name}　報告</span><span class="t">${esc(sh.report.text)}</span></button>`;
+      const b = P[sh.id].bubble, style = b[2] === "r" ? `right:${1920 - b[0]}px;top:${b[1]}px` : `left:${b[0]}px;top:${b[1]}px`;
+      return `<button class="bubble ${b[2]} ${sh.report.tone === "bad" ? "bad" : ""}" data-act="sel" data-v="${sh.id}" style="${style}">${esc(sh.report.short || sh.report.text)}</button>`;
     }).join("");
   }
-
-  // ---------- header and the bar under the scene ----------
-  function hud() {
-    const a = E.airStatus(s), d = dayOf(s.t), part = ((s.t % E.DAY) / E.DAY);
-    const bars = DOW.map((_, i) => `<span><i style="width:${i < d ? 100 : i === d ? Math.round(part * 100) : 0}%"></i></span>`).join("");
-    const lbls = DOW.map((x, i) => `<span class="${i === d ? "now" : ""}">${x}</span>`).join("");
+  function mtop() {
+    const a = E.airStatus(s), unread = s.phone.filter((m) => !m.read).length;
     const secLeft = Math.max(0, Math.ceil((E.WEEK - (s.t % E.WEEK)) / MIN_PER_SEC));
-    return `<div class="hud-l"><span class="wk">第${Math.min(s.week, E.weekOf(s.t))}週</span><span class="air ${a.airing ? "on" : ""}">${esc(a.main)}${a.sub ? `<small>${esc(a.sub)}</small>` : ""}</span></div>
-      <div class="gauge" aria-label="${clock(s.t)}"><div class="bars">${bars}</div><div class="lbls">${lbls}</div></div>
-      <div class="sec-left">${clock(s.t)} ・ この週 残り <b>${secLeft}</b> 秒</div>
-      <div class="hud-r"><button class="btn-main" data-act="pause">${ui.paused || ui.modal || s.phase !== "play" ? "動かす" : "止める"}</button><button class="btn-sys ${ui.speed === 2 ? "on" : ""}" data-act="speed" aria-pressed="${ui.speed === 2}">2倍</button><button class="btn-sys" data-act="help">遊び方</button><button class="btn-sys" data-act="restartAsk">最初から</button></div>`;
+    return `<div class="mh"><b>第${Math.min(s.week, E.weekOf(s.t))}週　${clock(s.t)}　残り${secLeft}秒</b><span class="${a.airing ? "on" : ""}">${esc(a.main)}${a.sub ? ` ・ ${esc(a.sub)}` : ""}</span></div>
+      <div class="mb"><button data-act="pause">${ui.paused || ui.modal || s.phase !== "play" ? "▶ 再開" : "Ⅱ 停止"}</button><button data-act="speed" class="${ui.speed === 2 ? "on" : ""}" aria-pressed="${ui.speed === 2}">×${ui.speed}</button><button data-act="phone">スマホ${unread ? `（${unread}）` : ""}</button><button data-act="help">遊び方</button></div>
+      <span class="hint">横向きにすると大きく表示されます。進行を押すと指示が出ます。</span>`;
   }
-  function bar2() {
-    const who = s.shinko.map((sh) => {
-      const tg = tagOf(sh), on = ui.sel && ui.sel.k === "sh" && ui.sel.id === sh.id;
-      const sub = sh.report ? `「${sh.report.text}」` : sh.task && sh.task.kind !== "rest" ? taskName(sh.task) : stateOf(sh) === "wait" ? "押して指示を出す" : "寝ている（押せば起こして指示できる）";
-      return `<button class="who ${on ? "on" : tg.att ? "att" : ""}" style="--c:var(--${sh.id})" data-act="sel" data-k="sh" data-v="${sh.id}"><i></i><span><b>${sh.name}（${sh.rookie ? "新人" : "ベテラン"}）・ ${esc(tg.t)}</b><small>${esc(sub)}</small></span></button>`;
-    }).join("");
-    const unread = s.phone.filter((m) => !m.read).length;
-    return who + `<button class="btn-sys" data-act="sel" data-k="phone" data-v="phone">スマホ${unread ? `（未読${unread}）` : ""}</button><button class="btn-sys" data-act="sel" data-k="monitor" data-v="eps">モニター（話数）</button><button class="btn-sys" data-act="sel" data-k="car" data-v="car">社用車${s.car ? "：使用中" : ""}</button>`;
+  function drawArt() {
+    const h = E.hourOf(s.t), bg = h < 6 || h >= 19 ? "night" : h >= 17 ? "evening" : "day";
+    const bgEl = document.getElementById("bg"), src = `assets/rts/bg-${bg}.webp`;
+    if (!bgEl.getAttribute("src").endsWith(`bg-${bg}.webp`)) bgEl.setAttribute("src", src);
+    for (const sh of s.shinko) {
+      const img = document.getElementById("c-" + sh.id), st = stateOf(sh);
+      img.style.display = st === "out" ? "none" : "";
+      const want = `assets/rts/chars/${sh.id}/${poseOf(sh)}.webp`;
+      if (img.getAttribute("src") !== want) img.setAttribute("src", want);
+    }
+    document.getElementById("keys-art").style.display = s.car ? "none" : "";
   }
 
-  // ---------- details ----------
-  const mut = (m, label = "あなたの見立て") => (m ? `<div class="mut"><span class="me" aria-hidden="true">あなた</span><div class="mut-b tone-${m.tone}"><div class="l">${label}</div><div class="t">${esc(m.t)}</div></div></div>` : "");
-  const oh = (type, name, sub, tag = "", x = true) => `<div class="oh"><div class="oh-top"><span class="typ">${esc(type)}</span>${tag}${x ? `<button class="x" data-act="close" aria-label="閉じてモニターに戻る">×</button>` : ""}</div><h2 id="paneT">${esc(name)}</h2>${sub ? `<span class="oh-sub">${sub}</span>` : ""}</div>`;
-  const act = ({ label, sub = "", cost = "", attrs = "", pri = false, disabled = false }) => `<button class="act ${pri ? "pri" : ""}" ${attrs} ${disabled ? "disabled" : ""}><span class="m"><b>${esc(label)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>${cost ? `<span class="cost">${esc(cost)}</span>` : ""}</button>`;
-  const foot = (name, acts, note = "") => `<div class="pane-f"><span class="lbl">${esc(name)}にできること</span>${acts ? `<div class="acts">${acts}</div>` : ""}${note ? `<p class="note2">${note}</p>` : ""}</div>`;
-  const pane = (body, f) => `<aside class="pane" aria-labelledby="paneT"><div class="pane-b">${body}</div>${f}</aside>`;
-  const row = (l, v, cls = "", attrs = "") => (attrs ? `<button class="row" ${attrs}><span>${l}</span><span class="v ${cls}">${v}</span></button>` : `<div class="row"><span>${l}</span><span class="v ${cls}">${v}</span></div>`);
-  const tile = (l, v, cls = "") => `<div class="tile ${cls}"><div class="l">${l}</div><div class="v">${v}</div></div>`;
-  const dur = (kind) => { const h = E.TASK[kind].hours; return h >= 16 ? "1日" : h >= 10 ? "半日" : "数時間"; };
+  // ---------- the menu beside a 進行 ----------
+  function urgentEps(kind) {
+    return E.live(s).sort((a, b) => a.air - b.air).filter((e) => !E.canOrder(s, ui.sel, kind, e.n));
+  }
+  function menuHtml() {
+    if (!ui.sel || ui.phone || ui.modal) return "";
+    const sh = shOf(ui.sel), p = P[sh.id], tg = tagOf(sh);
+    const m = E.shMut(s, sh);
+    const said = sh.lastReport ? `<span class="said">「${esc(sh.lastReport)}」</span>` : "";
+    const now = sh.task && sh.task.kind !== "rest" ? `<span>いま：${esc(taskName(sh.task))}（あと${hrs(sh.task.need - sh.task.done)}）</span>` : "";
+    const head = `<div class="head"><b>${sh.name}（${sh.rookie ? "新人" : "ベテラン"}）・ ${esc(tg.t)}</b><span>体力 ${Math.round(sh.sta)}</span>${now}${said}<span class="me ${m.tone}">あなたの見立て：${esc(m.t)}</span></div>`;
+    const btn = (kind) => {
+      const T = E.TASK[kind];
+      let why = "";
+      if (T.ep) { if (!urgentEps(kind).length) why = kind === "eigyo" ? "空きカットなし" : kind === "meet" ? "作打ちする話数なし" : "進行表はそろっている"; }
+      else why = E.canOrder(s, sh.id, kind);
+      if (kind === "soto" && why && s.car && s.car !== sh.id) why = "車を使用中";
+      if (why === "体力は十分") why = "体力は十分";
+      return `<button class="cmd ${ui.pick === kind ? "on" : ""}" data-act="cmd" data-v="${kind}" ${why ? "disabled" : ""}>${why ? esc(why) : esc(T.label)}</button>`;
+    };
+    const cmds = ["eigyo", "meet", "shinko", "soto", "rest"].map(btn).join("") + (sh.task ? `<button class="cmd" data-act="cancel"><span class="stack">やめさせる<small>いまの作業は無駄になる</small></span></button>` : "");
+    let eps = "";
+    if (ui.pick && E.TASK[ui.pick].ep) {
+      const list = urgentEps(ui.pick);
+      eps = `<div class="menu eps" data-anchor="eps"><span class="cap">どの話数？（${E.TASK[ui.pick].label}）</span>${list.map((e) => { const c = E.counts(s, e), mm = E.epMut(s, e); const info = ui.pick === "eigyo" ? `空き${c.empty} ・ 放送まで${daysTo(e.air)}` : ui.pick === "meet" ? `${c.filled}カット分 ・ 放送まで${daysTo(e.air)}` : `放送まで${daysTo(e.air)}`; return `<button class="cmd sub" data-act="ep" data-v="${e.n}"><span>第${e.n}話</span><small style="color:${mm.tone === "bad" ? "var(--red)" : mm.tone === "worry" ? "var(--orange)" : "var(--ink-soft)"}">${esc(info)}</small></button>`; }).join("")}</div>`;
+    }
+    return `<div class="menu" data-anchor="main">${cmds}${head}</div>${eps}`;
+  }
 
-  function urgentEp() {
-    const live = E.live(s).sort((a, b) => a.air - b.air);
-    const need = live.find((e) => { const c = E.counts(s, e); return (c.filled > 0 && !e.meet) || (c.coll > 0 && !e.sheets.hatchu) || ((c.dDone + c.douga) > 0 && !e.sheets.kouban) || c.empty > 0; });
-    return (need || live[0] || {}).n;
-  }
-  function paneSh(sh) {
-    const tg = tagOf(sh), st = stateOf(sh);
-    const live = E.live(s).sort((a, b) => a.air - b.air);
-    if (!live.some((e) => e.n === ui.epSel)) ui.epSel = urgentEp();
-    const e = E.epOf(s, ui.epSel);
-    const said = sh.lastReport ? `<div class="said"><small>さっきの報告</small>${esc(sh.lastReport)}</div>` : "";
-    const now = sh.task && sh.task.kind !== "rest" ? `<section class="psec"><h3>いまやっていること</h3><p>${esc(taskName(sh.task))}${st === "out" ? "（社用車）" : ""} ・ あと 約${hrs(sh.task.need - sh.task.done)}</p></section>` : "";
-    const chips = live.map((x) => { const m = E.epMut(s, x); return `<button class="${x.n === ui.epSel ? "on" : ""} ${m.tone === "bad" ? "bad" : ""}" data-act="epSel" data-v="${x.n}" aria-pressed="${x.n === ui.epSel}"><b>${x.n}話</b><small>放送まで${daysTo(x.air)}</small></button>`; }).join("");
-    const body = oh("制作進行", `${sh.name}（${sh.rookie ? "新人" : "ベテラン"}）`, `体力 ${Math.round(sh.sta)} ・ ${clock(s.t)}`, `<span class="ptag ${tg.att ? "att" : ""}">${esc(tg.t)}</span>`)
-      + said + mut(E.shMut(s, sh)) + now
-      + (e ? `<section class="psec"><h3>どの話数？</h3><div class="eps" role="group" aria-label="話数">${chips}</div>${mut(E.epMut(s, e), `あなたの見立て（${e.n}話）`)}</section>` : "");
-    let acts = "";
-    if (e) {
-      const c = E.counts(s, e), busy = sh.task && sh.task.kind !== "rest";
-      const why = (k) => E.canOrder(s, sh.id, k, e.n);
-      const mk = (k, sub, pri = false) => act({ label: E.TASK[k].label, sub: why(k) || sub + (busy ? "（いまの作業はやめる）" : ""), cost: dur(k), attrs: `data-act="order" data-v="${k}"`, disabled: !!why(k), pri: pri && !why(k) });
-      const hint = E.hint(s).t;
-      acts += mk("eigyo", `${e.n}話の空き ${c.empty}カット ・ 原画マンに電話で当たる`, /営業/.test(hint) && hint.startsWith(`${e.n}話`));
-      acts += mk("meet", c.filled ? `${e.n}話の原画マン ${c.filled}カット分に打ち合わせ。済むと描き始める` : "先に営業して、原画マンを決める", /作打ち/.test(hint));
-      acts += mk("hatchu", "これがないと、回収した原画を動画・仕上げに出せない", /発注表/.test(hint));
-      acts += mk("kouban", "これがないと、撮影に入れない", /香盤表/.test(hint));
-      acts += mk("shinko", "誰がどこまで描いたか分かる。回収の取りこぼしがなくなる");
-    }
-    const sw = E.canOrder(s, sh.id, "soto");
-    const drawn = E.live(s).reduce((t, x) => t + x.drawn, 0);
-    acts += act({ label: E.TASK.soto.label, sub: sw || `上がった原画を回収し、動画・仕上げへ（放送が近い話数から）${drawn ? "" : " ・ いまは上がりが少なそう"}`, cost: "1日", attrs: `data-act="order" data-v="soto"`, disabled: !!sw });
-    acts += act({ label: E.TASK.rest.label, sub: E.canOrder(s, sh.id, "rest") || "体力が戻るまで、机で寝る", cost: "体力しだい", attrs: `data-act="order" data-v="rest"`, disabled: !!E.canOrder(s, sh.id, "rest") });
-    if (sh.task) acts += act({ label: "いまの作業をやめさせる", sub: "やりかけは無駄になる", attrs: `data-act="cancel"` });
-    return pane(body, foot(sh.name, acts, `外回りは、机の社用車を${sh.name}にドラッグしても出せる。指示を出すまで、${sh.name}は動かない。`));
-  }
-  function paneEp(e) {
-    const c = E.counts(s, e), m = E.epMut(s, e);
-    const known = e.sheets.shinko;
-    const body = oh("話数", `第${e.n}話`, e.result ? `${e.result.label} ・ 撮影 ${e.shot}/${e.cuts}` : `${e.cuts}カット ・ 放送 ${stamp(e.air)}`, e.result ? `<span class="ptag">${esc(e.result.label)}</span>` : `<span class="ptag ${m.tone === "bad" ? "bad" : ""}">放送まで${daysTo(e.air)}</span>`)
-      + `<div class="tiles">${tile("空きカット", c.empty, c.empty ? "bad" : "good")}${tile("撮影済み", `${c.shot}/${e.cuts}`, c.shot >= e.cuts ? "good" : "")}${tile("作打ち", e.meet ? "済" : "まだ", e.meet ? "good" : "bad")}</div>`
-      + mut(m, `あなたの見立て（${e.n}話）`)
-      + `<section class="psec"><h3>カットの流れ</h3><div class="rows">${row("空き（原画マンが決まっていない）", c.empty, c.empty ? "bad" : "")}${row(`原画中${e.meet ? "" : "（作打ち待ち）"}`, known ? c.queued : "分からない", known ? "" : "mute")}${row("上がり（回収待ち）", known ? c.drawn : "分からない", known ? "" : "mute")}${row(`回収済み${e.sheets.hatchu ? "" : "（発注表待ち）"}`, c.coll, c.coll && !e.sheets.hatchu ? "bad" : "")}${row("動画・仕上げ中", c.douga)}${row(`撮影待ち${e.sheets.kouban ? "" : "（香盤表待ち）"}`, c.dDone, c.dDone && !e.sheets.kouban ? "bad" : "")}${row("撮影中", c.shooting)}${row("撮影済み", c.shot, "good")}</div><p>${known ? "進行表があるので、原画の進み具合が分かる。" : "進行表がないので、原画がどこまで上がっているかは分からない。"}</p></section>`
-      + `<section class="psec"><h3>表</h3><div class="rows">${row("進行表", e.sheets.shinko ? "あり" : "まだ", e.sheets.shinko ? "good" : "mute")}${row("発注表", e.sheets.hatchu ? "あり" : "まだ", e.sheets.hatchu ? "good" : "mute")}${row("香盤表", e.sheets.kouban ? "あり" : "まだ", e.sheets.kouban ? "good" : "mute")}</div></section>`;
-    const free = s.shinko.filter((x) => !x.task || x.task.kind === "rest");
-    const acts = free.map((x) => act({ label: `${x.name}に指示を出す`, sub: tagOf(x).t, attrs: `data-act="sel" data-k="sh" data-v="${x.id}" data-ep="${e.n}"` })).join("");
-    return pane(body, foot(`第${e.n}話`, acts, acts ? "" : "手の空いている進行がいない。"));
-  }
-  function paneMonitor() {
-    const tabs = `<div class="tabs2" role="tablist">${[["eps", "話数"], ["anims", "原画マン"], ["log", "記録"]].map(([v, t]) => `<button class="${ui.tab === v ? "on" : ""}" data-act="tab" data-v="${v}" role="tab" aria-selected="${ui.tab === v}">${t}</button>`).join("")}</div>`;
-    let inner = "";
-    if (ui.tab === "eps") {
-      const live = E.live(s).sort((a, b) => a.air - b.air), done = s.eps.filter((e) => e.result);
-      inner = `<section class="psec"><h3>制作中</h3><div class="rows">${live.map((e) => { const c = E.counts(s, e), m = E.epMut(s, e); return row(`第${e.n}話 ・ 放送まで${daysTo(e.air)} ・ 空き${c.empty}`, `撮影 ${c.shot}/${e.cuts}`, m.tone === "bad" ? "bad" : "", `data-act="sel" data-k="ep" data-v="${e.n}"`); }).join("")}</div></section>`
-        + (done.length ? `<section class="psec"><h3>放送済み</h3><div class="rows">${done.map((e) => row(`第${e.n}話`, e.result.label, e.result.tone, `data-act="sel" data-k="ep" data-v="${e.n}"`)).join("")}</div></section>` : "");
-    } else if (ui.tab === "anims") {
-      inner = `<section class="psec"><h3>原画マン（${s.anims.length}人）</h3><p>営業で、手の空いている人にカットを頼む。</p><div class="rows">${s.anims.map((a) => { const l = E.animLoad(a); return row(a.name, l >= E.ANIM_CAP ? "手一杯" : l > 0 ? `${l}カット抱えている` : "空いている", l >= E.ANIM_CAP ? "bad" : l ? "" : "good"); }).join("")}</div></section>`;
-    } else {
-      inner = `<section class="psec"><h3>現場の記録</h3><div class="log">${s.log.slice(0, 60).map((l) => `<p class="${l.tone}"><span class="w">${stamp(l.t)}</span>${esc(l.text)}</p>`).join("")}</div></section>`;
-    }
-    const a = E.airStatus(s);
-    const body = oh("モニター", "あなたのモニター", `${esc(a.main)}${a.sub ? ` ・ ${esc(a.sub)}` : ""}`, "", false) + mut(E.hint(s)) + tabs + inner;
-    return pane(body, foot("モニター", "", "話数を押すと、その話数のくわしい状況。指示は進行を押して出す。"));
-  }
-  function panePhone() {
-    const body = oh("スマホ", "あなたのスマホ", `未読 ${s.phone.filter((m) => !m.read).length}件`)
-      + (s.phone.length ? `<div class="msgs">${s.phone.slice(0, 20).map((m) => `<div class="msg ${m.tone}"><small>${stamp(m.t)} ・ ${esc(m.from)}</small>${esc(m.text)}</div>`).join("")}</div>` : `<p class="note2">まだ何も来ていない。</p>`);
-    return pane(body, foot("スマホ", "", "原画マンがカットを返してくると、その話数の空きが増える。営業で埋め直す。"));
-  }
-  function paneCar() {
-    const by = s.car ? shOf(s.car) : null;
-    const body = oh("社用車", "社用車（1台）", by ? `${by.name}が外回りで使用中 ・ あと 約${hrs(by.task.need - by.task.done)}` : "机の上にある。進行にドラッグすると外回りへ")
-      + mut(by ? { tone: "mute", t: "戻るまで、ほかの進行は外回りに出せない" } : E.hint(s));
-    const acts = s.shinko.map((x) => { const w = E.canOrder(s, x.id, "soto"); return act({ label: `${x.name}を外回りに出す`, sub: w || tagOf(x).t + (x.task && x.task.kind !== "rest" ? "（いまの作業はやめる）" : ""), cost: "1日", attrs: `data-act="order" data-v="soto" data-sid="${x.id}"`, disabled: !!w }); }).join("");
-    return pane(body, foot("社用車", acts));
-  }
-  function paneHtml() {
-    if (!ui.sel) ui.sel = { k: "monitor", id: "eps" };
-    const { k, id } = ui.sel;
-    if (k === "sh" && shOf(id)) return paneSh(shOf(id));
-    if (k === "ep" && E.epOf(s, Number(id))) return paneEp(E.epOf(s, Number(id)));
-    if (k === "phone") return panePhone();
-    if (k === "car") return paneCar();
-    if (k === "monitor") return paneMonitor();
-    return "";
+  // ---------- the phone ----------
+  function phoneHtml() {
+    if (!ui.phone) return "";
+    const msgs = s.phone.slice(0, 30);
+    const list = msgs.length ? msgs.map((m) => `<div class="m ${m.tone}"><span class="who">${esc(m.from)}</span><span class="txt">${esc(m.text)}</span><span class="at">${E.weekOf(m.t)}週 ${clock(m.t)} 受信</span></div>`).join("") : `<div class="empty">まだ連絡はない</div>`;
+    return `<div class="phone-bg modal-bg" data-act="phoneClose" style="display:block;padding:0;place-items:initial"><div class="phone" id="phoneEl" role="dialog" aria-label="スマホ"><img src="assets/rts/phone-body.webp" alt=""><div class="scr"><div class="bar"><span>連絡</span><small>${clock(s.t)}</small></div><div class="list">${list}</div><button class="back" data-act="phoneClose">机に戻す</button></div></div></div>`;
   }
 
   // ---------- dialogs ----------
-  const dlg = (body, f) => `<div class="modal-bg"><div class="pane dlg" role="dialog" aria-modal="true" aria-labelledby="paneT"><div class="pane-b">${body}</div>${f}</div></div>`;
-  const dh = (type, name, sub = "") => `<div class="oh"><div class="oh-top"><span class="typ">${esc(type)}</span></div><h2 id="paneT">${esc(name)}</h2>${sub ? `<span class="oh-sub">${sub}</span>` : ""}</div>`;
+  const card = (k, title, body, acts) => `<div class="modal-bg"><div class="card" role="dialog" aria-modal="true" aria-labelledby="cardT"><span class="k">${esc(k)}</span><h2 id="cardT">${esc(title)}</h2>${body}<div class="acts">${acts}</div></div></div>`;
+  const row = (l, v, cls = "") => `<div class="row"><span>${l}</span><span class="v ${cls}">${v}</span></div>`;
+  const cbtn = (label, act, pri = false) => `<button class="cmd ${pri ? "pri" : ""}" data-act="${act}">${esc(label)}</button>`;
   function modalHtml() {
     if (ui.modal === "intro" || ui.modal === "help") {
       const intro = ui.modal === "intro";
-      return dlg(dh("遊び方", intro ? "進行RTS（試作）" : "遊び方", "制作デスクの席から、制作進行3人に指示を出す。1週間＝120秒。")
-        + `<section class="psec" style="border:0;padding:0"><ul>
-          <li>全12話。1話のスケジュールは<b>4週</b>（炎上中）。毎週1話ずつコンテが上がり、4週後に放送される。</li>
-          <li>進行は<b>自分からは動かない</b>。仕事が終わると、報告の吹き出しを出して席で待つ（押すまで出たまま）。押すと吹き出しが消え、次の指示を出せる。待たせた時間はそのまま無駄になる。</li>
-          <li>1話の流れ：<b>営業</b>でカット表を埋める → <b>作打ち</b>で原画が始まる → <b>外回り</b>で回収 → <b>発注表</b>があれば動画・仕上げへ → <b>香盤表</b>があれば撮影へ。<b>進行表</b>があると原画の進み具合が分かり、回収の取りこぼしがなくなる。</li>
-          <li>社用車は<b>1台</b>。机の社用車を進行にドラッグすると外回りに出る（進行の詳細からも出せる）。</li>
-          <li>夜、仕事のない進行は机で寝る。仕事をさせると体力が減り、へとへとになると遅くなる。</li>
-          <li>スマホには原画マンから連絡が来る。カットを返されると、その話数の空きが増える。</li>
-          <li>放送日に撮影が全部終わっていれば「完成」、85%以上なら「止め絵でしのぐ」、それ未満は「落とした」。</li>
-        </ul></section>`,
-        foot("この画面", act({ label: intro ? "はじめる" : "閉じる", sub: intro ? "第1週 月曜 9:00 から" : "Esc でも閉じる", attrs: `data-act="${intro ? "start" : "close"}"`, pri: true })));
+      return card("遊び方", intro ? "進行RTS（試作）" : "遊び方", `<ul>
+        <li>あなたは制作デスク。全12話、1話のスケジュールは<b>4週</b>（炎上中）。毎週1話ずつコンテが上がり、4週後に放送される。<b>1週間＝120秒</b>。</li>
+        <li>制作進行の3人は<b>自分からは動かない</b>。進行を押すと、そばに指示が出る：<b>原画マン営業</b>（カット表を埋める）・<b>作打ち</b>（済むと原画が始まる）・<b>進行表</b>（原画の進み具合が分かり、回収の取りこぼしがなくなる）・<b>回収へ</b>・<b>休ませる</b>。</li>
+        <li>香盤表と発注表は、話数が始まるときに作ってある。回収した原画は動画・仕上げ、撮影へ自動で流れる。</li>
+        <li>仕事が終わると、報告の吹き出しを出して待つ（押すまで出たまま）。待たせた時間はそのまま無駄になる。</li>
+        <li>社用車は1台。机の<b>車の鍵を進行にドラッグ</b>すると回収へ出る（指示の「回収へ」でもよい）。</li>
+        <li>夜、仕事のない進行は机で寝る。働かせ続けると疲れて遅くなる。</li>
+        <li>机のスマホを押すと、原画マンからの連絡が読める。カットを返されると、その話数の空きが増える。</li>
+        <li>壁のホワイトボードに全12話の進み具合。放送日に撮影が全部終わっていれば「完成」、85%以上なら「止め絵」、それ未満は「落とした」。</li>
+        <li>スペースで止める・動かす。1〜3キーで進行を選ぶ。Esc で閉じる。</li></ul>`,
+        cbtn(intro ? "はじめる" : "閉じる", intro ? "start" : "close", true) + (intro ? "" : cbtn("最初からやり直す", "restartAsk")));
     }
-    if (ui.modal === "restart") {
-      return dlg(dh("最初から", "最初からやり直しますか？", "いまの現場は消える。"),
-        foot("この画面", act({ label: "最初からやり直す", attrs: `data-act="restart"`, pri: true }) + act({ label: "やめる", sub: "続ける", attrs: `data-act="close"` })));
-    }
+    if (ui.modal === "restart") return card("最初から", "最初からやり直しますか？", `<p style="margin:0">いまの現場は消える。</p>`, cbtn("やり直す", "restart", true) + cbtn("やめる", "close"));
     if (s.phase === "weekEnd" && s.weekEnd) {
-      const w = s.weekEnd, a = E.airStatus(s);
-      const airedNow = w.aired.map((n) => E.epOf(s, n));
-      const airedHtml = airedNow.map((e) => `<div class="said"><small>第${e.n}話 放送</small><b>${esc(e.result.label)}</b>（撮影 ${e.shot}/${e.cuts}）</div>`).join("");
-      const live = E.live(s).sort((x, y) => x.air - y.air);
-      const body = dh("1週間おわり", `第${w.week}週 おわり`, `次は第${w.week + 1}週`)
-        + airedHtml
-        + `<div class="big ${a.airing ? "on" : ""}">${esc(a.main)}</div>${a.sub ? `<p class="note2">${esc(a.sub)}</p>` : ""}`
-        + `<section class="psec"><h3>制作中の話数</h3><div class="rows">${live.map((e) => { const m = E.epMut(s, e); return row(`第${e.n}話 ・ 放送まで${daysTo(e.air)}`, esc(m.t), m.tone === "bad" ? "bad" : m.tone === "good" ? "good" : ""); }).join("")}</div></section>`;
-      return dlg(body, foot("この画面", act({ label: `第${w.week + 1}週へ`, sub: live.some((e) => e.n === w.week + 1) ? `第${w.week + 1}話のコンテが上がった` : "", attrs: `data-act="nextWeek"`, pri: true })));
+      const w = s.weekEnd, a = E.airStatus(s), live = E.live(s).sort((x, y) => x.air - y.air);
+      const aired = w.aired.map((n) => E.epOf(s, n)).map((e) => row(`第${e.n}話 放送`, `${esc(e.result.label)}（撮影 ${e.shot}/${e.cuts}）`, e.result.tone)).join("");
+      return card("1週間おわり", `第${w.week}週 おわり`, `${aired ? `<div class="rows">${aired}</div>` : ""}<div class="big ${a.airing ? "on" : ""}">${esc(a.main)}</div>${a.sub ? `<div>${esc(a.sub)}</div>` : ""}<div class="rows">${live.map((e) => { const m = E.epMut(s, e); return row(`第${e.n}話 ・ 放送まで${daysTo(e.air)}`, esc(m.t), m.tone === "bad" ? "bad" : m.tone === "worry" ? "warn" : m.tone === "good" ? "good" : "mute"); }).join("")}</div>`,
+        cbtn(`第${w.week + 1}週へ`, "nextWeek", true));
     }
     if (s.phase === "end" && s.result) {
       const r = s.result;
-      const m = r.rank === "S" ? { tone: "good", t: "全話、落とさずに走りきった" } : r.rank === "A" ? { tone: "good", t: "なんとか形になった" } : r.rank === "B" ? { tone: "ok", t: "傷だらけだが、最後まで放送した" } : { tone: "bad", t: "落としすぎた・・・" };
-      const body = dh("放送終了", "全12話 放送終了", `完成 ${r.full}話 ・ 止め絵 ${r.still}話 ・ 落とした ${r.drop}話`)
-        + `<div style="display:flex;align-items:center;gap:16px"><span class="rank">${esc(r.rank)}</span><span class="note2">指示 ${r.orders}回 ・ 白紙 ${r.blank}カット ・ 返されたカット ${r.drops}回</span></div>`
-        + mut(m)
-        + `<section class="psec"><h3>各話</h3><div class="rows">${s.eps.map((e) => row(`第${e.n}話`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone)).join("")}</div></section>`;
-      return dlg(body, foot("この画面", act({ label: "もう一度", sub: "別の現場で最初から", attrs: `data-act="restart"`, pri: true })));
+      return card("放送終了", "全12話 放送終了", `<div style="display:flex;gap:18px;align-items:center"><span class="rank">${esc(r.rank)}</span><span>完成 ${r.full}話 ・ 止め絵 ${r.still}話 ・ 落とした ${r.drop}話<br>指示 ${r.orders}回</span></div><div class="rows">${s.eps.map((e) => row(`第${e.n}話`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone)).join("")}</div>`, cbtn("もう一度", "restart", true));
     }
     return "";
   }
@@ -888,36 +719,62 @@ if (typeof module !== "undefined") module.exports = Engine;
   // ---------- rendering ----------
   const cache = {};
   function put(id, html) {
-    if (cache[id] === html) return;
+    if (cache[id] === html) return false;
     const el = document.getElementById(id), ae = document.activeElement;
     let key = null;
-    if (ae && el.contains(ae) && ae.dataset && ae.dataset.act) key = ["act", "v", "k", "sid"].map((k) => ae.dataset[k] || "").join("|");
-    const scroll = el.querySelector(".pane") ? el.querySelector(".pane").scrollTop : 0;
-    cache[id] = html;
-    el.innerHTML = html;
-    const p = el.querySelector(".pane"); if (p) p.scrollTop = scroll;
-    if (key) { const again = [...el.querySelectorAll("[data-act]")].find((x) => ["act", "v", "k", "sid"].map((k) => x.dataset[k] || "").join("|") === key); if (again && !again.disabled) again.focus({ preventScroll: true }); }
+    if (ae && el.contains(ae) && ae.dataset && ae.dataset.act) key = `${ae.dataset.act}|${ae.dataset.v || ""}`;
+    cache[id] = html; el.innerHTML = html;
+    if (key) { const again = [...el.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.v || ""}` === key); if (again && !again.disabled) again.focus({ preventScroll: true }); }
+    return true;
   }
   function render() {
     if (!s || pressing || dragging) return;
-    drawScene();
-    put("hud", hud());
+    drawArt();
+    put("wb", whiteboard());
     put("ov", overlay());
     put("ovb", bubbles());
-    put("bar2", bar2());
-    put("dock", paneHtml());
-    put("modal-root", modalHtml());
-    layout();
+    put("mtop", mtop());
+    if (put("ui", menuHtml())) placeMenu();
+    put("modal-root", phoneHtml() + modalHtml());
+    placePhone();
+    if (!rendered) { rendered = true; layout(); }
   }
+  let rendered = false;
   function layout() {
-    const box = document.getElementById("box"), stage = document.getElementById("stage"), dock = document.getElementById("dock");
-    const W = document.getElementById("wrap").clientWidth, wide = window.innerWidth >= 1100;
-    const avail = wide ? Math.max(320, window.innerHeight - document.getElementById("hud").offsetHeight - document.getElementById("bar2").offsetHeight - 36) : 9999;
-    const k = Math.min(W / 1440, avail / 900);
-    stage.style.transform = `scale(${k})`;
-    box.style.width = `${Math.round(1440 * k)}px`; box.style.height = `${Math.round(900 * k)}px`;
-    const p = dock.querySelector(".pane");
-    if (p) p.style.maxHeight = wide ? `${Math.max(400, window.innerHeight - document.getElementById("hud").offsetHeight - 36)}px` : "";
+    const W = window.innerWidth, H = window.innerHeight;
+    k = Math.min(W / 1920, H / 1080);
+    const bw = 1920 * k, bh = 1080 * k, box = document.getElementById("box");
+    const portrait = H > W && W <= 900, topH = portrait ? (document.getElementById("mtop").offsetHeight || 170) + 8 : 0;
+    box.style.width = `${bw}px`; box.style.height = `${bh}px`; box.style.left = `${(W - bw) / 2}px`;
+    box.style.top = `${portrait ? topH : Math.max(0, (H - bh) / 2)}px`;
+    document.getElementById("stage").style.transform = `scale(${k})`;
+    placeMenu(); placePhone();
+  }
+  // the menu stays readable: never smaller than 0.6 of its drawn size, kept inside the window
+  function placeMenu() {
+    if (!ui.sel) return;
+    const box = document.getElementById("box").getBoundingClientRect(), p = P[ui.sel];
+    const uk = Math.max(k, Math.min(1, window.innerWidth / 460) * 0.72, 0.6);
+    const main = document.querySelector('#ui .menu[data-anchor="main"]'), eps = document.querySelector('#ui .menu[data-anchor="eps"]');
+    if (!main) return;
+    const mw = 260 * uk, mh = main.offsetHeight * uk;
+    let x = box.left + p.menu[0] * k, y = box.top + p.menu[1] * k;
+    x = Math.max(6, Math.min(window.innerWidth - mw - 6, x)); y = Math.max(6, Math.min(window.innerHeight - mh - 6, y));
+    main.style.transform = `scale(${uk})`; main.style.left = `${x}px`; main.style.top = `${y}px`;
+    if (eps) {
+      const ew = 260 * uk, eh = eps.offsetHeight * uk;
+      let ex = p.side > 0 ? x + mw + 12 : x - ew - 12;
+      if (ex < 6 || ex + ew > window.innerWidth - 6) ex = p.side > 0 ? x - ew - 12 : x + mw + 12;
+      if (ex < 6 || ex + ew > window.innerWidth - 6) ex = Math.max(6, Math.min(window.innerWidth - ew - 6, x + 20));
+      const ey = Math.max(6, Math.min(window.innerHeight - eh - 6, y));
+      eps.style.transform = `scale(${uk})`; eps.style.left = `${ex}px`; eps.style.top = `${ey}px`;
+    }
+  }
+  function placePhone() {
+    const el = document.getElementById("phoneEl");
+    if (!el) return;
+    const pk = Math.min(1, (window.innerHeight * 0.94) / 820, (window.innerWidth * 0.96) / 460);
+    el.style.transform = `translate(-50%, -50%) scale(${pk})`;
   }
   function toast(text) {
     const t = document.getElementById("toast");
@@ -937,7 +794,7 @@ if (typeof module !== "undefined") module.exports = Engine;
         acc -= n;
         const before = s.shinko.map((x) => !!x.report);
         E.tick(s, n);
-        if (s.phase !== "play") { save(); render(); }
+        if (s.phase !== "play") { ui.sel = null; ui.phone = false; save(); render(); }
         else if (s.shinko.some((x, i) => x.report && !before[i])) render();
       }
     }
@@ -947,62 +804,62 @@ if (typeof module !== "undefined") module.exports = Engine;
   }
 
   // ---------- input ----------
-  function select(k, id, extra) {
-    ui.sel = { k, id };
-    if (k === "sh") {
-      const sh = shOf(id);
-      if (sh.report) { sh.lastReport = sh.report.text; E.ack(s, id); }
-      if (extra && extra.ep) ui.epSel = Number(extra.ep);
-    }
-    if (k === "phone") s.phone.forEach((m) => (m.read = true));
-    if (k === "monitor" && id) ui.tab = id;
+  function select(id) {
+    const sh = shOf(id);
+    if (ui.sel === id && !sh.report) { ui.sel = null; ui.pick = null; return render(); } // pressing again closes the menu
+    ui.sel = id; ui.pick = null;
+    if (sh.report) { sh.lastReport = sh.report.text; E.ack(s, id); } else if (!sh.task) sh.lastReport = sh.lastReport || null;
     save(); render();
-    if (window.innerWidth < 1100 && k !== "monitor") document.getElementById("dock").scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+  function give(sid, kind, ep) {
+    const ok = E.order(s, sid, kind, ep);
+    if (ok) { const sh = shOf(sid); sh.lastReport = null; toast(`${sh.name}：${taskName(sh.task)}に取りかかった`); ui.sel = null; ui.pick = null; }
+    save(); render();
+    return ok;
   }
   function doAct(el) {
     const a = el.dataset.act, v = el.dataset.v;
-    if (a === "sel") return select(el.dataset.k, v, { ep: el.dataset.ep });
-    if (a === "close") { if (ui.modal) { ui.modal = null; } else ui.sel = { k: "monitor", id: "eps" }; save(); return render(); }
+    if (a === "sel") return select(v);
+    if (a === "cmd") {
+      const T = E.TASK[v];
+      if (!T.ep) return give(ui.sel, v, null);
+      const list = urgentEps(v);
+      if (list.length === 1) return give(ui.sel, v, list[0].n);
+      ui.pick = ui.pick === v ? null : v; return render();
+    }
+    if (a === "ep") return give(ui.sel, ui.pick, Number(v));
+    if (a === "cancel") { E.cancel(s, ui.sel); ui.sel = null; save(); return render(); }
+    if (a === "phone") { ui.phone = true; ui.sel = null; s.phone.forEach((m) => (m.read = true)); save(); return render(); }
+    if (a === "phoneClose") { ui.phone = false; return render(); }
+    if (a === "keys") { toast("車の鍵は、回収に出す進行までドラッグする"); return; }
     if (a === "pause") { if (ui.modal || s.phase !== "play") return; ui.paused = !ui.paused; return render(); }
     if (a === "speed") { ui.speed = ui.speed === 2 ? 1 : 2; return render(); }
-    if (a === "help") { ui.modal = "help"; return render(); }
+    if (a === "help") { ui.modal = "help"; ui.sel = null; return render(); }
     if (a === "start") { ui.modal = null; ui.paused = false; save(); return render(); }
+    if (a === "close") { ui.modal = null; return render(); }
     if (a === "restartAsk") { ui.modal = "restart"; return render(); }
     if (a === "restart") { fresh(1 + Math.floor(Math.random() * 100000)); ui.modal = null; ui.paused = false; save(); return render(); }
     if (a === "nextWeek") { E.nextWeek(s); save(); return render(); }
-    if (a === "epSel") { ui.epSel = Number(v); return render(); }
-    if (a === "tab") { ui.tab = v; return render(); }
-    if (a === "order") {
-      const sid = el.dataset.sid || (ui.sel && ui.sel.k === "sh" ? ui.sel.id : null);
-      if (!sid) return;
-      const ok = E.order(s, sid, v, E.TASK[v].ep ? ui.epSel : null);
-      if (ok) { const sh = shOf(sid); sh.lastReport = null; toast(`${sh.name}：「${taskName(sh.task)}」に取りかかった`); if (ui.sel && ui.sel.k !== "sh") ui.sel = { k: "sh", id: sid }; }
-      save(); return render();
-    }
-    if (a === "cancel") { if (ui.sel && ui.sel.k === "sh") E.cancel(s, ui.sel.id); save(); return render(); }
-    if (a === "car") { toast("社用車は、外回りに出す進行までドラッグする"); return select("car", "car"); }
   }
+  function stagePoint(ev) { const r = document.getElementById("box").getBoundingClientRect(); return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k }; }
+  // front to back: 真壁, 佐伯, 川口
+  function zoneAt(pt) { return ["s3", "s1", "s2"].map(shOf).find((sh) => drawnAt(sh, pt)); }
   document.addEventListener("pointerdown", (ev) => {
     const el = ev.target.closest && ev.target.closest("[data-act]");
     if (!el) return;
     pressing = true;
-    if (el.dataset.car && s.phase === "play" && !ui.modal) {
-      dragging = { x0: ev.clientX, y0: ev.clientY, moved: false, id: ev.pointerId };
+    if (el.dataset.keys && s.phase === "play" && !ui.modal && !s.car) {
+      dragging = { x0: ev.clientX, y0: ev.clientY, moved: false };
       try { el.setPointerCapture(ev.pointerId); } catch (e) { /* fine */ }
     }
   });
-  function stagePoint(ev) {
-    const r = document.getElementById("box").getBoundingClientRect(), k = r.width / 1440;
-    return { x: (ev.clientX - r.left) / k, y: (ev.clientY - r.top) / k };
-  }
-  function zoneAt(p) { return s.shinko.find((sh) => Math.abs(p.x - SEAT[sh.id] * 4) <= 100 && p.y >= 180 && p.y <= 590); }
   document.addEventListener("pointermove", (ev) => {
     if (!dragging) return;
     if (!dragging.moved && Math.hypot(ev.clientX - dragging.x0, ev.clientY - dragging.y0) < 6) return;
     dragging.moved = true;
-    const p = stagePoint(ev), g = document.getElementById("ghost");
-    g.style.display = "block"; g.style.left = `${p.x - 60}px`; g.style.top = `${p.y - 36}px`;
-    const z = zoneAt(p);
+    const g = document.getElementById("ghost");
+    g.style.display = "block"; g.style.width = `${Math.max(90, 280 * k)}px`; g.style.left = `${ev.clientX - Math.max(45, 140 * k)}px`; g.style.top = `${ev.clientY - Math.max(25, 75 * k)}px`;
+    const z = zoneAt(stagePoint(ev));
     document.querySelectorAll(".zone").forEach((el) => { el.classList.remove("drop", "nodrop"); if (z && el.dataset.zone === z.id) el.classList.add(E.canOrder(s, z.id, "soto") ? "nodrop" : "drop"); });
   });
   document.addEventListener("pointerup", (ev) => {
@@ -1011,44 +868,45 @@ if (typeof module !== "undefined") module.exports = Engine;
       document.getElementById("ghost").style.display = "none";
       if (d.moved) {
         const z = zoneAt(stagePoint(ev));
-        if (z) {
-          const why = E.canOrder(s, z.id, "soto");
-          if (why) toast(`${z.name}は外回りに出せない：${why}`);
-          else { E.order(s, z.id, "soto"); z.lastReport = null; toast(`${z.name}：外回りに出た（社用車）`); ui.sel = { k: "sh", id: z.id }; save(); }
-        }
-        pressing = false;
-        render();
-        ev.preventDefault();
-        suppressClick = true;
-        setTimeout(() => { suppressClick = false; }, 0); // only the click that belongs to this drop
+        if (z) { const why = E.canOrder(s, z.id, "soto"); if (why) toast(`${z.name}は回収に出せない：${why}`); else give(z.id, "soto", null); }
+        pressing = false; render();
+        suppressClick = true; setTimeout(() => { suppressClick = false; }, 0);
         return;
       }
     }
     setTimeout(() => { pressing = false; }, 0);
   });
-  let suppressClick = false;
   document.addEventListener("pointercancel", () => { pressing = false; dragging = null; document.getElementById("ghost").style.display = "none"; });
   document.addEventListener("click", (ev) => {
     if (suppressClick) { suppressClick = false; return; }
-    const el = ev.target.closest && ev.target.closest("[data-act]");
-    if (!el || el.disabled) return;
     pressing = false;
+    const el = ev.target.closest && ev.target.closest("[data-act]");
+    if (el && el.dataset.act === "phoneClose" && el.classList.contains("phone-bg") && ev.target.closest("#phoneEl")) return; // inside the phone
+    if (el && el.classList.contains("zone") && ev.detail > 0) {
+      // a pointer press on a person: whoever is drawn under the pointer (川口 sits behind 真壁)
+      const who = zoneAt(stagePoint(ev));
+      if (who) return select(who.id);
+      if (ui.sel) { ui.sel = null; ui.pick = null; render(); }
+      return;
+    }
+    if (!el) { if (ui.sel) { ui.sel = null; ui.pick = null; render(); } return; } // pressing the room closes the menu
+    if (el.disabled) return;
     doAct(el);
   });
   document.addEventListener("keydown", (ev) => {
     if (!s) return;
-    if (ev.key === "Escape") { if (ui.modal === "intro") { ui.modal = null; ui.paused = false; } else if (ui.modal === "help" || ui.modal === "restart") ui.modal = null; else if (!ui.modal) ui.sel = { k: "monitor", id: "eps" }; render(); return; }
+    if (ev.key === "Escape") { if (ui.modal === "intro") { ui.modal = null; ui.paused = false; } else if (ui.modal === "help" || ui.modal === "restart") ui.modal = null; else if (ui.phone) ui.phone = false; else { ui.sel = null; ui.pick = null; } render(); return; }
     if (ui.modal) return;
     if (ev.key === " ") { ev.preventDefault(); if (!ev.repeat && s.phase === "play") { ui.paused = !ui.paused; render(); } }
-    if (["1", "2", "3"].includes(ev.key)) select("sh", s.shinko[Number(ev.key) - 1].id);
+    if (["1", "2", "3"].includes(ev.key)) select(s.shinko[Number(ev.key) - 1].id);
   });
   document.addEventListener("keyup", (ev) => { if (ev.key === " " && !ui.modal) ev.preventDefault(); });
   window.addEventListener("resize", layout);
   window.addEventListener("pagehide", save);
   document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
 
-  document.getElementById("scene").innerHTML = sceneSvg();
   if (!load()) fresh(1 + Math.floor(Math.random() * 100000));
+  layout();
   render();
   requestAnimationFrame(frame);
 })();

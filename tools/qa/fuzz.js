@@ -101,7 +101,7 @@ function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x9E3779B9) | 0
       }, BAD_TEXT.source);
       if (check.bad) fail("text", check.bad);
       if (check.over && !overflowSeen) { overflowSeen = true; fail("overflow", `page scrolls sideways at ${W}px after ${act}`); }
-      if (!check.hasPane) fail("layout", `no detail pane after ${act}`);
+      if (!check.hasPane && !LIVE) fail("layout", `no detail pane after ${act}`); // the RTS screen has no fixed panel
     }
     report.runs.push({ seed, steps: trail.length, phaseMax, reachedEnd: ended > 0 });
     await ctx.close();
