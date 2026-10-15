@@ -56,7 +56,9 @@
   .stage-box { position: relative; overflow: hidden; margin: 0 auto; }
   .stage { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; transform-origin: 0 0; }
   .stage svg { position: absolute; left: 0; top: 0; display: block; }
-  .ov { position: absolute; inset: 0; font-family: var(--font-pixel); }
+  .ov { position: absolute; inset: 0; font-family: var(--font-pixel); pointer-events: none; }
+  .ov > * { pointer-events: auto; }
+  .ov .tag, .ov .chip, .ov .zzz, .ov .tray-l, .ov .note, .ov .plate { pointer-events: none; }
   .ov button { font-family: inherit; }
   .zone { position: absolute; width: 192px; height: 380px; top: 196px; background: transparent; border: 2px solid transparent; border-radius: 6px; padding: 0; }
   .zone:hover, .zone:focus-visible { border-color: rgba(232, 234, 241, .45); }
@@ -70,11 +72,11 @@
   .chip .bar { height: 6px; background: var(--line-2); border-radius: 1px; overflow: hidden; display: block; }
   .chip .bar i { display: block; height: 100%; }
   .chip small { color: var(--on-soft); font-size: 16px; }
-  .bubble { position: absolute; top: 72px; width: 400px; box-sizing: border-box; padding: 10px 14px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; text-align: left; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); font-family: var(--font-body) !important; }
+  .bubble { position: absolute; top: 578px; width: 400px; box-sizing: border-box; padding: 8px 12px; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; text-align: left; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 0 rgba(0, 0, 0, .35); font-family: var(--font-body) !important; }
   .bubble .w { font-family: var(--font-pixel); font-size: 16px; color: var(--ink-soft); }
-  .bubble .t { font-size: 21px; font-weight: 700; line-height: 1.4; }
+  .bubble .t { font-size: 19px; font-weight: 700; line-height: 1.35; }
   .bubble .h { font-size: 15px; color: var(--ink-soft); }
-  .bubble::after { content: ""; position: absolute; left: 190px; bottom: -11px; width: 18px; height: 18px; background: var(--paper); border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); }
+  .bubble::after { content: ""; position: absolute; left: 190px; top: -11px; width: 18px; height: 18px; background: var(--paper); border-left: 2px solid var(--ink); border-top: 2px solid var(--ink); transform: rotate(45deg); }
   .bubble.good { box-shadow: inset 5px 0 0 var(--green), 0 4px 0 rgba(0, 0, 0, .35); }
   .bubble.warn, .bubble.bad { box-shadow: inset 5px 0 0 var(--red), 0 4px 0 rgba(0, 0, 0, .35); }
   .zzz { position: absolute; top: 350px; font-size: 30px; color: var(--on-soft); line-height: 1; pointer-events: none; }
@@ -149,7 +151,7 @@
   button.row { min-height: 44px; }
   button.row:hover { background: rgba(26, 28, 36, .05); }
   .row .v { font-weight: 700; text-align: right; }
-  .row .v.bad { color: var(--red); } .row .v.good { color: var(--green); } .row .v.mute { color: var(--ink-soft); font-weight: 400; }
+  .row .v.bad { color: var(--red); } .row .v.good { color: var(--green); } .row .v.warn { color: #8a5a00; } .row .v.mute { color: var(--ink-soft); font-weight: 400; }
   .acts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
   .act { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 12px; border-radius: 4px; text-align: left; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); }
   .act.pri { background: var(--ink); color: var(--paper); }
@@ -202,7 +204,12 @@
     .bar2 > .btn-sys { flex: 1 1 calc(50% - 8px); }
     .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
+  .arm-mid { display: none; }
   @media (prefers-reduced-motion: no-preference) {
+    .arm-up { animation: wave-a .8s steps(1) infinite; }
+    .arm-mid { display: inline; animation: wave-b .8s steps(1) infinite; }
+    @keyframes wave-a { 0% { opacity: 1; } 50% { opacity: 0; } }
+    @keyframes wave-b { 0% { opacity: 0; } 50% { opacity: 1; } }
     .bubble { animation: pop .25s ease-out; }
     @keyframes pop { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
   }
@@ -217,6 +224,7 @@
       <div class="stage" id="stage">
         <svg id="scene" viewBox="0 0 360 225" width="1440" height="900" shape-rendering="crispEdges" aria-hidden="true"></svg>
         <div class="ov" id="ov"></div>
+        <div class="ov" id="ovb"></div>
         <svg class="ghost" id="ghost" viewBox="0 0 30 18" shape-rendering="crispEdges" aria-hidden="true"><rect x="1" y="6" width="28" height="9" fill="#e8eaf1"/><rect x="16" y="1" width="12" height="6" fill="#e8eaf1"/><rect x="18" y="2" width="8" height="4" fill="#86b6da"/><rect x="1" y="10" width="28" height="2" fill="#c8323a"/><rect x="4" y="14" width="5" height="3" fill="#1a1c24"/><rect x="20" y="14" width="5" height="3" fill="#1a1c24"/></svg>
       </div>
       <div id="toast"></div>
@@ -299,15 +307,16 @@ const Engine = (() => {
       if (T.sheet && e.sheets[kind]) return "もうできている";
     }
     if (kind === "soto" && s.car && s.car !== sid) return `社用車がない（${shOf(s, s.car).name}が使用中）`;
-    if (kind === "soto" && sh.task && sh.task.kind === "soto") return "もう外回り中";
+    if (sh.task && sh.task.kind === kind && sh.task.kind !== "rest" && (!T.ep || sh.task.ep === n)) return "いまやっている";
     if (kind === "rest" && sh.task && sh.task.kind === "rest") return "もう休んでいる";
+    if (kind === "rest" && sh.sta >= 95) return "体力は十分";
     return "";
   }
   function order(s, sid, kind, n = null) {
     if (canOrder(s, sid, kind, n)) return false;
     const sh = shOf(s, sid);
     if (sh.task && sh.task.kind === "soto" && kind !== "soto") s.car = null; // calling them back brings the car back
-    if (sh.task && sh.task.kind !== "rest" && sh.task.kind !== kind) log(s, `${sh.name}：「${TASK[sh.task.kind].short}」を途中でやめた。`, "warn");
+    if (sh.task && sh.task.kind !== "rest") log(s, `${sh.name}：「${TASK[sh.task.kind].short}」を途中でやめた。`, "warn");
     if (!sh.asleep && !sh.task) s.stats.waited += Math.max(0, s.t - sh.idleSince);
     sh.report = null;
     sh.asleep = false;
@@ -400,7 +409,7 @@ const Engine = (() => {
     for (const sh of s.shinko) {
       const T = sh.task;
       if (!T) {
-        sh.asleep = night;
+        sh.asleep = night; // nothing to do at night: asleep at the desk (a report waits in its bubble)
         sh.sta = Math.min(100, sh.sta + (night ? 14 : 4) / HOUR);
         continue;
       }
@@ -620,7 +629,8 @@ if (typeof module !== "undefined") module.exports = Engine;
     const cx = SEAT[id], sh = `var(--${id})`, hair = HAIR[id], skin = "#f2c9a0", ink = "#1a1c24";
     const glasses = (y) => (id === "s2" ? R(cx - 6, y, 12, 1, ink) + R(cx - 5, y + 1, 4, 2, "#9fd3f0") + R(cx + 1, y + 1, 4, 2, "#9fd3f0") : "");
     const stand = R(cx - 18, 92, 36, 34, sh) + R(cx - 2, 90, 4, 2, skin) + R(cx - 7, 74, 14, 16, skin) + R(cx - 8, 72, 16, 5, hair) + R(cx - 8, 77, 2, 6, hair) + R(cx + 6, 77, 2, 6, hair)
-      + R(cx - 4, 81, 2, 2, ink) + R(cx + 2, 81, 2, 2, ink) + R(cx - 1, 86, 3, 2, "#8a3a2a") + R(cx + 18, 80, 4, 14, sh) + R(cx + 18, 76, 4, 4, skin) + glasses(80);
+      + R(cx - 4, 81, 2, 2, ink) + R(cx + 2, 81, 2, 2, ink) + R(cx - 1, 86, 3, 2, "#8a3a2a") + glasses(80)
+      + `<g class="arm-up">${R(cx + 18, 80, 4, 14, sh) + R(cx + 18, 76, 4, 4, skin)}</g><g class="arm-mid">${R(cx + 18, 86, 4, 10, sh) + R(cx + 22, 84, 4, 4, skin)}</g>`;
     const seat = R(cx - 18, 102, 36, 24, sh) + R(cx - 2, 100, 4, 2, skin) + R(cx - 7, 86, 14, 15, skin) + R(cx - 8, 84, 16, 5, hair) + R(cx - 8, 89, 2, 4, hair) + R(cx + 6, 89, 2, 4, hair)
       + R(cx - 4, 93, 2, 2, ink) + R(cx + 2, 93, 2, 2, ink) + R(cx - 1, 98, 3, 1, "#8a3a2a") + glasses(92);
     const x0 = SLEEP_SIDE[id] < 0 ? cx - 38 : cx + 14;
@@ -692,9 +702,6 @@ if (typeof module !== "undefined") module.exports = Engine;
         out.push(`<div class="chip" style="left:${cx - 132}px;box-shadow:inset 3px 0 0 var(--${sh.id})"><span>${esc(taskName(sh.task))}${st === "out" ? "（社用車）" : ""}</span><span class="bar"><i style="width:${Math.round(p * 100)}%;background:var(--${sh.id})"></i></span><small>あと 約${hrs(left)}${sh.sta < 25 ? " ・ へとへと" : ""}</small></div>`);
       }
       if (st === "sleep") out.push(`<div class="zzz" style="left:${SLEEP_SIDE[sh.id] < 0 ? cx - 190 : cx + 100}px"><span>z</span><span>Z</span><span>Z</span></div>`);
-      if (sh.report) {
-        out.push(`<button class="bubble ${sh.report.tone}" style="left:${Math.max(8, Math.min(1432 - 400, cx - 200))}px" data-act="sel" data-k="sh" data-v="${sh.id}"><span class="w">${sh.name}　報告</span><span class="t">${esc(sh.report.text)}</span><span class="h">押すまで出たまま ・ 押すと次の指示へ</span></button>`);
-      }
     }
     // your desk
     const unread = s.phone.filter((m) => !m.read).length;
@@ -708,6 +715,14 @@ if (typeof module !== "undefined") module.exports = Engine;
     return out.join("");
   }
 
+  // report bubbles: under each 進行's name tag, so the whiteboard stays readable
+  function bubbles() {
+    return s.shinko.filter((sh) => sh.report).map((sh) => {
+      const cx = SEAT[sh.id] * 4;
+      return `<button class="bubble ${sh.report.tone}" style="left:${Math.max(8, Math.min(1432 - 400, cx - 200))}px" data-act="sel" data-k="sh" data-v="${sh.id}"><span class="w">${sh.name}　報告</span><span class="t">${esc(sh.report.text)}</span></button>`;
+    }).join("");
+  }
+
   // ---------- header and the bar under the scene ----------
   function hud() {
     const a = E.airStatus(s), d = dayOf(s.t), part = ((s.t % E.DAY) / E.DAY);
@@ -717,12 +732,12 @@ if (typeof module !== "undefined") module.exports = Engine;
     return `<div class="hud-l"><span class="wk">第${Math.min(s.week, E.weekOf(s.t))}週</span><span class="air ${a.airing ? "on" : ""}">${esc(a.main)}${a.sub ? `<small>${esc(a.sub)}</small>` : ""}</span></div>
       <div class="gauge" aria-label="${clock(s.t)}"><div class="bars">${bars}</div><div class="lbls">${lbls}</div></div>
       <div class="sec-left">${clock(s.t)} ・ この週 残り <b>${secLeft}</b> 秒</div>
-      <div class="hud-r"><button class="btn-main" data-act="pause">${ui.paused ? "動かす" : "止める"}</button><button class="btn-sys ${ui.speed === 2 ? "on" : ""}" data-act="speed" aria-pressed="${ui.speed === 2}">2倍</button><button class="btn-sys" data-act="help">遊び方</button><button class="btn-sys" data-act="restartAsk">最初から</button></div>`;
+      <div class="hud-r"><button class="btn-main" data-act="pause">${ui.paused || ui.modal || s.phase !== "play" ? "動かす" : "止める"}</button><button class="btn-sys ${ui.speed === 2 ? "on" : ""}" data-act="speed" aria-pressed="${ui.speed === 2}">2倍</button><button class="btn-sys" data-act="help">遊び方</button><button class="btn-sys" data-act="restartAsk">最初から</button></div>`;
   }
   function bar2() {
     const who = s.shinko.map((sh) => {
       const tg = tagOf(sh), on = ui.sel && ui.sel.k === "sh" && ui.sel.id === sh.id;
-      const sub = sh.report ? `「${sh.report.text}」` : sh.task && sh.task.kind !== "rest" ? taskName(sh.task) : tg.t;
+      const sub = sh.report ? `「${sh.report.text}」` : sh.task && sh.task.kind !== "rest" ? taskName(sh.task) : stateOf(sh) === "wait" ? "押して指示を出す" : "寝ている（押せば起こして指示できる）";
       return `<button class="who ${on ? "on" : tg.att ? "att" : ""}" style="--c:var(--${sh.id})" data-act="sel" data-k="sh" data-v="${sh.id}"><i></i><span><b>${sh.name}（${sh.rookie ? "新人" : "ベテラン"}）・ ${esc(tg.t)}</b><small>${esc(sub)}</small></span></button>`;
     }).join("");
     const unread = s.phone.filter((m) => !m.read).length;
@@ -792,7 +807,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (ui.tab === "eps") {
       const live = E.live(s).sort((a, b) => a.air - b.air), done = s.eps.filter((e) => e.result);
       inner = `<section class="psec"><h3>制作中</h3><div class="rows">${live.map((e) => { const c = E.counts(s, e), m = E.epMut(s, e); return row(`第${e.n}話 ・ 放送まで${daysTo(e.air)} ・ 空き${c.empty}`, `撮影 ${c.shot}/${e.cuts}`, m.tone === "bad" ? "bad" : "", `data-act="sel" data-k="ep" data-v="${e.n}"`); }).join("")}</div></section>`
-        + (done.length ? `<section class="psec"><h3>放送済み</h3><div class="rows">${done.map((e) => row(`第${e.n}話`, e.result.label, e.result.tone === "good" ? "good" : "bad", `data-act="sel" data-k="ep" data-v="${e.n}"`)).join("")}</div></section>` : "");
+        + (done.length ? `<section class="psec"><h3>放送済み</h3><div class="rows">${done.map((e) => row(`第${e.n}話`, e.result.label, e.result.tone, `data-act="sel" data-k="ep" data-v="${e.n}"`)).join("")}</div></section>` : "");
     } else if (ui.tab === "anims") {
       inner = `<section class="psec"><h3>原画マン（${s.anims.length}人）</h3><p>営業で、手の空いている人にカットを頼む。</p><div class="rows">${s.anims.map((a) => { const l = E.animLoad(a); return row(a.name, l >= E.ANIM_CAP ? "手一杯" : l > 0 ? `${l}カット抱えている` : "空いている", l >= E.ANIM_CAP ? "bad" : l ? "" : "good"); }).join("")}</div></section>`;
     } else {
@@ -834,7 +849,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       return dlg(dh("遊び方", intro ? "進行RTS（試作）" : "遊び方", "制作デスクの席から、制作進行3人に指示を出す。1週間＝120秒。")
         + `<section class="psec" style="border:0;padding:0"><ul>
           <li>全12話。1話のスケジュールは<b>4週</b>（炎上中）。毎週1話ずつコンテが上がり、4週後に放送される。</li>
-          <li>進行は<b>自分からは動かない</b>。仕事が終わると、報告の吹き出しを出して席で待つ。押すと吹き出しが消え、次の指示を出せる。待たせた時間はそのまま無駄になる。</li>
+          <li>進行は<b>自分からは動かない</b>。仕事が終わると、報告の吹き出しを出して席で待つ（押すまで出たまま）。押すと吹き出しが消え、次の指示を出せる。待たせた時間はそのまま無駄になる。</li>
           <li>1話の流れ：<b>営業</b>でカット表を埋める → <b>作打ち</b>で原画が始まる → <b>外回り</b>で回収 → <b>発注表</b>があれば動画・仕上げへ → <b>香盤表</b>があれば撮影へ。<b>進行表</b>があると原画の進み具合が分かり、回収の取りこぼしがなくなる。</li>
           <li>社用車は<b>1台</b>。机の社用車を進行にドラッグすると外回りに出る（進行の詳細からも出せる）。</li>
           <li>夜、仕事のない進行は机で寝る。仕事をさせると体力が減り、へとへとになると遅くなる。</li>
@@ -864,7 +879,7 @@ if (typeof module !== "undefined") module.exports = Engine;
       const body = dh("放送終了", "全12話 放送終了", `完成 ${r.full}話 ・ 止め絵 ${r.still}話 ・ 落とした ${r.drop}話`)
         + `<div style="display:flex;align-items:center;gap:16px"><span class="rank">${esc(r.rank)}</span><span class="note2">指示 ${r.orders}回 ・ 白紙 ${r.blank}カット ・ 返されたカット ${r.drops}回</span></div>`
         + mut(m)
-        + `<section class="psec"><h3>各話</h3><div class="rows">${s.eps.map((e) => row(`第${e.n}話`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone === "good" ? "good" : "bad")).join("")}</div></section>`;
+        + `<section class="psec"><h3>各話</h3><div class="rows">${s.eps.map((e) => row(`第${e.n}話`, `${esc(e.result.label)}（${e.shot}/${e.cuts}）`, e.result.tone)).join("")}</div></section>`;
       return dlg(body, foot("この画面", act({ label: "もう一度", sub: "別の現場で最初から", attrs: `data-act="restart"`, pri: true })));
     }
     return "";
@@ -888,6 +903,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     drawScene();
     put("hud", hud());
     put("ov", overlay());
+    put("ovb", bubbles());
     put("bar2", bar2());
     put("dock", paneHtml());
     put("modal-root", modalHtml());
@@ -947,7 +963,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const a = el.dataset.act, v = el.dataset.v;
     if (a === "sel") return select(el.dataset.k, v, { ep: el.dataset.ep });
     if (a === "close") { if (ui.modal) { ui.modal = null; } else ui.sel = { k: "monitor", id: "eps" }; save(); return render(); }
-    if (a === "pause") { ui.paused = !ui.paused; return render(); }
+    if (a === "pause") { if (ui.modal || s.phase !== "play") return; ui.paused = !ui.paused; return render(); }
     if (a === "speed") { ui.speed = ui.speed === 2 ? 1 : 2; return render(); }
     if (a === "help") { ui.modal = "help"; return render(); }
     if (a === "start") { ui.modal = null; ui.paused = false; save(); return render(); }
@@ -1003,7 +1019,8 @@ if (typeof module !== "undefined") module.exports = Engine;
         pressing = false;
         render();
         ev.preventDefault();
-        d.suppress = true; suppressClick = true;
+        suppressClick = true;
+        setTimeout(() => { suppressClick = false; }, 0); // only the click that belongs to this drop
         return;
       }
     }
