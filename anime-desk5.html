@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>デスクの5日間 試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
+<style>
+  /* A small text prototype: you are the 制作デスク, three 進行 work three episodes for five days.
+     Left: what reached you and the schedule sheet. Right: the three people, the phone, and 進める. */
+  :root {
+    --bg: #eef0f4; --panel: #ffffff; --ink: #1d2236; --soft: #4a5068; --line: #d5d9e3; --navy: #1f2a44;
+    --yellow: #ffe082; --red: #b3262e; --orange: #8a4b00; --green: #11693f; --blue: #1f56b0; --gray: #c9ced9;
+    --font: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); }
+  body { min-width: 0; }
+  button, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  .top { position: sticky; top: 0; z-index: 5; background: var(--navy); color: #fff; display: flex; align-items: center; gap: 16px; padding: 10px 20px; flex-wrap: wrap; }
+  .top h1 { margin: 0; font-size: 18px; font-weight: 700; color: #cfd6ea; }
+  .top .when { font-size: 26px; font-weight: 700; }
+  .top .calls { font-size: 16px; font-weight: 700; padding: 4px 12px; background: #34426a; }
+  .top .calls.none { background: #6b3a3f; }
+  .top .sp { flex: 1; }
+  .top button { border: 0; padding: 8px 14px; font-weight: 700; background: #34426a; color: #fff; min-height: 40px; }
+  .top button.on { background: var(--yellow); color: var(--ink); }
+  .wrap { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 16px; padding: 16px 20px 40px; max-width: 1600px; margin: 0 auto; }
+  .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); padding: 14px 16px; }
+  .card h2 { margin: 0 0 10px; font-size: 17px; display: flex; align-items: baseline; gap: 10px; }
+  .card h2 small { font-size: 13px; color: var(--soft); font-weight: 400; }
+  .msgs { display: flex; flex-direction: column; gap: 8px; }
+  .msg { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 10px; padding: 8px 10px; background: #f6f7fa; border-left: 4px solid var(--gray); line-height: 1.6; font-size: 15px; }
+  .msg b { font-size: 14px; }
+  .msg.warn { border-left-color: var(--orange); background: #fff6e8; }
+  .msg.bad { border-left-color: var(--red); background: #fdeeee; }
+  .msg.good { border-left-color: var(--green); background: #ecf7f0; }
+  .msg.ans { border-left-color: var(--blue); background: #edf2fc; }
+  .result { display: flex; flex-direction: column; gap: 6px; }
+  .result .line { font-size: 15px; line-height: 1.55; }
+  .result .say { font-size: 15px; line-height: 1.55; padding-left: 10px; border-left: 3px solid var(--line); }
+  table.sheet { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .sheet th { text-align: left; background: #f0f2f7; border: 1px solid var(--line); padding: 6px 8px; font-size: 13px; white-space: nowrap; }
+  .sheet td { border: 1px solid var(--line); padding: 7px 8px; vertical-align: top; line-height: 1.45; }
+  .sheet td.t b { display: block; font-size: 15px; }
+  .sheet td.t small { color: var(--soft); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 700; padding: 0 6px; margin-left: 4px; border: 1px solid currentColor; }
+  .tag.k { color: var(--green); } .tag.h { color: var(--orange); } .tag.s { color: var(--blue); }
+  .red { color: var(--red); font-weight: 700; } .grn { color: var(--green); font-weight: 700; } .org { color: var(--orange); font-weight: 700; }
+  .note { font-size: 13px; color: var(--soft); line-height: 1.6; margin: 8px 0 0; }
+  .who { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .who:last-of-type { border-bottom: 0; }
+  .who .nm { display: flex; align-items: baseline; gap: 8px; }
+  .who .nm b { font-size: 17px; }
+  .who .nm small { color: var(--soft); font-size: 13px; }
+  .who select { width: 100%; min-height: 44px; padding: 6px 8px; border: 1px solid #9aa2b8; background: #fff; font-size: 15px; }
+  .who .why { font-size: 13px; color: var(--red); }
+  .phone .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .phone .row span { font-size: 13px; color: var(--soft); width: 100%; }
+  .phone button { border: 1px solid #9aa2b8; background: #fff; padding: 8px 10px; min-height: 40px; font-size: 14px; font-weight: 700; }
+  .phone button:disabled { color: #59607a; background: #eceef2; cursor: not-allowed; border-color: var(--line); }
+  .go { width: 100%; min-height: 60px; border: 0; background: var(--navy); color: #fff; font-size: 20px; font-weight: 700; }
+  .go:hover { background: #2d3c63; }
+  .detail table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .detail th, .detail td { border: 1px solid var(--line); padding: 5px 8px; text-align: center; }
+  .detail th { background: #f0f2f7; }
+  .detail td.today { background: #fff6cc; font-weight: 700; }
+  .modal { position: fixed; inset: 0; z-index: 20; background: rgba(15, 20, 36, .55); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+  .dlg { width: min(720px, 100%); background: #fff; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .dlg h2 { margin: 0; font-size: 22px; }
+  .dlg ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; line-height: 1.6; font-size: 15px; }
+  .dlg p { margin: 0; line-height: 1.6; font-size: 15px; }
+  .dlg .acts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .dlg .acts button { flex: 1 1 200px; min-height: 52px; border: 0; background: var(--navy); color: #fff; font-weight: 700; font-size: 16px; }
+  .dlg .acts button.sub { background: #e3e6ee; color: var(--ink); }
+  .end textarea { width: 100%; min-height: 64px; border: 1px solid #9aa2b8; padding: 8px; font-size: 15px; }
+  .end label { font-weight: 700; font-size: 15px; }
+  @media (max-width: 1100px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script id="engine">
+const Engine = (() => {
+  "use strict";
+  // Rules of the 5-day trial (第3版). One day = 午前・午後・夕方. Bags (袋 = 10 cuts) move:
+  // animators' morning output → 上がり待ち → (a 進行 collects, max 4) → 仕上げ待ち → (仕上げ line, 2 per block, in order) → 完成.
+  const BL = ["午前", "午後", "夕方"], NB = 15, CAP = 4, LINE = 2, PUSH = 3, CALLS = 1;
+  const SHINKO = [
+    { id: "kawa", name: "川口", ep: "ep1", note: "中堅。数字で話す" },
+    { id: "make", name: "真壁", ep: "ep2", note: "ベテラン。心配ごとは控えめに言う" },
+    { id: "sae", name: "佐伯", ep: "ep3", note: "新人。いつも前向き" },
+  ];
+  const EPS = {
+    ep1: { title: "第1話「屋上の約束」", scene: "ラストの屋上の告白", deadline: 11, owner: "kawa", queue: ["x", "x"],
+      groups: [{ n: "A", name: "有村", sched: [2, 2, 2, 4, 0] }, { n: "B", name: "別所", sched: [2, 2, 2, 0, 0] }, { n: "C", name: "千田", sched: [2, 2, 2, 0, 0] }] },
+    ep2: { title: "第2話「雨の追走」", scene: "中盤の雨の中の追走", deadline: 14, owner: "make", queue: ["o", "o", "o", "o", "o", "o"],
+      groups: [{ n: "A", name: "秋山", sched: [2, 2, 2, 2, 2] }, { n: "B", name: "坂巻", sched: [2, 0, 2, 2, 2] }, { n: "C", name: "柴崎", sched: [0, 2, 2, 2, 0] }] },
+    ep3: { title: "第3話「文化祭」", scene: "ステージの演奏シーン", deadline: 14, owner: "sae", queue: ["o", "o"],
+      groups: [{ n: "A", name: "天野", sched: [2, 2, 2, 2, 0] }, { n: "B", name: "馬場", sched: [2, 2, 2, 2, 0] }, { n: "C", name: "千早", sched: [2, 2, 2, 2, 0] }] },
+  };
+  const EVENTS = { cStop: 2, bDay: 3, maint: { ep: "ep3", b: 12 } };
+  const IDS = ["ep1", "ep2", "ep3"];
+  const bname = (b) => `${Math.floor(b / 3) + 1}日目 ${BL[b % 3]}`;
+  const dayOf = (b) => Math.floor(b / 3) + 1;
+  const shOf = (id) => SHINKO.find((x) => x.id === id);
+  const G = (s, ep, n) => s.eps[ep].groups.find((g) => g.n === n);
+  const pile = (e) => e.groups.reduce((t, g) => t + g.ready, 0);
+  // bags the line can take this block, from the head, stopping at a bad bag or a bag delivered this block
+  const workable = (e, b) => { let n = 0; for (const q of e.queue) { if (!q.ok || q.from > b) break; n++; } return n; };
+
+  function newGame() {
+    const s = { v: 1, b: 0, phase: "play", calls: 0, push: {}, eps: {}, f: { handover: 0, bKept: false, bMissed: false },
+      know: { defectFlag: false, defect: false, cStop: false, bLeave: false, maint: false, checked: {} },
+      reported: {}, collected: {}, inbox: [], last: null, stall: {}, history: [], log: [] };
+    for (const id of IDS) {
+      const d = EPS[id];
+      s.eps[id] = { id, done: 0, closed: false, short: null, closedAt: null,
+        total: d.queue.length + d.groups.reduce((t, g) => t + g.sched.reduce((a, c) => a + c, 0), 0),
+        queue: d.queue.map((q) => ({ ok: q !== "x", from: 0 })),
+        groups: d.groups.map((g) => ({ n: g.n, name: g.name, sched: g.sched.slice(), ready: g.sched[0], rem: g.sched.slice(1).reduce((a, c) => a + c, 0), lag: 0, stop: false, gone: false })) };
+    }
+    begin(s);
+    return s;
+  }
+
+  // morning output: a group that did not draw (stopped, or yesterday's bags still waiting) slips its schedule by a day
+  function produce(g, day) {
+    if (g.gone || g.rem <= 0) return 0;
+    if (g.stop || g.ready > 0) { if (g.sched) g.lag++; return -1; }
+    const want = g.sched ? (g.sched[day - 1 - g.lag] || 0) : g.rate;
+    const k = Math.min(want, g.rem); g.ready += k; g.rem -= k; return k;
+  }
+  function morning(s, day, quiet) {
+    const notes = [];
+    if (day === EVENTS.cStop) G(s, "ep3", "C").stop = true;
+    if (day === EVENTS.cStop + 1) { const C = G(s, "ep3", "C"); if (C.stop && !C.gone) { C.gone = true; notes.push({ ep: "ep3", k: "gone" }); } }
+    if (day === EVENTS.bDay + 1 && !s.f.bKept) { G(s, "ep2", "B").stop = true; notes.push({ ep: "ep2", k: "bgone" }); }
+    for (const id of IDS) {
+      const e = s.eps[id]; if (e.closed) continue;
+      for (const g of e.groups) { const before = g.ready, k = produce(g, day); if (k === -1 && before > 0 && !g.stop) notes.push({ ep: id, k: "idle", g: g.name }); }
+    }
+    return notes;
+  }
+
+  // ---------- what reaches the desk at the start of a block ----------
+  function begin(s) {
+    const b = s.b, day = dayOf(b), m = b % 3;
+    s.inbox = []; s.push = {};
+    if (m === 0) { s.calls = 0; s.collected = {}; }
+    const say = (from, text, tone = "") => s.inbox.push({ from, text, tone });
+    let notes = [];
+    if (m === 0 && day > 1) notes = morning(s, day);
+    if (m === 0) {
+      for (const sh of SHINKO) {
+        const e = s.eps[sh.ep], p = pile(e);
+        if (e.closed) { say(sh.name, sh.id === "kawa" ? "ep1は終わりました。手、空いてます。" : "担当の話数は終わりました。", ""); s.reported[sh.ep] = 0; continue; }
+        const idle = notes.filter((n) => n.ep === sh.ep && n.k === "idle").map((n) => n.g);
+        if (sh.id === "kawa") {
+          s.reported.ep1 = p;
+          let t = `上がり${p}袋。数字どおり回収します。`;
+          if (idle.length) t += `${idle.join("さん・")}さんは、昨日の袋が回収されずに残っていたので今朝は描いていません。`;
+          if (day === 2 && G(s, "ep3", "C").stop) t += "……そういえば、佐伯くんのとこの千早さん、昨日よその現場で見かけましたよ。";
+          say("川口", t);
+        } else if (sh.id === "make") {
+          s.reported.ep2 = p;
+          let t = `上がり${p}袋です。`;
+          if (idle.length) t += `${idle.join("さん・")}さんは、昨日の分を取りに行けなかったので今朝は描いてないそうです。`;
+          if (day === EVENTS.bDay && !s.f.bKept) t += "坂巻さんが少し遅れ気味で……まあ、様子見です。";
+          if (notes.some((n) => n.k === "bgone")) t += "坂巻さん、連絡がつきません。よその現場に入ったみたいで……追走のカット、止まります。";
+          say("真壁", t, notes.some((n) => n.k === "bgone") ? "bad" : day === EVENTS.bDay && !s.f.bKept ? "warn" : "");
+        } else {
+          const rep = p >= 4 ? 4 : p; s.reported.ep3 = rep;
+          let t = p >= 4 ? `上がり${rep}袋です！ 午前で終わります！` : `上がり${rep}袋です！`;
+          if (idle.length) t += `${idle.join("さん・")}さんは今朝はお休みみたいです！`;
+          if (day === EVENTS.cStop) t += "みんな順調です！";
+          if (notes.some((n) => n.k === "gone")) t += "千早さんの分は、天野さんが引き受けてくれるそうです！";
+          say("佐伯", t);
+        }
+      }
+      if (day === 1 && s.eps.ep1.queue.some((q) => !q.ok)) { s.know.defectFlag = true; say("仕上げ会社", "ep1の仕上げ待ち2袋、データに不備があるかもしれません。いま確認中です。もし不備があれば、どなたかにこちらへ来て直してもらわないと、ep1の仕上げはそこで止まってしまいます。", "warn"); }
+      if (day === 2) { say("仕上げ会社", "ep3の担当ラインに、近いうちに機材のメンテナンスが入るかもしれません。", "warn"); say("仕上げ会社", "ep2のデータ形式について、一度確認をお願いしたいのですが。", ""); }
+      if (day === 5 && !s.eps.ep3.closed) say("仕上げ会社", "ep3のラインは、本日午前は機材メンテナンスで止まります。", "warn");
+      if (notes.some((n) => n.k === "gone")) say("千早さん（ep3の原画）", "すみません、ステージのカット、降ろさせてください。よその仕事が抜けられなくて……残りは誰かに引き継いでもらえますか。", "bad");
+    }
+    for (const id of IDS) if (s.stall[id] && !s.eps[id].closed) { s.know.defect = true; say("仕上げ会社", `${id}、データ不備のところで仕上げが止まっています。どなたかに来ていただかないと進みません。`, "bad"); }
+    s.stall = {};
+    if (day === 5 && m === 0) s.know.maint = true;
+  }
+
+  // ---------- the phone (once a day) ----------
+  function callWhy(s, kind, ep, where) {
+    if (s.phase !== "play") return "終わっている";
+    if (s.calls >= CALLS) return "今日はもう電話した";
+    const e = s.eps[ep];
+    if (kind === "push") {
+      if (e.closed) return "終わっている";
+      if (EVENTS.maint.ep === ep && EVENTS.maint.b === s.b) return "メンテ中で動かせない";
+      if (s.push[ep]) return "もう頼んだ";
+      if (workable(e, s.b) < 3) return "作業できる仕上げ待ちが3袋未満";
+    }
+    return "";
+  }
+  function call(s, kind, ep, where) {
+    const why = callWhy(s, kind, ep, where);
+    if (why) return { ok: false, text: why };
+    s.calls++;
+    const e = s.eps[ep], day = dayOf(s.b), m = s.b % 3;
+    let text = "";
+    if (kind === "push") {
+      s.push[ep] = true;
+      text = `${ep}の仕上げ会社に頼み込んだ。このブロックだけ、3袋まで処理してくれる。`;
+    } else if (where === "genga") {
+      s.know.checked[ep] = s.b;
+      const parts = e.groups.map((g) => {
+        if (g.gone) return `${g.name}さん：降板。残りの${g.rem + g.ready}袋を引き継いでくれる人を探すには、あと${2 - s.f.handover}回ほど回る必要がありそう。`;
+        if (ep === "ep3" && g.n === "C" && g.stop) { s.know.cStop = true; return `${g.name}さん：よその仕事に手を取られて止まっています。今日中に誰かが行けば、明日の朝から戻ってもらえそう。`; }
+        if (ep === "ep2" && g.n === "B" && !s.f.bKept && day === EVENTS.bDay && m === 0) { s.know.bLeave = true; return `${g.name}さん：上がり${g.ready}袋。ただ、今日の14時からよその仕事に移る予定。午前中に行けば引き止められそう。`; }
+        if (ep === "ep2" && g.n === "B" && !s.f.bKept && (day > EVENTS.bDay || (day === EVENTS.bDay && m > 0))) { s.know.bLeave = true; return `${g.name}さん：よその仕事に移りました。${day === EVENTS.bDay ? "今日は話ができません。明日以降に" : ""}呼び戻しに行けば、その翌朝から戻れそう。`; }
+        return `${g.name}さん：上がり${g.ready}袋（順調）。`;
+      });
+      text = `${ep}の原画（いまの上がり待ち ${pile(e)}袋）：` + parts.join(" ");
+      if (ep === "ep3" && s.reported.ep3 !== undefined && pile(e) + (s.collected.ep3 || 0) > s.reported.ep3) text += "（佐伯の報告より多い）";
+    } else {
+      const bad = e.queue.filter((q) => !q.ok).length;
+      if (bad) { s.know.defect = true; text = `${ep}の仕上げ：仕上げ待ちのうち${bad}袋がデータ不備です。誰かが来てくれれば直せます。`; }
+      else text = `${ep}の仕上げ：データは問題ありません。`;
+      if (ep === "ep3" && !e.closed) { s.know.maint = true; text += "それと、5日目の午前は機材メンテナンスでこのラインが止まります。"; }
+      if (ep === "ep2") text += "（データ形式の件も、問題ありませんでした）";
+    }
+    s.inbox.push({ from: "電話", text, tone: "ans" });
+    return { ok: true, text };
+  }
+
+  // ---------- resolve a block ----------
+  const FIX = { "ep1:shiage": "defect", "ep3:genga": "C", "ep2:genga": "B" };
+  function defaultAct(s, id) { const sh = shOf(id); return s.eps[sh.ep].closed ? { k: "wait" } : { k: "collect", ep: sh.ep }; }
+  function actWhy(s, id, a) {
+    if (a.k === "collect" && s.eps[a.ep].closed) return "その話数は締切が過ぎている";
+    return "";
+  }
+  function resolve(s, actsIn) {
+    if (s.phase !== "play") return null;
+    const b = s.b, day = dayOf(b), E = s.eps, lines = [], says = [];
+    const acts = {};
+    for (const sh of SHINKO) {
+      let a = (actsIn && actsIn[sh.id]) || defaultAct(s, sh.id);
+      if (actWhy(s, sh.id, a)) a = { k: "wait" };
+      acts[sh.id] = { ...a };
+    }
+    // 対応
+    for (const sh of SHINKO) {
+      const a = acts[sh.id]; if (a.k !== "fix") continue;
+      const t = FIX[`${a.ep}:${a.where}`]; let hit = false;
+      if (t === "defect") { const q = E.ep1.queue.filter((x) => !x.ok); if (q.length) { q.forEach((x) => { x.ok = true; }); hit = true; s.know.defect = true; lines.push(`${sh.name}がep1の仕上げ会社でデータ不備を直した。`);
+        says.push([sh.name, sh.id === "kawa" ? "直しました。そのぶん今日の回収はずれますが。" : sh.id === "make" ? "直してきました。ep1、流れます。こっちは仕上げ待ちがあるので大丈夫です。" : "直してきました！ 川口さんに貸しです！"]); } }
+      if (t === "C") { const C = G(s, "ep3", "C");
+        if (C.gone && C.rem + C.ready > 0) { s.f.handover++; hit = true; lines.push(`${sh.name}が千早さんの残りを引き継ぐ人を探して回った（${s.f.handover}/2）。`);
+          if (s.f.handover === 2) { E.ep3.groups.push({ n: "D", name: "土屋", rate: 2, ready: 0, rem: C.rem + C.ready, lag: 0, stop: false, gone: false }); C.rem = 0; C.ready = 0; lines.push("土屋さんが、千早さんの残りを引き受けてくれた（明日の朝から）。"); says.push([sh.name, "土屋さん、ステージのカット引き受けてくれました。"]); } }
+        else if (C.stop && !C.gone) { C.stop = false; hit = true; s.know.cStop = true; lines.push(`${sh.name}が千早さんを訪ね、明日の朝から戻ってもらえることになった。`);
+          says.push(["佐伯", sh.id === "sae" ? "千早さん、戻ってくれるそうです……すみません、ぼく気づいてなくて。" : "えっ、千早さん止まってたんですか……ありがとうございます。"]); } }
+      if (t === "B") { const B = G(s, "ep2", "B");
+        if (day === EVENTS.bDay && b % 3 === 0 && !s.f.bKept) { s.f.bKept = true; hit = true; s.know.bLeave = true; lines.push(`${sh.name}が坂巻さんを引き止めた。`); says.push(["真壁", sh.id === "make" ? "坂巻さん、残ってくれるそうです。追走シーン、予定どおりいけます。" : "……助かりました。追走シーン、坂巻さんじゃないと描けないんで。"]); }
+        else if (B.stop) { B.stop = false; hit = true; lines.push(`${sh.name}が坂巻さんを呼び戻した（明日の朝から）。`); says.push(["真壁", "坂巻さん、明日から戻ってくれるそうです。"]); } }
+      a.hit = hit;
+      if (!hit) { lines.push(`${sh.name}が${a.ep}の${a.where === "genga" ? "原画マン" : "仕上げ会社"}を回ったが、手を打てることはなかった（空振り）。`); says.push([sh.name, sh.id === "kawa" ? "行ってきましたが、何もできませんでした。" : sh.id === "make" ? "向こうは特に困っていませんでしたよ。" : "行ってきました！ 特に何もなかったです！"]); }
+    }
+    // 回収
+    for (const sh of SHINKO) {
+      const a = acts[sh.id]; if (a.k !== "collect") continue;
+      const e = E[a.ep]; let cap = CAP, got = 0;
+      for (const g of e.groups) { const k = Math.min(g.ready, cap); g.ready -= k; cap -= k; got += k; }
+      for (let i = 0; i < got; i++) e.queue.push({ ok: true, from: b + 1 });
+      a.got = got; s.collected[a.ep] = (s.collected[a.ep] || 0) + got;
+      if (a.ep !== sh.ep && got) lines.push(`${sh.name}が${a.ep}の回収を手伝った（${got}袋）。`);
+    }
+    // 仕上げ
+    const proc = {};
+    for (const id of IDS) {
+      const e = E[id]; if (e.closed) { proc[id] = 0; continue; }
+      const cap = EVENTS.maint.ep === id && EVENTS.maint.b === b ? 0 : s.push[id] ? PUSH : LINE;
+      let n = 0;
+      while (n < cap && e.queue.length && e.queue[0].ok && e.queue[0].from <= b) { e.queue.shift(); e.done++; n++; }
+      if (n < cap && e.queue.length && !e.queue[0].ok) s.stall[id] = true;
+      proc[id] = n;
+      if (cap === 0) lines.push(`${id}のラインはメンテナンスで止まっていた。`);
+      else if (n === 0 && e.done < e.total) lines.push(`${id}の仕上げは、このブロック動けなかった（作業できる袋がなかった）。`);
+      const sum = e.groups.reduce((t, g) => t + g.ready + g.rem, 0) + e.queue.length + e.done;
+      if (sum !== e.total) throw new Error(`${bname(b)} ${id} 袋の数が合わない`);
+      if (b === EPS[id].deadline || (e.done >= e.total && !e.closed)) {
+        e.closed = true; e.short = e.total - e.done; e.closedAt = b;
+        const sh = shOf(EPS[id].owner);
+        if (e.short === 0) { lines.push(`${id}「${EPS[id].title.split("「")[1]}が完成した。`); says.push([sh.name, id === "ep1" ? "屋上の告白、全カット揃いました。いい芝居になってます。" : id === "ep2" ? "追走シーン、雨の中まで全部入りました。" : "ステージの演奏、間に合いました！ 千早さんのカット、すごいですよ！"]); }
+        else { lines.push(`${id}は締切で${e.short}袋足りなかった。足りない分は止め絵や使い回しでつなぐ。`); says.push([sh.name, id === "ep1" ? `屋上のラスト、${e.short}袋足りません。止め絵でつなぎます。` : id === "ep2" ? `追走が${e.short}袋ぶん抜けます。……雨のカットでごまかします。` : `ステージ、${e.short}袋ぶん止め絵です……すみません。`]); }
+      }
+    }
+    if (day === EVENTS.bDay && b % 3 === 0 && !s.f.bKept) s.f.bMissed = true;
+    s.last = { b, acts, proc, lines, says, calls: s.history.length };
+    s.history.push({ calls: (s.pendingCalls || []).slice(), acts: actsIn || {} });
+    s.pendingCalls = [];
+    s.b++;
+    if (s.b >= NB || IDS.every((id) => s.eps[id].closed)) { s.phase = "end"; s.inbox = []; }
+    else begin(s);
+    return s.last;
+  }
+  // replay-friendly wrappers (the UI records calls so a saved game can be rebuilt exactly)
+  function doCall(s, kind, ep, where) { const r = call(s, kind, ep, where); if (r.ok) { s.pendingCalls = s.pendingCalls || []; s.pendingCalls.push({ kind, ep, where }); } return r; }
+  function replay(history) { const s = newGame(); for (const h of history) { for (const c of h.calls || []) call(s, c.kind, c.ep, c.where); s.pendingCalls = (h.calls || []).slice(); resolve(s, h.acts); } return s; }
+
+  // ---------- what the desk can read ----------
+  // the deadline outlook from what the desk knows: unknown troubles count as "none"; assumes each 担当 collects every block from now
+  function outlook(s, id) {
+    const e0 = s.eps[id]; if (e0.closed) return null;
+    const c = JSON.parse(JSON.stringify(e0)), K = s.know;
+    if (!K.defect) c.queue.forEach((q) => { q.ok = true; });
+    for (const g of c.groups) { if (id === "ep3" && g.n === "C" && g.stop && !K.cStop) g.stop = false; }
+    const bKept = s.f.bKept || !K.bLeave, maintOn = K.maint;
+    const dl = EPS[id].deadline;
+    for (let b = s.b; b <= dl; b++) {
+      if (b % 3 === 0 && b !== s.b) { const day = dayOf(b); for (const g of c.groups) { if (id === "ep3" && g.n === "C" && g.stop && day === EVENTS.cStop + 1) g.gone = true; if (id === "ep2" && g.n === "B" && day === EVENTS.bDay + 1 && !bKept) g.stop = true; produce(g, day); } }
+      let cap = CAP, got = 0; for (const g of c.groups) { const k = Math.min(g.ready, cap); g.ready -= k; cap -= k; got += k; }
+      for (let i = 0; i < got; i++) c.queue.push({ ok: true, from: b + 1 });
+      const lc = maintOn && EVENTS.maint.ep === id && EVENTS.maint.b === b ? 0 : (b === s.b && s.push[id] ? PUSH : LINE);
+      let n = 0; while (n < lc && c.queue.length && c.queue[0].ok && c.queue[0].from <= b) { c.queue.shift(); c.done++; n++; }
+      if (c.done >= c.total) return dl - b;
+    }
+    return -Math.ceil((c.total - c.done) / 2);
+  }
+  function schedule(id) { return EPS[id].groups.reduce((acc, g) => g.sched.map((v, i) => (acc[i] || 0) + v), []); }
+  function result(s) { return IDS.map((id) => ({ id, short: s.eps[id].short, done: s.eps[id].done, total: s.eps[id].total, at: s.eps[id].closedAt })); }
+
+  return { NB, CALLS, SHINKO, EPS, IDS, EVENTS, bname, dayOf, newGame, resolve, doCall, call, callWhy, replay, outlook, schedule, workable, pile, result, defaultAct, actWhy, shOf };
+})();
+if (typeof module !== "undefined") module.exports = Engine;
+</script>
+<script>
+(() => {
+  "use strict";
+  const E = Engine, KEY = "animep.desk5";
+  let s = null, acts = {}, ui = { detail: false, modal: null, notes: { q1: "", q2: "", q3: "" } };
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const $ = (id) => document.getElementById(id);
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify({ history: s.history, pending: s.pendingCalls || [], acts, notes: ui.notes, modal: ui.modal === "intro" ? "intro" : null })); } catch (e) { /* storage may be off */ } }
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (!d) return false;
+      s = E.replay(d.history || []);
+      for (const c of d.pending || []) E.doCall(s, c.kind, c.ep, c.where);
+      acts = d.acts || {}; ui.notes = d.notes || ui.notes; ui.modal = d.modal || null;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ---------- pieces ----------
+  const EPN = { ep1: "ep1", ep2: "ep2", ep3: "ep3" };
+  function shiageCell(id) {
+    const e = s.eps[id], n = e.queue.length, bad = e.queue.filter((q) => !q.ok).length;
+    if (e.closed) return "—";
+    if (id === "ep1" && bad && !s.know.defect && s.know.defectFlag) return `${n}袋 <span class="org">（うち${bad}袋は作業できるか未確認）</span>`;
+    if (bad && s.know.defect) return `${n}袋 <span class="red">（うち${bad}袋はデータ不備）</span>`;
+    return `${n}袋 <small>（問題の報告なし）</small>`;
+  }
+  function bufferCell(id) {
+    const e = s.eps[id]; if (e.closed) return "—";
+    const unknownBad = id === "ep1" && !s.know.defect && e.queue.some((q) => !q.ok);
+    let w = 0; for (const q of e.queue) { if (q.from > s.b) break; if (!q.ok && s.know.defect) break; w++; }
+    const blocks = Math.floor(w / 2);
+    if (unknownBad) return `最大${blocks}ブロック <span class="tag h">推</span><br><small>不備があれば0</small>`;
+    return `${blocks}ブロック <span class="tag h">推</span>`;
+  }
+  function pileCell(id) {
+    const e = s.eps[id]; if (e.closed) return "—";
+    const sh = E.shOf(E.EPS[id].owner), got = s.collected[id] || 0, rep = s.reported[id];
+    if (s.know.checked[id] === s.b) return `${E.pile(e)}袋 <span class="tag k">確</span><br><small>電話で確認</small>`;
+    if (rep === undefined) return "—";
+    if (got === 0) return `${rep}袋 <span class="tag s">報</span><br><small>${sh.name}の報告</small>`;
+    return `残り${Math.max(0, rep - got)}袋 <span class="tag h">推</span><br><small>報告${rep}−回収${got}</small>`;
+  }
+  function sheet() {
+    const rows = E.IDS.map((id) => {
+      const e = s.eps[id], d = E.EPS[id];
+      const done = e.closed ? (e.short === 0 ? `<span class="grn">完成 ${e.done}/${e.total}</span>` : `<span class="red">締切 ${e.done}/${e.total}（${e.short}袋不足）</span>`) : `${e.done}/${e.total}`;
+      const dl = `${E.bname(d.deadline).replace(" ", "")}まで${s.know.maint && id === "ep3" && !e.closed ? "<br><small class=\"org\">5日目午前メンテ</small>" : ""}`;
+      return `<tr><td class="t"><b>${esc(d.title)}</b><small>見せ場：${esc(d.scene)}／担当 ${esc(E.shOf(d.owner).name)}</small></td><td>${done} <span class="tag k">確</span></td><td>${shiageCell(id)}</td><td>${bufferCell(id)}</td><td>${pileCell(id)}</td><td>${dl}</td></tr>`;
+    }).join("");
+    return `<div class="card"><h2>工程表 <small>確＝受け取り表の確かな数／報＝担当の報告／推＝推測</small></h2>
+      <table class="sheet"><thead><tr><th>話数</th><th>完成</th><th>仕上げ待ち</th><th>手元の余裕</th><th>上がり待ち</th><th>締切</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="note">手元の余裕：担当がこのブロックで抜けても、その話数の仕上げが止まらないブロック数。</p></div>`;
+  }
+  function inbox() {
+    const items = s.inbox.map((m) => `<div class="msg ${m.tone}"><b>${esc(m.from)}</b><span>${esc(m.text)}</span></div>`).join("") || `<p class="note">新しい報告はない。</p>`;
+    return `<div class="card"><h2>届いた報告</h2><div class="msgs">${items}</div></div>`;
+  }
+  function lastResult() {
+    const L = s.last; if (!L) return "";
+    return `<div class="card"><h2>${esc(E.bname(L.b))}の結果</h2><div class="result">${L.lines.map((l) => `<div class="line">${esc(l)}</div>`).join("")}${L.says.map(([w, t]) => `<div class="say"><b>${esc(w)}</b>「${esc(t)}」</div>`).join("")}${!L.lines.length && !L.says.length ? '<div class="line">いつもどおり回収と仕上げが進んだ。</div>' : ""}
+      <div class="line"><small>仕上げ：${E.IDS.map((id) => `${id} +${L.proc[id]}`).join("　")}</small></div></div></div>`;
+  }
+  function optionsFor(id) {
+    const sh = E.shOf(id), cur = acts[id] || E.defaultAct(s, id), val = (a) => a.k === "collect" ? `c:${a.ep}` : a.k === "fix" ? `f:${a.ep}:${a.where}` : "w";
+    const o = [];
+    o.push(`<optgroup label="回収">` + E.IDS.map((ep) => `<option value="c:${ep}" ${s.eps[ep].closed ? "disabled" : ""}>${ep}を回収${ep === sh.ep ? "（担当）" : "（応援）"}${s.eps[ep].closed ? "：締切が過ぎている" : ""}</option>`).join("") + `</optgroup>`);
+    o.push(`<optgroup label="対応（出向く）">` + E.IDS.map((ep) => `<option value="f:${ep}:genga">${ep}の原画マンを回る</option><option value="f:${ep}:shiage">${ep}の仕上げ会社へ行く</option>`).join("") + `</optgroup>`);
+    o.push(`<option value="w">待機</option>`);
+    return o.join("").replace(`value="${val(cur)}"`, `value="${val(cur)}" selected`);
+  }
+  function people() {
+    const rows = E.SHINKO.map((sh) => `<div class="who"><div class="nm"><b>${sh.name}</b><small>${sh.ep}担当・${esc(sh.note)}</small></div>
+      <label class="sr" for="sel-${sh.id}" style="position:absolute;left:-9999px">${sh.name}への指示</label>
+      <select id="sel-${sh.id}" data-who="${sh.id}">${optionsFor(sh.id)}</select></div>`).join("");
+    return `<div class="card"><h2>3人の配置 <small>指示しなければ担当の話数を回収</small></h2>${rows}<p class="note">対応に出した人は、そのブロックは回収しません。問題のない所へ行くと空振りです。</p></div>`;
+  }
+  function phone() {
+    const left = E.CALLS - s.calls;
+    const b = (label, kind, ep, where) => { const why = E.callWhy(s, kind, ep, where); return `<button data-call="${kind}" data-ep="${ep}" data-where="${where || ""}" ${why ? "disabled" : ""} title="${esc(why)}">${esc(label)}${why && why !== "今日はもう電話した" ? `：${esc(why)}` : ""}</button>`; };
+    return `<div class="card phone"><h2>電話 <small>今日の残り ${left}回／答えを見てから指示を決められる</small></h2>
+      <div class="row"><span>確認（本当の状態と原因が分かる）</span>${E.IDS.map((ep) => b(`${ep}の原画`, "check", ep, "genga") + b(`${ep}の仕上げ`, "check", ep, "shiage")).join("")}</div>
+      <div class="row"><span>頼み込み（このブロックだけ、その話数の仕上げを3袋に。作業できる仕上げ待ちが3袋以上必要）</span>${E.IDS.map((ep) => b(`${ep}に頼み込む`, "push", ep)).join("")}</div></div>`;
+  }
+  function detail() {
+    if (!ui.detail) return "";
+    const day = E.dayOf(s.b);
+    const rows = E.IDS.map((id) => `<tr><th>${id}</th>${E.schedule(id).map((v, i) => `<td class="${i + 1 === day ? "today" : ""}">${v}</td>`).join("")}</tr>`).join("");
+    const out = E.IDS.map((id) => { const o = E.outlook(s, id); return `<li>${id}：${o === null ? "締切済み" : o >= 0 ? `締切より${o}ブロック早く終わる見込み` : `このままだと締切で約${-o * 2}袋足りない見込み`}</li>`; }).join("");
+    return `<div class="card detail"><h2>詳細 <small>予定表と見込み</small></h2>
+      <p class="note" style="margin:0 0 6px">予定表：原画マンが毎朝上げる予定の袋数（1日目→5日目）。前日の袋が回収されずに残っていたり、手が止まったりすると、その分あとへずれる。</p>
+      <table><thead><tr><th></th><th>1日目</th><th>2日目</th><th>3日目</th><th>4日目</th><th>5日目</th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="note" style="margin:10px 0 4px">締切の見込み（推）：あなたが把握している情報だけで、担当が毎ブロック回収した場合。分かっていない問題は入っていない。</p><ul style="margin:0;padding-left:20px;line-height:1.7;font-size:14px">${out}</ul></div>`;
+  }
+  const RULES = `<ul>
+    <li>あなたは制作デスク。進行3人（川口・真壁・佐伯）が、それぞれ担当の話数を回している。5日間で3話を締切までに仕上げる。</li>
+    <li>1日は午前・午後・夕方の3ブロック。指示を決めて「進める」で1ブロック進む。指示しない人は、担当の話数を回収する。</li>
+    <li>原画マンの上がった袋を進行が回収し（1人1回4袋まで）、仕上げ会社が1ブロック2袋ずつ、届いた順に仕上げる。回収した袋は次のブロックから仕上げられる。</li>
+    <li>前日の袋が回収されずに残っていると、その原画マンは翌朝描かない。</li>
+    <li>電話は1日1回。「確認」で本当の状態と原因が分かる。「頼み込み」でそのブロックだけ仕上げを3袋にできる。</li>
+    <li>報告には人それぞれ癖がある。確かなのは受け取り表の数（完成・仕上げ待ち・回収した数）だけ。問題は放っておくと悪化することがある。</li>
+  </ul>`;
+  function modal() {
+    if (ui.modal === "intro") return `<div class="modal"><div class="dlg" role="dialog" aria-label="はじめに"><h2>デスクの5日間（試作）</h2><p>5分ほどで終わる、制作デスクの試作です。</p>${RULES}<div class="acts"><button data-act="start">はじめる</button></div></div></div>`;
+    if (ui.modal === "help") return `<div class="modal"><div class="dlg" role="dialog" aria-label="遊び方"><h2>遊び方</h2>${RULES}<div class="acts"><button data-act="close">閉じる</button></div></div></div>`;
+    if (ui.modal === "restart") return `<div class="modal"><div class="dlg" role="dialog" aria-label="最初から"><h2>最初からやり直しますか？</h2><p>いまの5日間は消える。</p><div class="acts"><button data-act="restart">やり直す</button><button class="sub" data-act="close">やめる</button></div></div></div>`;
+    return "";
+  }
+  function endScreen() {
+    const r = E.result(s);
+    const rows = r.map((x) => { const d = E.EPS[x.id]; return `<tr><td class="t"><b>${esc(d.title)}</b><small>見せ場：${esc(d.scene)}</small></td><td>${x.short === 0 ? `<span class="grn">完成（${E.bname(x.at)}）</span>` : `<span class="red">${x.short}袋不足（止め絵でつなぐ）</span>`}</td><td>${x.done}/${x.total}</td></tr>`; }).join("");
+    const hist = s.history.map((h, i) => { const parts = []; for (const c of h.calls || []) parts.push(c.kind === "push" ? `電話：${c.ep}に頼み込み` : `電話：${c.ep}の${c.where === "genga" ? "原画" : "仕上げ"}を確認`); for (const [w, a] of Object.entries(h.acts || {})) { if (!a) continue; const sh = E.shOf(w); if (a.k === "collect" && a.ep === sh.ep) continue; parts.push(`${sh.name}：${a.k === "collect" ? `${a.ep}の回収応援` : a.k === "fix" ? `${a.ep}の${a.where === "genga" ? "原画マン" : "仕上げ会社"}へ` : "待機"}`); } return parts.length ? `<li><b>${E.bname(i)}</b> ${esc(parts.join("／"))}</li>` : ""; }).join("");
+    return `<div class="wrap" style="grid-template-columns:minmax(0,1fr)"><div class="col end">
+      <div class="card"><h2>5日間の結果</h2><table class="sheet"><thead><tr><th>話数</th><th>結果</th><th>完成</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${lastResult()}
+      <div class="card"><h2>あなたの指示の記録 <small>担当の回収以外</small></h2><ul style="margin:0;padding-left:20px;line-height:1.8;font-size:14px">${hist || "<li>担当の回収以外の指示はなかった。</li>"}</ul></div>
+      <div class="card"><h2>ふりかえり</h2>
+        <label for="q1">いちばん迷った判断は？</label><textarea id="q1" data-note="q1">${esc(ui.notes.q1)}</textarea>
+        <label for="q2">納得できなかった結果は？</label><textarea id="q2" data-note="q2">${esc(ui.notes.q2)}</textarea>
+        <label for="q3">覚えている人物や出来事は？</label><textarea id="q3" data-note="q3">${esc(ui.notes.q3)}</textarea>
+        <p class="note">書いた内容はこのブラウザに残る。</p>
+        <div class="dlg" style="padding:0"><div class="acts"><button data-act="restartAsk">最初からもう一度</button></div></div></div></div></div>`;
+  }
+  function render() {
+    const top = `<div class="top"><h1>デスクの5日間</h1><span class="when">${s.phase === "end" ? "5日間おわり" : esc(E.bname(s.b))}</span>${s.phase === "play" ? `<span class="calls ${E.CALLS - s.calls ? "" : "none"}">電話 残り${E.CALLS - s.calls}回</span>` : ""}<span class="sp"></span>
+      ${s.phase === "play" ? `<button data-act="detail" class="${ui.detail ? "on" : ""}" aria-pressed="${ui.detail}">詳細</button>` : ""}<button data-act="help">遊び方</button><button data-act="restartAsk">最初から</button></div>`;
+    const body = s.phase === "end" ? endScreen() : `<div class="wrap"><div class="col">${lastResult()}${inbox()}${sheet()}${detail()}</div>
+      <div class="col">${people()}${phone()}<button class="go" data-act="go">進める（${esc(E.bname(s.b))}を終える）</button></div></div>`;
+    $("app").innerHTML = top + body + modal();
+  }
+
+  // ---------- input ----------
+  document.addEventListener("change", (ev) => {
+    const sel = ev.target.closest("select[data-who]");
+    if (!sel) return;
+    const v = sel.value.split(":"), who = sel.dataset.who;
+    acts[who] = v[0] === "c" ? { k: "collect", ep: v[1] } : v[0] === "f" ? { k: "fix", ep: v[1], where: v[2] } : { k: "wait" };
+    const d = E.defaultAct(s, who); if (JSON.stringify(d) === JSON.stringify(acts[who])) delete acts[who];
+    save();
+  });
+  document.addEventListener("input", (ev) => { const t = ev.target.closest("textarea[data-note]"); if (t) { ui.notes[t.dataset.note] = t.value; save(); } });
+  document.addEventListener("click", (ev) => {
+    const c = ev.target.closest("[data-call]");
+    if (c && !c.disabled) { E.doCall(s, c.dataset.call, c.dataset.ep, c.dataset.where || undefined); save(); render(); return; }
+    const a = ev.target.closest("[data-act]"); if (!a) return;
+    const k = a.dataset.act;
+    if (k === "start") { ui.modal = null; save(); render(); return; }
+    if (k === "help") { ui.modal = "help"; render(); return; }
+    if (k === "close") { ui.modal = null; render(); return; }
+    if (k === "restartAsk") { ui.modal = "restart"; render(); return; }
+    if (k === "restart") { s = E.newGame(); acts = {}; ui.modal = null; ui.notes = { q1: "", q2: "", q3: "" }; save(); render(); window.scrollTo(0, 0); return; }
+    if (k === "detail") { ui.detail = !ui.detail; render(); return; }
+    if (k === "go") { E.resolve(s, { ...acts }); acts = {}; save(); render(); window.scrollTo(0, 0); } // only what you chose is recorded; the rest follow their own episode
+  });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && (ui.modal === "help" || ui.modal === "restart")) { ui.modal = null; render(); } });
+  window.addEventListener("pagehide", () => { if (s) save(); });
+
+  if (!load()) { s = E.newGame(); ui.modal = "intro"; }
+  render();
+})();
+</script>
+</body>
+</html>
