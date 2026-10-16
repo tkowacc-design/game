@@ -199,8 +199,8 @@ const Engine = (() => {
     if (s.phase !== "play") return "終わっている";
     if (s.calls >= CALLS) return "今日はもう電話した";
     const e = s.eps[ep];
+    if (e.closed) return "締切が過ぎている";
     if (kind === "push") {
-      if (e.closed) return "終わっている";
       if (EVENTS.maint.ep === ep && EVENTS.maint.b === s.b) return "メンテ中で動かせない";
       if (s.push[ep]) return "もう頼んだ";
       if (workable(e, s.b) < 3) return "作業できる仕上げ待ちが3袋未満";
@@ -242,7 +242,7 @@ const Engine = (() => {
   const FIX = { "ep1:shiage": "defect", "ep3:genga": "C", "ep2:genga": "B" };
   function defaultAct(s, id) { const sh = shOf(id); return s.eps[sh.ep].closed ? { k: "wait" } : { k: "collect", ep: sh.ep }; }
   function actWhy(s, id, a) {
-    if (a.k === "collect" && s.eps[a.ep].closed) return "その話数は締切が過ぎている";
+    if (s.eps[a.ep] && s.eps[a.ep].closed && a.k !== "wait") return "その話数は締切が過ぎている";
     return "";
   }
   function resolve(s, actsIn) {
@@ -269,7 +269,11 @@ const Engine = (() => {
         if (day === EVENTS.bDay && b % 3 === 0 && !s.f.bKept) { s.f.bKept = true; hit = true; s.know.bLeave = true; lines.push(`${sh.name}が坂巻さんを引き止めた。`); says.push(["真壁", sh.id === "make" ? "坂巻さん、残ってくれるそうです。追走シーン、予定どおりいけます。" : "……助かりました。追走シーン、坂巻さんじゃないと描けないんで。"]); }
         else if (B.stop) { B.stop = false; hit = true; lines.push(`${sh.name}が坂巻さんを呼び戻した（明日の朝から）。`); says.push(["真壁", "坂巻さん、明日から戻ってくれるそうです。"]); } }
       a.hit = hit;
-      if (!hit) { lines.push(`${sh.name}が${a.ep}の${a.where === "genga" ? "原画マン" : "仕上げ会社"}を回ったが、手を打てることはなかった（空振り）。`); says.push([sh.name, sh.id === "kawa" ? "行ってきましたが、何もできませんでした。" : sh.id === "make" ? "向こうは特に困っていませんでしたよ。" : "行ってきました！ 特に何もなかったです！"]); }
+      if (!hit) {
+        const bAway = t === "B" && !s.f.bKept && day === EVENTS.bDay;
+        lines.push(`${sh.name}が${a.ep}の${a.where === "genga" ? "原画マン" : "仕上げ会社"}を回ったが、手を打てることはなかった（空振り）。`);
+        says.push([sh.name, bAway ? "坂巻さん、もうよその現場に入っていて、今日は話せませんでした。" : sh.id === "kawa" ? "行ってきましたが、何もできませんでした。" : sh.id === "make" ? "向こうは特に困っていませんでしたよ。" : "行ってきました！ 特に何もなかったです！"]);
+      }
     }
     // 回収
     for (const sh of SHINKO) {
@@ -289,7 +293,7 @@ const Engine = (() => {
       while (n < cap && e.queue.length && e.queue[0].ok && e.queue[0].from <= b) { e.queue.shift(); e.done++; n++; }
       if (n < cap && e.queue.length && !e.queue[0].ok) s.stall[id] = true;
       proc[id] = n;
-      if (cap === 0) lines.push(`${id}のラインはメンテナンスで止まっていた。`);
+      if (cap === 0 && workable(e, b) > 0) lines.push(`${id}のラインはメンテナンスで止まっていた（${Math.min(LINE, workable(e, b))}袋ぶん進まなかった）。`);
       else if (n === 0 && e.done < e.total) lines.push(`${id}の仕上げは、このブロック動けなかった（作業できる袋がなかった）。`);
       const sum = e.groups.reduce((t, g) => t + g.ready + g.rem, 0) + e.queue.length + e.done;
       if (sum !== e.total) throw new Error(`${bname(b)} ${id} 袋の数が合わない`);
@@ -347,13 +351,13 @@ if (typeof module !== "undefined") module.exports = Engine;
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const $ = (id) => document.getElementById(id);
 
-  function save() { try { localStorage.setItem(KEY, JSON.stringify({ history: s.history, pending: s.pendingCalls || [], acts, notes: ui.notes, modal: ui.modal === "intro" ? "intro" : null })); } catch (e) { /* storage may be off */ } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify({ history: s.history, pending: s.pendingCalls || [], acts, notes: ui.notes, modal: ui.modal === "intro" ? "intro" : null, detail: ui.detail })); } catch (e) { /* storage may be off */ } }
   function load() {
     try {
       const d = JSON.parse(localStorage.getItem(KEY) || "null"); if (!d) return false;
       s = E.replay(d.history || []);
       for (const c of d.pending || []) E.doCall(s, c.kind, c.ep, c.where);
-      acts = d.acts || {}; ui.notes = d.notes || ui.notes; ui.modal = d.modal || null;
+      acts = d.acts || {}; ui.notes = d.notes || ui.notes; ui.modal = d.modal || null; ui.detail = !!d.detail;
       return true;
     } catch (e) { return false; }
   }
@@ -363,9 +367,10 @@ if (typeof module !== "undefined") module.exports = Engine;
   function shiageCell(id) {
     const e = s.eps[id], n = e.queue.length, bad = e.queue.filter((q) => !q.ok).length;
     if (e.closed) return "—";
-    if (id === "ep1" && bad && !s.know.defect && s.know.defectFlag) return `${n}袋 <span class="org">（うち${bad}袋は作業できるか未確認）</span>`;
-    if (bad && s.know.defect) return `${n}袋 <span class="red">（うち${bad}袋はデータ不備）</span>`;
-    return `${n}袋 <small>（問題の報告なし）</small>`;
+    const K = '<span class="tag k">確</span>';
+    if (id === "ep1" && bad && !s.know.defect && s.know.defectFlag) return `${n}袋 ${K}<br><span class="org">うち${bad}袋は作業できるか未確認</span> <span class="tag s">報</span>`;
+    if (bad && s.know.defect) return `${n}袋 ${K}<br><span class="red">うち${bad}袋はデータ不備</span> <span class="tag k">確</span>`;
+    return `${n}袋 ${K}<br><small>問題の報告なし</small>`;
   }
   function bufferCell(id) {
     const e = s.eps[id]; if (e.closed) return "—";
@@ -387,7 +392,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     const rows = E.IDS.map((id) => {
       const e = s.eps[id], d = E.EPS[id];
       const done = e.closed ? (e.short === 0 ? `<span class="grn">完成 ${e.done}/${e.total}</span>` : `<span class="red">締切 ${e.done}/${e.total}（${e.short}袋不足）</span>`) : `${e.done}/${e.total}`;
-      const dl = `${E.bname(d.deadline).replace(" ", "")}まで${s.know.maint && id === "ep3" && !e.closed ? "<br><small class=\"org\">5日目午前メンテ</small>" : ""}`;
+      const dl = `${E.bname(d.deadline).replace(" ", "")}まで <span class="tag k">確</span>${s.know.maint && id === "ep3" && !e.closed ? "<br><small class=\"org\">5日目午前メンテ</small>" : ""}`;
       return `<tr><td class="t"><b>${esc(d.title)}</b><small>見せ場：${esc(d.scene)}／担当 ${esc(E.shOf(d.owner).name)}</small></td><td>${done} <span class="tag k">確</span></td><td>${shiageCell(id)}</td><td>${bufferCell(id)}</td><td>${pileCell(id)}</td><td>${dl}</td></tr>`;
     }).join("");
     return `<div class="card"><h2>工程表 <small>確＝受け取り表の確かな数／報＝担当の報告／推＝推測</small></h2>
@@ -407,7 +412,8 @@ if (typeof module !== "undefined") module.exports = Engine;
     const sh = E.shOf(id), cur = acts[id] || E.defaultAct(s, id), val = (a) => a.k === "collect" ? `c:${a.ep}` : a.k === "fix" ? `f:${a.ep}:${a.where}` : "w";
     const o = [];
     o.push(`<optgroup label="回収">` + E.IDS.map((ep) => `<option value="c:${ep}" ${s.eps[ep].closed ? "disabled" : ""}>${ep}を回収${ep === sh.ep ? "（担当）" : "（応援）"}${s.eps[ep].closed ? "：締切が過ぎている" : ""}</option>`).join("") + `</optgroup>`);
-    o.push(`<optgroup label="対応（出向く）">` + E.IDS.map((ep) => `<option value="f:${ep}:genga">${ep}の原画マンを回る</option><option value="f:${ep}:shiage">${ep}の仕上げ会社へ行く</option>`).join("") + `</optgroup>`);
+    const cl = (ep) => s.eps[ep].closed ? ` disabled` : "", cw = (ep) => s.eps[ep].closed ? "：締切が過ぎている" : "";
+    o.push(`<optgroup label="対応（出向く）">` + E.IDS.map((ep) => `<option value="f:${ep}:genga"${cl(ep)}>${ep}の原画マンを回る${cw(ep)}</option><option value="f:${ep}:shiage"${cl(ep)}>${ep}の仕上げ会社へ行く${cw(ep)}</option>`).join("") + `</optgroup>`);
     o.push(`<option value="w">待機</option>`);
     return o.join("").replace(`value="${val(cur)}"`, `value="${val(cur)}" selected`);
   }
@@ -420,7 +426,7 @@ if (typeof module !== "undefined") module.exports = Engine;
   function phone() {
     const left = E.CALLS - s.calls;
     const b = (label, kind, ep, where) => { const why = E.callWhy(s, kind, ep, where); return `<button data-call="${kind}" data-ep="${ep}" data-where="${where || ""}" ${why ? "disabled" : ""} title="${esc(why)}">${esc(label)}${why && why !== "今日はもう電話した" ? `：${esc(why)}` : ""}</button>`; };
-    return `<div class="card phone"><h2>電話 <small>今日の残り ${left}回／答えを見てから指示を決められる</small></h2>
+    return `<div class="card phone"><h2>電話 <small>今日の残り ${left}回／答えを見てから指示を決められる</small></h2>${left ? "" : '<p class="note" style="margin:0 0 8px"><b>今日の電話はもう使った。</b>明日の午前にまた使える。</p>'}
       <div class="row"><span>確認（本当の状態と原因が分かる）</span>${E.IDS.map((ep) => b(`${ep}の原画`, "check", ep, "genga") + b(`${ep}の仕上げ`, "check", ep, "shiage")).join("")}</div>
       <div class="row"><span>頼み込み（このブロックだけ、その話数の仕上げを3袋に。作業できる仕上げ待ちが3袋以上必要）</span>${E.IDS.map((ep) => b(`${ep}に頼み込む`, "push", ep)).join("")}</div></div>`;
   }
@@ -428,7 +434,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (!ui.detail) return "";
     const day = E.dayOf(s.b);
     const rows = E.IDS.map((id) => `<tr><th>${id}</th>${E.schedule(id).map((v, i) => `<td class="${i + 1 === day ? "today" : ""}">${v}</td>`).join("")}</tr>`).join("");
-    const out = E.IDS.map((id) => { const o = E.outlook(s, id); return `<li>${id}：${o === null ? "締切済み" : o >= 0 ? `締切より${o}ブロック早く終わる見込み` : `このままだと締切で約${-o * 2}袋足りない見込み`}</li>`; }).join("");
+    const out = E.IDS.map((id) => { const o = E.outlook(s, id); return `<li>${id}：${o === null ? "締切済み" : o > 0 ? `締切より${o}ブロック早く終わる見込み` : o === 0 ? "締切ちょうどに終わる見込み" : `このままだと締切で約${-o * 2}袋足りない見込み`}</li>`; }).join("");
     return `<div class="card detail"><h2>詳細 <small>予定表と見込み</small></h2>
       <p class="note" style="margin:0 0 6px">予定表：原画マンが毎朝上げる予定の袋数（1日目→5日目）。前日の袋が回収されずに残っていたり、手が止まったりすると、その分あとへずれる。</p>
       <table><thead><tr><th></th><th>1日目</th><th>2日目</th><th>3日目</th><th>4日目</th><th>5日目</th></tr></thead><tbody>${rows}</tbody></table>
@@ -461,7 +467,7 @@ if (typeof module !== "undefined") module.exports = Engine;
         <label for="q2">納得できなかった結果は？</label><textarea id="q2" data-note="q2">${esc(ui.notes.q2)}</textarea>
         <label for="q3">覚えている人物や出来事は？</label><textarea id="q3" data-note="q3">${esc(ui.notes.q3)}</textarea>
         <p class="note">書いた内容はこのブラウザに残る。</p>
-        <div class="dlg" style="padding:0"><div class="acts"><button data-act="restartAsk">最初からもう一度</button></div></div></div></div></div>`;
+        <button class="go" data-act="restartAsk">最初からもう一度</button></div></div></div>`;
   }
   function render() {
     const top = `<div class="top"><h1>デスクの5日間</h1><span class="when">${s.phase === "end" ? "5日間おわり" : esc(E.bname(s.b))}</span>${s.phase === "play" ? `<span class="calls ${E.CALLS - s.calls ? "" : "none"}">電話 残り${E.CALLS - s.calls}回</span>` : ""}<span class="sp"></span>
@@ -491,7 +497,7 @@ if (typeof module !== "undefined") module.exports = Engine;
     if (k === "close") { ui.modal = null; render(); return; }
     if (k === "restartAsk") { ui.modal = "restart"; render(); return; }
     if (k === "restart") { s = E.newGame(); acts = {}; ui.modal = null; ui.notes = { q1: "", q2: "", q3: "" }; save(); render(); window.scrollTo(0, 0); return; }
-    if (k === "detail") { ui.detail = !ui.detail; render(); return; }
+    if (k === "detail") { ui.detail = !ui.detail; save(); render(); return; }
     if (k === "go") { E.resolve(s, { ...acts }); acts = {}; save(); render(); window.scrollTo(0, 0); } // only what you chose is recorded; the rest follow their own episode
   });
   document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && (ui.modal === "help" || ui.modal === "restart")) { ui.modal = null; render(); } });
