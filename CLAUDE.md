@@ -2,18 +2,19 @@
 
 - ゲーム本体は `anime-producer.html` の1ファイル。計算部分（`<script id="engine">`）と画面（その下の `<script>`）は分かれている。
 - 画面は「左に一覧 → 選ぶと右に詳細 → 詳細のいちばん下に、それにできること」で統一している。品質の見込みは数字で出さず、制作デスクの「あなたの見立て」のひとことで出す。
+- 新しい冒頭の試作は `anime-order.html`（4カットの発注。制作デスクの机の上で、コンテ→資料をそろえる→原画マンを選ぶ→袋づめと佐伯の回る順番→戻った原画の照合→作監と仕上げへの受け渡し→映像）。作りは同じ（計算部分は `<script id="engine">`、画面は「左に一覧 → まん中に机 → 右に詳細とできること」）。机で考えている間は時間が進まない。テストのルートは `tools/qa/routes-order.md`。
 
 ## 大きな修正のあとのテスト（必ずやる）
 
 画面の作り直し、ゲームの流れ・ルールの変更、複数の画面にまたがる修正をしたら、プッシュする前に次をすべて行う。
 
-1. デバッグ担当（`.claude/agents/debugger.md`、Haiku）を呼び、`tools/qa/routes.md` の**全ルート**を実際のブラウザで試させる。
+1. デバッグ担当（`.claude/agents/debugger.md`、Haiku）を呼び、`tools/qa/routes.md` の**全ルート**を実際のブラウザで試させる（4カットの発注を直したときは `tools/qa/routes-order.md`）。
    - 呼ぶときは `subagent_type: "debugger"`。使えないときは general-purpose に `model: "haiku"` を指定し、`.claude/agents/debugger.md` の本文をそのまま渡す。
 2. 並行して、自分でも次を確かめる。
-   - `node tools/qa/fuzz.js`（PC幅・スマホ幅）
+   - `node tools/qa/fuzz.js`（PC幅・スマホ幅。4カットの発注は `--page anime-order.html`。ランダムに押すだけでは手配まで進まないので、`node tools/qa/order-walk.js`（`--drag` でドラッグも使う、`--width 390 --height 844` でスマホ幅）で最後の映像まで通す）
    - 横スクロールの有無（1440 / 1024 / 768 / 390 / 320 px）
    - 文字と背景のコントラスト、タップ領域（スマホ幅で44px以上）
    - 保存と再開（制作中・ダイアログ表示中の再読み込み）
-   - 計算部分を変えたときは、Node で多数の seed を回して破綻がないか
+   - 計算部分を変えたときは、Node で多数の seed を回して破綻がないか（4カットの発注は `node tools/qa/order-sim.js`）
 3. 見つかった問題を直し、もう一度テストしてからプッシュする。直さなかったものは理由と一緒に報告する。
-4. 画面や操作を足したら、`tools/qa/routes.md` にも足す。
+4. 画面や操作を足したら、`tools/qa/routes.md`（4カットの発注は `tools/qa/routes-order.md`）にも足す。

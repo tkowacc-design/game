@@ -1,0 +1,1187 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4カットの発注 試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap">
+<style>
+  /* The desk of a 制作デスク: four cuts of storyboard come in, you gather the model sheets, pick the animators,
+     pack each one's bag, send 佐伯 round, then check what comes back and split it between the 作監 and 仕上げ.
+     Left: what is on the desk (list). Centre: the work surface. Right: the picked thing and what you can do with it. */
+  :root {
+    --bg: #eceef3; --panel: #ffffff; --ink: #1d2236; --soft: #4a5068; --line: #d3d7e1; --navy: #1f2a44;
+    --yellow: #ffd54f; --sel: #f2b400; --red: #b3262e; --orange: #8a4b00; --green: #11693f; --blue: #1f56b0;
+    --zone: #f6f7fa; --hot: #fff7d6; --kan: #fdeeee; --shi: #ecf6f0;
+    --font: "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); }
+  body { min-width: 0; overflow-x: hidden; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+  button:disabled { cursor: not-allowed; }
+  .top { position: sticky; top: 0; z-index: 6; background: var(--navy); color: #fff; display: flex; align-items: center; gap: 12px 18px; padding: 8px 18px; flex-wrap: wrap; }
+  .top h1 { margin: 0; font-size: 17px; color: #d6dcef; }
+  .top h1 small { font-size: 12px; font-weight: 400; margin-left: 6px; color: #b9c2dc; }
+  .steps { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; flex-wrap: wrap; }
+  .steps button { border: 0; background: #2f3c60; color: #c9d1e8; padding: 6px 10px; font-size: 13px; font-weight: 700; min-height: 36px; }
+  .steps button.on { background: var(--yellow); color: var(--ink); }
+  .steps button.done { background: #3c4b74; color: #fff; }
+  .steps button:disabled { background: #283456; color: #aab4d0; }
+  .steps button.on, .steps button.on:disabled { background: var(--yellow); color: var(--ink); }
+  .clock { font-size: 22px; font-weight: 700; white-space: nowrap; }
+  .clock small { font-size: 13px; font-weight: 400; color: #c9d1e8; margin-left: 6px; }
+  .top .sp { flex: 1; }
+  .top .tb { border: 0; padding: 6px 12px; font-weight: 700; background: #34426a; color: #fff; min-height: 36px; }
+
+  .wrap { display: grid; grid-template-columns: 250px minmax(0, 1fr) 340px; gap: 14px; padding: 14px 16px 40px; max-width: 1680px; margin: 0 auto; align-items: start; }
+  .list, .desk, .pane { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+  /* the list and the detail stay beside the desk while it scrolls, so a sheet can be dragged onto any part of it */
+  .pane, .list { position: sticky; top: calc(var(--top, 52px) + 10px); max-height: calc(100vh - var(--top, 52px) - 20px); overflow-y: auto; }
+  details.box > summary { cursor: pointer; font-weight: 700; font-size: 16px; min-height: 32px; display: flex; align-items: center; gap: 8px; }
+  details.box > summary small { font-size: 12px; color: var(--soft); font-weight: 400; }
+  .box { background: var(--panel); border: 1px solid var(--line); padding: 12px 14px; min-width: 0; }
+  .box > h2 { margin: 0 0 8px; font-size: 16px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .box > h2 small { font-size: 12px; color: var(--soft); font-weight: 400; }
+  h3 { margin: 10px 0 6px; font-size: 14px; color: var(--soft); }
+  .items { display: flex; flex-direction: column; gap: 6px; }
+  .items.wrapit { flex-direction: row; flex-wrap: wrap; }
+  .item { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; border: 1px solid var(--line); background: #fff; padding: 4px 8px 4px 4px; min-height: 44px; font-size: 14px; position: relative; }
+  .item:hover { border-color: #9aa2b8; }
+  .item.on { outline: 3px solid var(--sel); outline-offset: -1px; border-color: var(--sel); background: #fffbea; }
+  .item .th { flex: 0 0 64px; width: 64px; }
+  .item .th svg { display: block; width: 64px; height: auto; }
+  .item .tx { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .item .tx b { font-size: 14px; }
+  .item .tx small { font-size: 12px; color: var(--soft); }
+  .item .mk { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--green); white-space: nowrap; }
+  .item .mk.warn { color: var(--red); }
+  .items.wrapit .item { width: auto; flex: 0 1 auto; }
+  .chipbtn { border: 1px solid #9aa2b8; background: #fff; padding: 4px 8px; font-size: 13px; min-height: 32px; }
+  .chipbtn.on { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  .saeki { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-left: 5px solid var(--blue); padding: 10px 12px; font-size: 15px; line-height: 1.6; }
+  .saeki b { flex: 0 0 auto; color: var(--blue); }
+  .saeki.warn { border-left-color: var(--red); }
+
+  .zone { background: var(--zone); border: 2px dashed #b8bfcf; padding: 8px 10px; min-width: 0; }
+  .zone.hot { background: var(--hot); border-color: var(--sel); }
+  .zone.over { background: #fff0b3; border-style: solid; }
+  .zone .zh { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .zone .zh b { font-size: 15px; }
+  .zone .zh small { color: var(--soft); font-size: 12px; }
+  .zone .zh .put { margin-left: auto; }
+  .zone .empty { color: var(--soft); font-size: 13px; padding: 6px 0; }
+  .zone.kan { background: var(--kan); }
+  .zone.shi { background: var(--shi); }
+  .zone.kan.hot, .zone.shi.hot { background: var(--hot); }
+  /* the basket of sheets stays at the bottom of the screen in step 1, so a sheet can always be dropped into it */
+  .zone.traybar { position: sticky; bottom: 0; z-index: 3; max-height: 32vh; overflow-y: auto; box-shadow: 0 -6px 14px rgba(15, 20, 36, .12); }
+  .put { border: 0; background: var(--sel); color: var(--ink); font-weight: 700; padding: 6px 10px; min-height: 36px; font-size: 13px; }
+
+  .conte { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .cpanel { border: 1px solid var(--line); background: #fbfaf2; padding: 8px; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+  .cpanel.on { outline: 3px solid var(--sel); }
+  .cpanel svg { width: 100%; height: auto; display: block; }
+  .cpanel .ch { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .cpanel .ch b { font-size: 16px; }
+  .cpanel .ch span { font-size: 13px; color: var(--soft); }
+  .cpanel p { margin: 0; font-size: 14px; line-height: 1.55; }
+  .star { color: var(--red); font-weight: 700; }
+  .scene { font-size: 14px; color: var(--soft); margin: 0 0 8px; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+  .cutcard { border: 1px solid var(--line); background: #fff; padding: 6px; text-align: left; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+  .cutcard.on { outline: 3px solid var(--sel); }
+  .cutcard svg { width: 100%; height: auto; display: block; }
+  .cutcard b { font-size: 14px; }
+  .who { font-size: 13px; }
+  .who.none { color: var(--red); font-weight: 700; }
+
+  .anim .samp { display: flex; gap: 8px; align-items: center; }
+  .anim .samp svg { width: 96px; flex: 0 0 96px; height: auto; }
+  .anim ul { margin: 4px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.55; }
+  .anim .cuts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .fit { font-size: 13px; font-weight: 700; margin-top: 4px; }
+  .fit.ok { color: var(--green); } .fit.ng { color: var(--red); }
+
+  .gantt { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+  .grow { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; align-items: center; }
+  .grow .gl { font-weight: 700; font-size: 13px; line-height: 1.3; }
+  .grow .gl small { display: block; font-weight: 400; color: var(--soft); font-size: 11px; }
+  .gbar { position: relative; height: 26px; background: #eef0f5; border: 1px solid var(--line); overflow: hidden; }
+  .gseg { position: absolute; top: 0; bottom: 0; }
+  .gseg.av { background: #cfead9; top: 4px; bottom: 4px; }
+  .gseg.wk { background: #2b6b4a; top: 3px; bottom: 3px; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; white-space: nowrap; overflow: hidden; }
+  .gseg.wk.late { background: var(--red); }
+  .gseg.kn { background: #8a3b3f; top: 3px; bottom: 3px; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; border-right: 1px solid #fff; }
+  .gseg.tr { background: #1f56b0; top: 6px; bottom: 6px; }
+  .gseg.pt { background: #2b6b4a; top: 3px; bottom: 3px; color: #fff; font-size: 11px; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; border-right: 1px solid #fff; }
+  .gseg.pt.late { background: var(--red); }
+  .gseg.off { background: repeating-linear-gradient(45deg, #e2e5ec, #e2e5ec 4px, #d6dae3 4px, #d6dae3 8px); }
+  .gmark { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--blue); }
+  .gdue { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--red); }
+  .gaxis { position: relative; height: 16px; margin-left: 100px; color: var(--soft); font-size: 11px; }
+  .gaxis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .gnote { font-size: 12px; font-weight: 700; margin: 0 0 0 100px; }
+  .gnote.ok { color: var(--green); } .gnote.ng { color: var(--red); }
+
+  .bag .mats { display: flex; gap: 6px; flex-wrap: wrap; }
+  .mchip { display: inline-flex; align-items: stretch; border: 1px solid #9aa2b8; background: #fff; font-size: 13px; }
+  .mchip button { border: 0; background: transparent; padding: 4px 8px; min-height: 34px; }
+  .mchip button + button { border-left: 1px solid var(--line); color: var(--red); font-weight: 700; }
+  .route { display: flex; flex-direction: column; gap: 6px; }
+  .rrow { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: center; background: #fff; border: 1px solid var(--line); padding: 6px 8px; font-size: 14px; }
+  .rrow .n { font-weight: 700; font-size: 18px; text-align: center; }
+  .rrow small { color: var(--soft); }
+  .rrow .ud { display: flex; gap: 4px; }
+  .rrow .ud button { border: 1px solid #9aa2b8; background: #fff; width: 40px; min-height: 36px; font-weight: 700; }
+  .map { font-size: 12px; color: var(--soft); line-height: 1.6; margin: 6px 0 0; }
+
+  .slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .slot { min-height: 150px; display: flex; flex-direction: column; gap: 6px; }
+  .slot svg { width: 100%; height: auto; display: block; }
+  .slot .st { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .slot .st b { font-size: 14px; }
+  .slot .st .sb { margin-left: auto; display: flex; gap: 6px; }
+  .slot .st .sb button { border: 1px solid #9aa2b8; background: #fff; min-height: 32px; font-size: 12px; padding: 2px 8px; }
+  .slot .st .sb .put { background: var(--sel); border-color: var(--sel); font-weight: 700; }
+  .meta { font-size: 13px; line-height: 1.55; color: var(--ink); margin: 0; }
+  .meta small { color: var(--soft); }
+  .bagrec { font-size: 13px; line-height: 1.6; margin: 0; padding-left: 18px; }
+  .gcard { background: #fff; border: 1px solid var(--line); padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+  .gcard .gh { display: flex; align-items: center; gap: 8px; }
+  .gcard .gh button.nm { border: 0; background: transparent; padding: 0; text-align: left; display: flex; gap: 8px; align-items: center; min-height: 40px; }
+  .gcard .gh svg { width: 72px; height: auto; display: block; }
+  .gcard .gh .back { margin-left: auto; border: 1px solid #9aa2b8; background: #fff; min-height: 34px; font-size: 12px; padding: 2px 8px; }
+  .gcard.on { outline: 3px solid var(--sel); }
+  .memo { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--soft); }
+
+  .order { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .order button { text-align: left; border: 2px solid var(--line); background: #fff; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-height: 64px; }
+  .order button b { font-size: 15px; }
+  .order button span { font-size: 13px; color: var(--soft); line-height: 1.5; }
+  .order button.on { border-color: var(--sel); background: #fffbea; }
+  .rule { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.65; color: var(--soft); }
+  .rule b { color: var(--ink); }
+
+  .foot { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .go { border: 0; background: var(--navy); color: #fff; font-weight: 700; font-size: 16px; padding: 10px 18px; min-height: 52px; }
+  .go:disabled { background: #c9cdd8; color: #343a4f; }
+  .sub { border: 1px solid #9aa2b8; background: #fff; font-weight: 700; padding: 8px 14px; min-height: 44px; }
+  .why { font-size: 13px; color: var(--red); font-weight: 700; }
+
+  .pane .big svg { width: 100%; height: auto; display: block; border: 1px solid var(--line); }
+  .pane dl { margin: 6px 0 0; display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 4px 8px; font-size: 13px; line-height: 1.55; }
+  .pane dt { color: var(--soft); }
+  .pane dd { margin: 0; }
+  .pane p { margin: 6px 0 0; font-size: 14px; line-height: 1.6; }
+  .acts { border-top: 2px solid var(--navy); margin-top: 12px; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .acts h3 { margin: 0 0 2px; color: var(--ink); font-size: 14px; }
+  .acts .a { display: flex; flex-direction: column; gap: 2px; }
+  .acts .a button { text-align: left; border: 1px solid var(--navy); background: #fff; font-weight: 700; padding: 8px 10px; min-height: 44px; font-size: 14px; }
+  .acts .a button.on { background: var(--navy); color: #fff; }
+  .acts .a button:disabled { border-color: var(--line); background: #eef0f4; color: #545b72; }
+  .acts .a small { font-size: 12px; color: var(--soft); }
+  .acts .a .why { font-size: 12px; }
+  .acts .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .acts .row button { flex: 1 1 90px; }
+  .see { border: 0; background: transparent; color: var(--blue); text-decoration: underline; padding: 0 2px; font-size: 13px; min-height: 28px; }
+  .todo { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.7; }
+
+  .pic { display: block; }
+  .vid { background: #111; padding: 8px; }
+  .vid .frame svg { width: 100%; height: auto; display: block; }
+  .vid .cap { color: #fff; font-size: 14px; display: flex; gap: 10px; align-items: baseline; margin-top: 6px; min-height: 22px; flex-wrap: wrap; }
+  .vid .sub2 { color: #fff; font-size: 18px; text-align: center; min-height: 28px; margin-top: 4px; }
+  .vid .line { color: #ffd54f; font-weight: 700; }
+  .res { display: flex; flex-direction: column; gap: 8px; }
+  .rcut { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 10px; background: #fff; border: 1px solid var(--line); padding: 8px; text-align: left; }
+  .rcut.on { outline: 3px solid var(--sel); }
+  .rcut svg { width: 100%; height: auto; display: block; }
+  .rcut ul { margin: 2px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.55; }
+  .ok { color: var(--green); font-weight: 700; } .ng { color: var(--red); font-weight: 700; } .so { color: var(--orange); font-weight: 700; }
+  .verdict { font-size: 20px; font-weight: 700; margin: 0 0 6px; }
+  .counts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .counts span { background: #f0f2f7; border: 1px solid var(--line); padding: 6px 10px; font-size: 14px; }
+  .log { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.5; }
+  .log li { display: grid; grid-template-columns: 70px 54px minmax(0, 1fr); gap: 6px; }
+  .log li .t { color: var(--soft); white-space: nowrap; }
+  .log li .w { font-weight: 700; }
+
+  #modal-root .modal-bg { position: fixed; inset: 0; z-index: 20; background: rgba(15, 20, 36, .55); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+  .dlg { width: min(680px, 100%); background: #fff; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; max-height: calc(100vh - 32px); overflow-y: auto; }
+  .dlg h2 { margin: 0; font-size: 21px; }
+  .dlg p { margin: 0; font-size: 15px; line-height: 1.65; }
+  .dlg ul { margin: 0; padding-left: 20px; font-size: 15px; line-height: 1.65; display: grid; gap: 4px; }
+  .dlg .acts2 { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .dlg .acts2 button { flex: 1 1 180px; min-height: 50px; border: 0; background: var(--navy); color: #fff; font-weight: 700; font-size: 16px; }
+  .dlg .acts2 button.sub { background: #e3e6ee; color: var(--ink); }
+
+  @keyframes rain { from { transform: translate(2px, -8px); } to { transform: translate(-2px, 8px); } }
+  @keyframes capoIn { from { transform: translate(-16px, 14px); opacity: .2; } to { transform: none; opacity: 1; } }
+  @keyframes press { from { transform: translateY(10px); } to { transform: none; } }
+  @keyframes vib { from { transform: translateY(-.8px); } to { transform: translateY(.8px); } }
+  @keyframes doorOpen { from { transform: scaleX(3); } to { transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes turnGood { 0%, 55% { opacity: 0; transform: translateX(5px); } 100% { opacity: 1; transform: none; } }
+  @keyframes turnStiff { from { opacity: 0; } to { opacity: 1; } }
+  .play .rain line { animation: rain .45s linear infinite; }
+  .play .capo-g { animation: capoIn 1.4s ease-out both; }
+  .play .fingers { animation: press .7s ease-out both; }
+  .play .str { animation: vib .09s linear 1s 14 alternate; }
+  .play .door-p { transform-box: view-box; transform-origin: 26px 85px; animation: doorOpen 1s ease-out both; }
+  .play .mio { animation: fadeIn .6s ease-out .6s both; }
+  .play .turnface { animation: turnGood 1.8s ease-in-out .9s both; }
+  .play.stiff .turnface { animation: turnStiff .05s steps(1) .7s both; }
+
+  @media (max-width: 1240px) {
+    .wrap { grid-template-columns: 200px minmax(0, 1fr) 290px; gap: 10px; padding: 12px 10px 40px; }
+    .list .item .th { flex-basis: 48px; width: 48px; }
+    .list .item .th svg { width: 48px; }
+  }
+  @media (max-width: 999px) {
+    .wrap { grid-template-columns: minmax(0, 1fr) 300px; }
+    .list { position: static; max-height: none; overflow: visible; }
+    .list { grid-column: 1; grid-row: 1; }
+    .desk { grid-column: 1; grid-row: 2; }
+    .pane { grid-column: 2; grid-row: 1 / span 2; }
+    .list .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .list .item .th { flex-basis: 48px; width: 48px; }
+    .list .item .th svg { width: 48px; }
+  }
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns: minmax(0, 1fr); padding: 10px 10px 40px; }
+    .list, .desk, .pane { grid-column: auto; grid-row: auto; position: static; max-height: none; overflow: visible; }
+    .desk { order: 1; } .list { order: 2; } .pane { order: 3; }
+    .zone.traybar { position: static; max-height: none; box-shadow: none; }
+    .top { position: static; padding: 8px 10px; }
+    .top h1 small { display: none; }
+    .steps button { padding: 4px 8px; font-size: 12px; }
+    details.box > summary { min-height: 44px; }
+    .slots, .grid3 { grid-template-columns: minmax(0, 1fr); }
+    .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .order, .grid2 { grid-template-columns: minmax(0, 1fr); }
+    .steps button, .top .tb { min-height: 44px; }
+    .chipbtn, .put, .slot .st .sb button, .gcard .gh .back, .mchip button, .see, .gcard .gh button.nm { min-height: 44px; }
+    .chipbtn, .slot .st .sb button, .gcard .gh .back { min-width: 44px; }
+    .rrow .ud button { min-height: 44px; width: 44px; }
+    .grow { grid-template-columns: 70px minmax(0, 1fr); }
+    .gaxis, .gnote { margin-left: 78px; }
+    .rcut { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .conte { grid-template-columns: minmax(0, 1fr); }
+    .clock { font-size: 18px; }
+    .log li { grid-template-columns: 62px minmax(0, 1fr); }
+    .log li .w { grid-column: 2; }
+    .log li span:last-child { grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <pattern id="hG1" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="4" height="4" fill="#fff"/><line x1="0" y1="0" x2="0" y2="4" stroke="#1d2236" stroke-width="1.1"/></pattern>
+  <pattern id="hG2" patternUnits="userSpaceOnUse" width="2.4" height="2.4" patternTransform="rotate(45)"><rect width="2.4" height="2.4" fill="#fff"/><line x1="0" y1="0" x2="0" y2="2.4" stroke="#1d2236" stroke-width=".65"/></pattern>
+  <pattern id="hG3" patternUnits="userSpaceOnUse" width="1.45" height="1.45" patternTransform="rotate(45)"><rect width="1.45" height="1.45" fill="#fff"/><line x1="0" y1="0" x2="0" y2="1.45" stroke="#1d2236" stroke-width=".4"/></pattern>
+  <pattern id="hC1" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><rect width="4" height="4" fill="#fbfaf2"/><line x1="0" y1="0" x2="0" y2="4" stroke="#858a99" stroke-width="1"/></pattern>
+  <pattern id="hC2" patternUnits="userSpaceOnUse" width="2.4" height="2.4" patternTransform="rotate(45)"><rect width="2.4" height="2.4" fill="#fbfaf2"/><line x1="0" y1="0" x2="0" y2="2.4" stroke="#858a99" stroke-width=".6"/></pattern>
+  <pattern id="hC3" patternUnits="userSpaceOnUse" width="1.45" height="1.45" patternTransform="rotate(45)"><rect width="1.45" height="1.45" fill="#fbfaf2"/><line x1="0" y1="0" x2="0" y2="1.45" stroke="#858a99" stroke-width=".38"/></pattern>
+</defs></svg>
+<div id="app"></div>
+<div id="modal-root"></div>
+
+<script id="engine">
+const Engine = (() => {
+  "use strict";
+  // Times are minutes from Monday 0:00. Desk work (reading, packing, sorting) takes no time;
+  // the clock moves only when 佐伯 goes out (Monday 12:30) and when the bundles are sent (Tuesday 13:00).
+  const VERSION = 1;
+  const T = (d, h, m = 0) => d * 1440 + h * 60 + m;
+  const DAYS = ["月", "火", "水"];
+  function fmt(t) { if (t === null || t === undefined) return "—"; const d = Math.floor(t / 1440), r = t - d * 1440; return `${DAYS[d] || ""} ${Math.floor(r / 60)}:${String(r % 60).padStart(2, "0")}`; }
+  const DEPART = T(0, 12, 30), DUE = T(1, 12), BACK = T(1, 13), KAN = T(1, 14), SHOOT = T(2, 10);
+  const PAINT_WIN = [[T(1, 13), T(2, 0)], [T(2, 8), T(2, 10)]];
+  const MIN = { paint: 180, check: 15, fix: 30, fixMemo: 15, wrongMemo: 5, hand: 10, call: 60, trip: 30 };
+  const MAX_CUTS = 2;
+  const CATS = ["服", "小物", "楽器", "背景", "手", "芝居"];
+
+  const SCENE = "第1話 Bパート「雨の部室」　11月・放課後";
+  const CUTS = [
+    { id: "C1", shot: "引き", sec: 3, star: "", hand: false, keys: 2, needs: ["yui", "rain"],
+      text: "夕方の部室。窓の外は雨。ユイが窓ぎわの椅子に座って、外を見ている。", line: "" },
+    { id: "C2", shot: "バストアップ", sec: 4, star: "", hand: true, keys: 3, needs: ["yui", "guitar", "capo", "handBad"],
+      text: "ユイ、ひざのギターにカポをつける（2フレット）。手が映る。", line: "" },
+    { id: "C3", shot: "手元アップ", sec: 3, star: "手元", hand: true, keys: 3, needs: ["yui", "capo", "chord", "handBad"],
+      text: "Gのコードを押さえて、ひと鳴らし。指の形が見せ場。", line: "" },
+    { id: "C4", shot: "ドア側", sec: 4, star: "芝居", hand: false, keys: 4, needs: ["yui", "mio", "muffler", "door", "stiff"],
+      text: "ドアが開いて、ミオ（外から来た。マフラー）。ユイ、溜めてから左へ振り向く。ドア側は新しい背景。", line: "ミオ「……まだいたの？」" },
+  ];
+  const CUT = Object.fromEntries(CUTS.map((c, i) => [c.id, { ...c, i }]));
+  const CUT_IDS = CUTS.map((c) => c.id);
+
+  const MATS = {
+    yui_w: { kind: "人物", name: "ユイ（冬服）", group: "yui", text: "10月〜3月。紺のブレザーに赤いリボン。長袖。" },
+    yui_s: { kind: "人物", name: "ユイ（夏服）", group: "yui", text: "6月〜9月。白の半袖シャツに赤いリボン。" },
+    mio_w: { kind: "人物", name: "ミオ（冬服）", group: "mio", text: "10月〜3月。紺のブレザー。外から来たときはマフラーを巻く（小物「マフラー（ミオ）」を見る）。", see: ["muffler"] },
+    mio_p: { kind: "人物", name: "ミオ（私服）", group: "mio", text: "休日の回。緑のパーカー。" },
+    guitar_a: { kind: "小物", name: "ギター（アコースティック）", group: "guitar", text: "ユイが部室で弾くギター。カポをつけるときは小物「カポタスト」を見る。", see: ["capo"] },
+    guitar_e: { kind: "小物", name: "ギター（エレキ）", group: "guitar", text: "ライブの回で使う赤いエレキ。" },
+    capo: { kind: "小物", name: "カポタスト", text: "黒。つける位置はコンテのとおり。" },
+    muffler: { kind: "小物", name: "マフラー（ミオ）", text: "赤のチェック。首にひと巻きして、片方を前に垂らす。" },
+    bg_rain: { kind: "背景", name: "部室（夕方・雨）", group: "room", text: "窓は右、ドアは左の壁。雨の日は窓に雨。" },
+    bg_day: { kind: "背景", name: "部室（昼・晴れ）", group: "room", text: "いつもの晴れた部室。窓は右、ドアは左の壁。" },
+    bg_door: { kind: "背景", name: "部室（ドア側）", text: "窓のほうからドアを見た向き。ドアは画面の左。" },
+    bg_hall: { kind: "背景", name: "廊下（夕方）", text: "部室の前の廊下。" },
+    ref_g: { kind: "参考", name: "参考：Gコード", group: "chord", text: "Gコードの押さえ方。3本の指を大きく開く。" },
+    ref_c: { kind: "参考", name: "参考：Cコード", group: "chord", text: "Cコードの押さえ方。3本の指を斜めに並べる。" },
+  };
+  const MAT_IDS = Object.keys(MATS);
+  const GROUPS = { yui: ["yui_w", "yui_s"], mio: ["mio_w", "mio_p"], guitar: ["guitar_a", "guitar_e"], room: ["bg_rain", "bg_day"], chord: ["ref_g", "ref_c"] };
+  // what an animator asks when a bag holds two versions of the same thing, and what 佐伯 answers from the storyboard
+  const ASK = {
+    yui: ["ユイの服、冬服と夏服、どっち？", "11月なので冬服です！"],
+    mio: ["ミオは制服？ 私服？", "制服です、冬服です！"],
+    guitar: ["ギター、アコギとエレキ、どっち？", "部室なのでアコギです！"],
+    room: ["背景、雨と晴れ、どっち？", "雨の夕方です！"],
+    chord: ["コード、GとC、どっち？", "コンテにGって書いてあります！"],
+  };
+
+  const ANIMS = {
+    mori: { name: "森", good: "手", bad: "", speed: 3, loc: "M", where: "自宅（スタジオから車20分）",
+      avail: [[T(0, 13), T(0, 16)]], availText: "月 13:00〜16:00 だけ（火曜は他社の仕事）",
+      sample: "ピアノを弾く手のアップ", note: "佐伯「手を描かせたら、うちでいちばんです」", back: "指の形、きれいに入ったと思う。" },
+    miyashita: { name: "宮下", good: "芝居", bad: "", speed: 5, loc: "Y", where: "自宅（スタジオから車30分・森さんの家から20分）",
+      avail: [[T(0, 17), T(1, 0)], [T(1, 8), T(1, 12)]], availText: "月 17:00〜24:00、火 8:00〜12:00",
+      sample: "振り返る女の子", note: "佐伯「芝居はすごくいいです。描くのはゆっくりです」", back: "ゆっくり描かせてもらったよ。" },
+    hayase: { name: "早瀬", good: "", bad: "小物", speed: 2, loc: "S", where: "スタジオの作画部屋",
+      avail: [[T(0, 13), T(0, 22)], [T(1, 9), T(1, 12)]], availText: "月 13:00〜22:00、火 9:00〜12:00",
+      sample: "走る男の子", note: "作監メモ「小物がよく抜けている」", back: "速く上げといたよ！" },
+    kobayashi: { name: "小林", good: "", bad: "手", speed: 4, loc: "S", where: "スタジオの作画部屋",
+      avail: [[T(0, 13), T(0, 22)], [T(1, 9), T(1, 12)]], availText: "月 13:00〜22:00、火 9:00〜12:00",
+      sample: "座っている女の子", note: "佐伯「新人さんです。手の作例はまだありません」", back: "がんばりました……。" },
+  };
+  const ANIM_IDS = Object.keys(ANIMS);
+  const DIST = { "M-S": 20, "S-Y": 30, "M-Y": 20 };
+  const dist = (a, b) => (a === b ? 0 : DIST[[a, b].sort().join("-")]);
+  const RIGHT = { yui: "w", mio: "w", guitar: "a", capo: true, muffler: true, rain: true, door: "L", chord: "G", handBad: false, stiff: false };
+
+  function newGame() {
+    return { v: VERSION, phase: 1, tray: [], assign: Object.fromEntries(CUT_IDS.map((c) => [c, null])),
+      bags: Object.fromEntries(ANIM_IDS.map((a) => [a, []])), route: [], ret: null,
+      bench: [null, null, null], bundle: Object.fromEntries(CUT_IDS.map((c) => [c, null])),
+      memo: Object.fromEntries(CUT_IDS.map((c) => [c, []])), order: "first", res: null };
+  }
+  const cutsOf = (s, a) => CUT_IDS.filter((c) => s.assign[c] === a);
+  const used = (s) => ANIM_IDS.filter((a) => cutsOf(s, a).length);
+  const planning = (s) => !s.ret;
+  function sync(s) {
+    const u = used(s);
+    s.route = s.route.filter((a) => u.includes(a));
+    for (const a of u) if (!s.route.includes(a)) s.route.push(a);
+  }
+
+  // ---------- planning (Monday morning) ----------
+  function trayWhy(s, m) { if (!planning(s)) return "もう手配した"; if (!MATS[m]) return "ない資料"; return ""; }
+  function trayToggle(s, m) {
+    const why = trayWhy(s, m); if (why) return why;
+    if (s.tray.includes(m)) { s.tray = s.tray.filter((x) => x !== m); for (const a of ANIM_IDS) s.bags[a] = s.bags[a].filter((x) => x !== m); }
+    else s.tray.push(m);
+    return "";
+  }
+  function assignWhy(s, c, a) {
+    if (!planning(s)) return "もう手配した";
+    if (!CUT[c]) return "ないカット";
+    if (a && !ANIMS[a]) return "いない人";
+    if (a && s.assign[c] !== a && cutsOf(s, a).length >= MAX_CUTS) return `${ANIMS[a].name}さんはもう2カット持っている`;
+    return "";
+  }
+  function assign(s, c, a) { const why = assignWhy(s, c, a); if (why) return why; s.assign[c] = a || null; sync(s); return ""; }
+  function bagWhy(s, a, m) {
+    if (!planning(s)) return "もう手配した";
+    if (!cutsOf(s, a).length) return "この人にはまだカットを頼んでいない";
+    if (!s.tray.includes(m)) return "「今回の資料」に出していない";
+    return "";
+  }
+  function bagToggle(s, a, m) {
+    const why = bagWhy(s, a, m); if (why) return why;
+    const b = s.bags[a]; s.bags[a] = b.includes(m) ? b.filter((x) => x !== m) : b.concat(m);
+    return "";
+  }
+  function routeMove(s, a, d) {
+    if (!planning(s)) return "もう手配した";
+    const i = s.route.indexOf(a), j = i + d;
+    if (i < 0 || j < 0 || j >= s.route.length) return "動かせない";
+    [s.route[i], s.route[j]] = [s.route[j], s.route[i]];
+    return "";
+  }
+  const conflicts = (bag) => Object.keys(GROUPS).filter((g) => GROUPS[g].every((m) => bag.includes(m)));
+
+  // work `mins` inside the windows, starting no earlier than `from`
+  function runWork(from, mins, wins) {
+    const blocks = []; let left = mins;
+    if (left <= 0) return { finish: from, blocks, left: 0 };
+    for (const [a, b] of wins) {
+      const st = Math.max(a, from); if (st >= b) continue;
+      const take = Math.min(b - st, left); blocks.push([st, st + take]); left -= take;
+      if (left === 0) return { finish: st + take, blocks, left: 0 };
+    }
+    return { finish: null, blocks, left };
+  }
+  function plan(s) {
+    let t = DEPART, at = "S"; const per = {};
+    for (const id of s.route) {
+      const a = ANIMS[id];
+      if (a.loc === "S") { t += dist(at, "S"); at = "S"; t += MIN.hand; } else { t += dist(at, a.loc); at = a.loc; }
+      const cuts = cutsOf(s, id), bag = s.bags[id] || [], conf = conflicts(bag);
+      const mins = cuts.length * a.speed * 60 + conf.length * MIN.call;
+      const w = runWork(t, mins, a.avail);
+      const ok = w.finish !== null && w.finish <= DUE;
+      per[id] = { arrive: t, cuts, conf, mins, blocks: w.blocks, finish: w.finish, left: w.left, ok, start: w.blocks.length ? w.blocks[0][0] : null };
+    }
+    return per;
+  }
+  // can this animator's cuts fit in their free time at all (ignoring the drive)?
+  function fits(s, id) { const a = ANIMS[id], n = cutsOf(s, id).length; const w = runWork(0, n * a.speed * 60, a.avail); return w.finish !== null && w.finish <= DUE; }
+  function dispatchWhy(s) {
+    if (!planning(s)) return "もう手配した";
+    const un = CUT_IDS.filter((c) => !s.assign[c]);
+    if (un.length) return `頼む人が決まっていないカットがある（${un.join("・")}）`;
+    const p = plan(s), bad = s.route.filter((id) => !p[id].ok);
+    if (bad.length) return `${bad.map((id) => ANIMS[id].name + "さん").join("・")}が火曜12:00までに描き終わらない`;
+    return "";
+  }
+
+  // ---------- what comes back ----------
+  function features(c, a, bag) {
+    const cut = CUT[c], an = ANIMS[a], has = (m) => bag.includes(m);
+    return {
+      yui: has("yui_w") ? "w" : "s",                      // both in the bag: they phone, 佐伯 answers from the storyboard
+      mio: has("mio_w") ? "w" : has("mio_p") ? "p" : "s",
+      guitar: has("guitar_a") ? "a" : "e",
+      capo: has("capo") && an.bad !== "小物",
+      muffler: has("muffler") && an.bad !== "小物",
+      rain: has("bg_rain"),
+      door: has("bg_door") ? "L" : "R",
+      chord: has("ref_g") ? "G" : has("ref_c") ? "C" : "X",
+      handBad: (cut.hand && an.bad === "手") || (cut.star === "手元" && an.good !== "手"),
+      stiff: cut.star === "芝居" && an.good !== "芝居",
+    };
+  }
+  function defects(c, a, bag) {
+    const f = features(c, a, bag), an = ANIMS[a], nm = an.name, has = (m) => bag.includes(m), out = [];
+    const add = (k, cat, label, cause) => out.push({ k, cat, label, cause });
+    for (const k of CUT[c].needs) {
+      if (f[k] === RIGHT[k]) continue;
+      if (k === "yui") add(k, "服", c === "C3" ? "ユイの袖が半袖（夏服）" : "ユイが夏服（白い半袖）", has("yui_s") ? "袋に入っていたのはユイ（夏服）だけだった" : `袋にユイ（冬服）がなく、${nm}さんは記憶で夏服に描いた（第1話の前半は夏）`);
+      if (k === "mio") add(k, "服", f.mio === "p" ? "ミオが私服（パーカー）" : "ミオが夏服", f.mio === "p" ? "袋に入っていたのはミオ（私服）だった" : `袋にミオ（冬服）がなく、${nm}さんは記憶で夏服に描いた`);
+      if (k === "guitar") add(k, "楽器", "ギターがエレキになっている", has("guitar_e") ? "袋に入っていたのはギター（エレキ）だった" : `袋にギターの設定がなく、${nm}さんはライブのエレキで描いた`);
+      if (k === "capo") add(k, "小物", "カポがついていない", an.bad === "小物" ? (has("capo") ? `${nm}さんは小物を省きがち（カポタストは袋に入っていた）` : `袋にカポタストがなく、${nm}さんも小物を省きがち`) : "袋にカポタストがなかった");
+      if (k === "muffler") add(k, "小物", "ミオのマフラーがない", an.bad === "小物" ? (has("muffler") ? `${nm}さんは小物を省きがち（マフラーは袋に入っていた）` : `袋にマフラーがなく、${nm}さんも小物を省きがち`) : "袋にマフラー（ミオ）がなかった");
+      if (k === "rain") add(k, "背景", "窓の外が晴れている（雨の夕方のはず）", has("bg_day") ? "袋に入っていたのは部室（昼・晴れ）だった" : `袋に部室の背景がなく、${nm}さんはいつもの晴れた部室で描いた`);
+      if (k === "door") add(k, "背景", "ドアが右にある（ユイが右へ振り向く）", `袋に部室（ドア側）がなく、${nm}さんはドアを右に描いた`);
+      if (k === "chord") add(k, "手", f.chord === "C" ? "指の形がCコード" : "指の形がコードになっていない", f.chord === "C" ? "袋に入っていたのは参考：Cコードだった" : "袋にコードの参考がなかった");
+      if (k === "handBad") add(k, "手", "指の形が崩れている", an.bad === "手" ? `${nm}さんは手が苦手` : `★手元を、手が得意でない${nm}さんに頼んだ`);
+      if (k === "stiff") add(k, "芝居", "振り向きが硬い（原画2枚・溜めがない）", `★芝居を、芝居が得意でない${nm}さんに頼んだ`);
+    }
+    return out;
+  }
+  function dispatch(s) {
+    const why = dispatchWhy(s); if (why) return why;
+    const p = plan(s), log = [], cut = {};
+    log.push({ t: DEPART, who: "佐伯", text: "袋を持ってスタジオを出る" });
+    for (const id of s.route) {
+      const a = ANIMS[id], r = p[id], cs = r.cuts.join("・");
+      log.push({ t: r.arrive, who: "佐伯", text: a.loc === "S" ? `作画部屋の${a.name}さんに袋を渡す（${cs}）` : `${a.name}さんの家に袋を届ける（${cs}）` });
+      r.conf.forEach((g, i) => log.push({ t: r.start + i * MIN.call, who: a.name, text: `電話「${ASK[g][0]}」→ 佐伯「${ASK[g][1]}」（1時間遅れる）` }));
+      log.push({ t: r.finish, who: a.name, text: `${cs}を描き終える` });
+      for (const c of r.cuts) cut[c] = { anim: id, f: features(c, id, s.bags[id]), defects: defects(c, id, s.bags[id]) };
+    }
+    log.push({ t: BACK, who: "佐伯", text: "4カットの原画を回収して戻る" });
+    log.sort((x, y) => x.t - y.t);
+    s.ret = { plan: p, bags: JSON.parse(JSON.stringify(s.bags)), route: s.route.slice(), cut, log };
+    s.phase = 4;
+    return "";
+  }
+
+  // ---------- Tuesday: check and hand on ----------
+  const benchRefOk = (r) => typeof r === "string" && /^(conte|genga|mat|bag):/.test(r);
+  function bench(s, i, r) {
+    if (!s.ret || s.res) return "いまは並べられない";
+    if (i < 0 || i > 2) return "置き場所がない";
+    if (r !== null && !benchRefOk(r)) return "並べられないもの";
+    s.bench[i] = r; return "";
+  }
+  function bundleWhy(s, c, w) { if (!s.ret || s.res) return "いまは分けられない"; if (!CUT[c]) return "ないカット"; if (w !== null && w !== "kan" && w !== "shi") return "ない束"; return ""; }
+  function bundle(s, c, w) { const why = bundleWhy(s, c, w); if (why) return why; s.bundle[c] = w; if (w !== "kan") s.memo[c] = []; return ""; }
+  function memo(s, c, cat) {
+    if (!s.ret || s.res) return "いまは書けない";
+    if (s.bundle[c] !== "kan") return "作監に確認する束に入れたカットだけ";
+    if (!CATS.includes(cat)) return "ない項目";
+    const m = s.memo[c]; s.memo[c] = m.includes(cat) ? m.filter((x) => x !== cat) : m.concat(cat);
+    return "";
+  }
+  function setOrder(s, o) { if (!s.ret || s.res) return "いまは決められない"; if (o !== "first" && o !== "together") return "ない順番"; s.order = o; return ""; }
+  const unsorted = (s) => CUT_IDS.filter((c) => !s.bundle[c]);
+  // real: use what is really wrong; otherwise estimate from the check memos (a cut without memos counts as one fix she must find)
+  function deliver(s, real) {
+    const kan = CUT_IDS.filter((c) => s.bundle[c] === "kan"), shi = CUT_IDS.filter((c) => s.bundle[c] === "shi");
+    let t = KAN; const kanRows = [];
+    for (const c of kan) {
+      const mm = s.memo[c] || []; let mins = MIN.check;
+      if (real) {
+        const defs = s.ret.cut[c].defects, fixes = defs.map((d) => ({ ...d, memo: mm.includes(d.cat) }));
+        fixes.forEach((d) => { mins += d.memo ? MIN.fixMemo : MIN.fix; });
+        const wrong = mm.filter((cat) => !defs.some((d) => d.cat === cat)); mins += wrong.length * MIN.wrongMemo;
+        kanRows.push({ cut: c, start: t, end: t + mins, mins, fixes, wrong });
+      } else { mins += mm.length ? mm.length * MIN.fixMemo : MIN.fix; kanRows.push({ cut: c, start: t, end: t + mins, mins }); }
+      t += mins;
+    }
+    const kanDone = kan.length ? t : null, trips = [];
+    if (s.order === "first" || !kan.length || !shi.length) {
+      if (shi.length) trips.push({ cuts: shi, depart: BACK, arrive: BACK + MIN.trip, back: BACK + 2 * MIN.trip });
+      if (kan.length) { const dep = Math.max(kanDone, shi.length ? BACK + 2 * MIN.trip : BACK); trips.push({ cuts: kan, depart: dep, arrive: dep + MIN.trip, back: dep + 2 * MIN.trip }); }
+    } else {
+      const dep = Math.max(kanDone, BACK); trips.push({ cuts: shi.concat(kan), depart: dep, arrive: dep + MIN.trip, back: dep + 2 * MIN.trip });
+    }
+    const queue = [];
+    trips.forEach((tr) => tr.cuts.forEach((c) => queue.push({ cut: c, arrive: tr.arrive })));
+    queue.sort((x, y) => x.arrive - y.arrive || CUT[x.cut].i - CUT[y.cut].i);
+    let free = PAINT_WIN[0][0]; const paint = [];
+    for (const q of queue) {
+      const w = runWork(Math.max(free, q.arrive), MIN.paint, PAINT_WIN), ok = w.finish !== null && w.finish <= SHOOT;
+      paint.push({ ...q, blocks: w.blocks, finish: w.finish, ok }); free = w.finish !== null ? w.finish : SHOOT;
+    }
+    return { kan: kanRows, kanDone, trips, paint };
+  }
+  function sendWhy(s) { if (!s.ret) return "まだ原画が戻っていない"; if (s.res) return "もう送った"; const u = unsorted(s); if (u.length) return `まだ分けていない原画がある（${u.join("・")}）`; return ""; }
+  function send(s) {
+    const why = sendWhy(s); if (why) return why;
+    const d = deliver(s, true), cut = {};
+    for (const c of CUT_IDS) {
+      const r = s.ret.cut[c], kan = s.bundle[c] === "kan", pr = d.paint.find((p) => p.cut === c);
+      cut[c] = { kan, fixed: kan ? r.defects : [], remain: kan ? [] : r.defects, wasted: kan && !r.defects.length, painted: pr.ok, arrive: pr.arrive, finish: pr.finish,
+        f: kan ? { ...RIGHT } : { ...r.f } };
+    }
+    const all = (k) => CUT_IDS.reduce((n, c) => n + cut[c][k].length, 0);
+    s.res = { d, cut, fixed: all("fixed"), remain: all("remain"), wasted: CUT_IDS.filter((c) => cut[c].wasted).length, unpainted: CUT_IDS.filter((c) => !cut[c].painted).length };
+    s.phase = 6;
+    return "";
+  }
+  function goWhy(s, p) {
+    if (s.res) return p === 6 ? "" : "もう送った";
+    if (s.ret) { if (p === 4) return ""; if (p === 5) { const u = unsorted(s); return u.length ? `まだ分けていない原画がある（${u.join("・")}）` : ""; } return p < 4 ? "もう手配した" : "まだ送っていない"; }
+    if (p >= 1 && p <= 3) return "";
+    return "まだ手配していない";
+  }
+  function go(s, p) { const why = goWhy(s, p); if (why) return why; s.phase = p; return ""; }
+
+  return { VERSION, T, fmt, DEPART, DUE, BACK, KAN, SHOOT, PAINT_WIN, MIN, MAX_CUTS, CATS, SCENE, CUTS, CUT, CUT_IDS, MATS, MAT_IDS, GROUPS, ANIMS, ANIM_IDS, RIGHT,
+    newGame, cutsOf, used, trayWhy, trayToggle, assignWhy, assign, bagWhy, bagToggle, routeMove, conflicts, runWork, plan, fits, dispatchWhy, dispatch,
+    features, defects, bench, bundleWhy, bundle, memo, setOrder, unsorted, deliver, sendWhy, send, goWhy, go, dist };
+})();
+if (typeof module !== "undefined") module.exports = Engine;
+</script>
+
+<script>
+(() => {
+  "use strict";
+  const E = Engine, KEY = "animep.order";
+  let s = null;
+  const ui = { sel: null, modal: null, vid: 0, vidTimer: null, flash: "", shelfOpen: false, paneFor: null, listFor: null };
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const $ = (id) => document.getElementById(id);
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify({ s, sel: ui.sel, modal: ["intro", "log"].includes(ui.modal) ? ui.modal : null })); } catch (e) { /* storage may be off */ } }
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (!d || !d.s || d.s.v !== E.VERSION) return false;
+      s = d.s; ui.sel = d.sel || null; ui.modal = d.modal || null; return true;
+    } catch (e) { return false; }
+  }
+
+  // ================= drawings =================
+  const COL = {
+    skin: "#f6d6c1", yuiHair: "#3b2b27", mioHair: "#a06c43", navy: "#2d3c6a", white: "#f7f7f2", ribbon: "#c7373c",
+    hoodie: "#6e9e62", pants: "#3d4a5c", skirt: "#3b4054", shoe: "#3a2e2a", muffler: "#bb3330", check: "#6f1c1a",
+    guitarA: "#cf914f", guitarE: "#b52a31", hole: "#3b2a1c", neck: "#7a5434", board: "#4a3426", capo: "#222",
+    wallR: "#a59a8e", wallD: "#efe5d3", skyR: "#6f7c90", skyD: "#a9d7f3", floor: "#7a6551", door: "#8c6b4b", hall: "#575667", sun: "#ffd166", rain: "#dfe6f0",
+  };
+  const pen = (m) => (m === "conte" ? { st: "#858a99", sw: 1.3, paper: "#fbfaf2" } : m === "genga" ? { st: "#1d2236", sw: 1.5, paper: "#ffffff" } : { st: "#2a2b38", sw: 1, paper: "#ffffff" });
+  const NS = ' vector-effect="non-scaling-stroke"';
+  // in line art the navy blazer is hatched, so a winter uniform reads differently from a white summer shirt; k is the drawing's scale
+  const hatch = (m, k) => `url(#h${m === "genga" ? "G" : "C"}${k < 1.3 ? 1 : k < 2.2 ? 2 : 3})`;
+  const F = (m, c, k = 1) => { const p = pen(m); return `fill="${m === "color" ? c : c === COL.navy ? hatch(m, k) : p.paper}" stroke="${p.st}" stroke-width="${p.sw}" stroke-linejoin="round"${NS}`; };
+  const Ln = (m, w) => { const p = pen(m); return `fill="none" stroke="${p.st}" stroke-width="${w || p.sw}" stroke-linecap="round" stroke-linejoin="round"${NS}`; };
+  const Lc = (m, c, w) => { const p = pen(m); return `fill="none" stroke="${m === "color" ? c : p.st}" stroke-width="${w || p.sw}" stroke-linecap="round"${NS}`; };
+  const solid = (m, c) => `fill="${m === "color" ? c : pen(m).st}" stroke="none"`;
+  const n1 = (v) => Math.round(v * 10) / 10;
+  const pts = (a) => a.map((p) => `${n1(p[0])},${n1(p[1])}`).join(" ");
+  const poly = (a, attr) => `<polygon points="${pts(a)}" ${attr}/>`;
+  function limbK(m, x1, y1, x2, y2, w, c, k = 1) { const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, nx = (-dy / L) * w, ny = (dx / L) * w; return poly([[x1 + nx, y1 + ny], [x2 + nx, y2 + ny], [x2 - nx, y2 - ny], [x1 - nx, y1 - ny]], F(m, c, k)); }
+  const limb = (m, x1, y1, x2, y2, w, c) => limbK(m, x1, y1, x2, y2, w, c, 1);
+  const Fk = (m, c, k) => F(m, c, k);
+  function svg(m, inner, label, cls = "") { return `<svg viewBox="0 0 320 180" class="pic ${m} ${cls}" role="img" aria-label="${esc(label)}"><rect x="0" y="0" width="320" height="180" fill="${pen(m).paper}"/>${inner}<rect x=".5" y=".5" width="319" height="179" fill="none" stroke="#b9bdc9"/></svg>`; }
+
+  // a girl, head at (0,0) radius 10, facing right when face is "r"; scaled and mirrored by the caller's transform
+  function girl(o) {
+    const m = o.mode, kk = o.k, top = o.outfit === "w" ? COL.navy : o.outfit === "p" ? COL.hoodie : COL.white;
+    const F = (mm, c) => Fk(mm, c, kk), limb = (mm, x1, y1, x2, y2, w, c) => limbK(mm, x1, y1, x2, y2, w, c, kk);
+    let g = "";
+    if (o.hair === "yui") g += `<path d="M-11,-2 Q-14,16 -12,25 L12,25 Q14,16 11,-2 Z" ${F(m, COL.yuiHair)}/>`;
+    if (o.outfit === "p") g += `<ellipse cx="0" cy="10" rx="13" ry="8" ${F(m, COL.hoodie)}/>`;
+    if (o.legs !== false) {
+      if (o.pose === "sit") {
+        if (o.outfit === "p") g += poly([[-8, 36], [17, 38], [18, 48], [-8, 48]], F(m, COL.pants)) + poly([[11, 46], [18, 46], [18, 68], [11, 68]], F(m, COL.pants));
+        else g += poly([[11, 46], [17, 46], [17, 68], [11, 68]], F(m, COL.skin)) + poly([[-9, 34], [16, 38], [19, 49], [-9, 49]], F(m, COL.skirt));
+        g += poly([[10, 68], [21, 68], [21, 72], [10, 72]], F(m, COL.shoe));
+      } else {
+        if (o.outfit === "p") g += poly([[-8, 36], [8, 36], [8, 76], [2, 76], [0, 50], [-2, 76], [-8, 76]], F(m, COL.pants));
+        else g += poly([[-7, 48], [-2, 48], [-2, 76], [-7, 76]], F(m, COL.skin)) + poly([[2, 48], [7, 48], [7, 76], [2, 76]], F(m, COL.skin)) + poly([[-9, 35], [9, 35], [13, 53], [-13, 53]], F(m, COL.skirt));
+        g += poly([[-8, 76], [-1, 76], [-1, 80], [-9, 80]], F(m, COL.shoe)) + poly([[1, 76], [8, 76], [9, 80], [1, 80]], F(m, COL.shoe));
+      }
+    }
+    g += poly([[-9, 12], [9, 12], [8, 38], [-8, 38]], F(m, top));
+    if (o.outfit === "w") g += `<path d="M-5,12 L0,24 L5,12 M0,24 L0,38" ${Ln(m)}/>`;
+    if (o.outfit === "p") g += poly([[-6, 28], [6, 28], [6, 34], [-6, 34]], F(m, COL.hoodie)) + `<path d="M-2,13 L-2,21 M2,13 L2,21" ${Ln(m)}/>`;
+    if (o.outfit === "s") g += `<path d="M-5,12 L-1,16 M5,12 L1,16" ${Ln(m)}/>`;
+    if (o.outfit !== "p") g += poly([[-3.5, 13], [0, 15.5], [3.5, 13], [3.5, 18], [0, 15.5], [-3.5, 18]], F(m, COL.ribbon));
+    if (o.arms !== false) {
+      const A = o.pose === "sit" ? [[4, 14, 16, 31]] : [[-9, 13, -12, 37], [9, 13, 12, 37]];
+      for (const [x1, y1, x2, y2] of A) {
+        if (o.outfit === "s") { const mx = x1 + (x2 - x1) * 0.32, my = y1 + (y2 - y1) * 0.32; g += limb(m, x1, y1, mx, my, 3.2, COL.white) + limb(m, mx, my, x2, y2, 2.1, COL.skin); }
+        else { g += limb(m, x1, y1, x2, y2, 2.8, top); const cx = x1 + (x2 - x1) * 0.86, cy = y1 + (y2 - y1) * 0.86; g += `<path d="M${n1(cx - 3)},${n1(cy)} L${n1(cx + 3)},${n1(cy + 0.6)}" ${Ln(m)}/>`; }
+        g += `<circle cx="${x2}" cy="${y2 + 1.5}" r="2.6" ${F(m, COL.skin)}/>`;
+      }
+    }
+    if (o.muffler) g += poly([[-8, 9], [8, 9], [8, 14.5], [-8, 14.5]], F(m, COL.muffler)) + poly([[2, 12], [7, 12], [8.5, 28], [4, 28]], F(m, COL.muffler)) + `<path d="M-4,9 L-4,14.5 M2,9 L2,14.5 M3.5,18 L8,18 M4,23 L8.3,23" ${Lc(m, COL.check, 0.8)}/>`;
+    g += `<circle cx="0" cy="0" r="10" ${F(m, COL.skin)}/>`;
+    if (o.hair === "yui") g += `<path d="M-10,-1 Q-9,-12 0,-11 Q9,-12 10,-1 Q6,-5 3,-3 Q0,-7 -3,-3 Q-6,-5 -10,-1 Z" ${F(m, COL.yuiHair)}/>`;
+    else g += `<path d="M-11,7 Q-13,-11 0,-11 Q13,-11 11,7 L8,7 Q8,-3 3,-4 Q0,-6 -3,-4 Q-8,-3 -8,7 Z" ${F(m, COL.mioHair)}/>`;
+    const ink = `fill="${pen(m).st}"`;
+    if (o.face === "f") g += `<ellipse cx="-3.6" cy="1.5" rx="1.1" ry="1.6" ${ink}/><ellipse cx="3.6" cy="1.5" rx="1.1" ry="1.6" ${ink}/>`;
+    else if (o.face === "down") g += `<path d="M-5,2 Q-3.5,3.2 -2,2 M2,2 Q3.5,3.2 5,2" ${Ln(m)}/>`;
+    else g += `<ellipse cx="5" cy="1.5" rx="1.1" ry="1.6" ${ink}/><path d="M9.6,0.5 L11.3,3 L9.8,4" ${Ln(m)}/>`;
+    const sx = (o.face === "l" ? -1 : 1) * o.k;
+    return `<g transform="translate(${o.x} ${o.y}) scale(${sx} ${o.k})">${g}</g>`;
+  }
+  // ユイ seen from behind, turning her face to the left (toward the door)
+  function yuiBack(m, x, y, k, outfit) {
+    const top = outfit === "w" ? COL.navy : COL.white, F = (mm, c) => Fk(mm, c, k);
+    let g = poly([[-16, 14], [16, 14], [23, 42], [-23, 42]], F(m, top));
+    if (outfit === "w") g += `<path d="M0,15 L0,42 M-12,15 L-17,42 M12,15 L17,42" ${Ln(m)}/>`;
+    else g += poly([[-16, 14], [-11, 14], [-13, 22], [-19, 22]], F(m, COL.white)) + poly([[16, 14], [11, 14], [13, 22], [19, 22]], F(m, COL.white)) + poly([[-19, 22], [-13, 22], [-15, 42], [-22, 42]], F(m, COL.skin)) + poly([[19, 22], [13, 22], [15, 42], [22, 42]], F(m, COL.skin));
+    g += `<path d="M-11,-4 Q-12,18 -9,22 L9,22 Q12,18 11,-4 Q11,-11 0,-11 Q-11,-11 -11,-4 Z" ${F(m, COL.yuiHair)}/>`;
+    g += `<g class="turnface"><path d="M-10,-1 Q-13.5,2 -12,4.6 L-13.2,6 L-11.4,7.4 Q-10,11.5 -6.5,12 Q-8.6,5 -10,-1 Z" ${F(m, COL.skin)}/><path d="M-10.6,2.4 L-9,2.6" ${Ln(m)}/></g>`;
+    return `<g transform="translate(${x} ${y}) scale(${k} ${k})">${g}</g>`;
+  }
+  function room(m, rain, withYui, outfit) {
+    let g = `<rect x="0" y="0" width="320" height="140" ${F(m, rain ? COL.wallR : COL.wallD)}/><rect x="0" y="140" width="320" height="40" ${F(m, COL.floor)}/>`;
+    g += `<rect x="20" y="44" width="44" height="96" ${F(m, COL.door)}/><circle cx="56" cy="93" r="2" ${F(m, COL.skin)}/>`;
+    g += `<rect x="200" y="22" width="100" height="80" ${F(m, rain ? COL.skyR : COL.skyD)}/>`;
+    if (rain) { g += `<g class="rain">`; for (let i = 0; i < 16; i++) { const x = 207 + ((i * 37) % 88), y = 27 + ((i * 23) % 64); g += `<line x1="${x}" y1="${y}" x2="${x - 4}" y2="${y + 9}" ${Lc(m, COL.rain, 1.2)}/>`; } g += `</g>`; }
+    else g += `<circle cx="282" cy="40" r="9" ${F(m, COL.sun)}/>`;
+    g += `<path d="M250,22 L250,102 M200,62 L300,62" ${Ln(m, 2)}/>`;
+    if (withYui) {
+      g += `<rect x="150" y="72" width="6" height="40" ${F(m, COL.neck)}/><rect x="150" y="104" width="38" height="5" ${F(m, COL.neck)}/><path d="M153,109 L153,140 M185,109 L185,140" ${Ln(m, 2)}/>`;
+      g += girl({ mode: m, x: 168, y: 62, k: 1, hair: "yui", outfit, pose: "sit", face: "r" });
+    }
+    return g;
+  }
+  // guitar neck in C2 runs from the body joint A to the nut B
+  const C2A = [150, 170], C2B = [306, 118];
+  const c2p = (t, off = 0) => { const x = C2B[0] + (C2A[0] - C2B[0]) * t, y = C2B[1] + (C2A[1] - C2B[1]) * t, L = Math.hypot(C2A[0] - C2B[0], C2A[1] - C2B[1]), nx = -(C2A[1] - C2B[1]) / L, ny = (C2A[0] - C2B[0]) / L; return [x - nx * off, y - ny * off]; };
+  function guitarBody(m, kind, cx, cy, s) {
+    if (kind === "a") return `<ellipse cx="${cx}" cy="${cy}" rx="${78 * s}" ry="${36 * s}" ${F(m, COL.guitarA)}/><circle cx="${cx + 20 * s}" cy="${cy - 9 * s}" r="${13 * s}" ${F(m, COL.hole)}/>`;
+    return poly([[cx - 70 * s, cy - 18 * s], [cx - 20 * s, cy - 34 * s], [cx + 40 * s, cy - 30 * s], [cx + 72 * s, cy - 6 * s], [cx + 60 * s, cy + 30 * s], [cx - 60 * s, cy + 30 * s]], F(m, COL.guitarE)) +
+      poly([[cx - 10 * s, cy - 22 * s], [cx + 40 * s, cy - 20 * s], [cx + 30 * s, cy + 10 * s], [cx - 20 * s, cy + 6 * s]], F(m, COL.white)) +
+      `<rect x="${cx + 4 * s}" y="${cy - 18 * s}" width="${8 * s}" height="${22 * s}" ${F(m, "#222")}/><rect x="${cx + 18 * s}" y="${cy - 16 * s}" width="${8 * s}" height="${22 * s}" ${F(m, "#222")}/>`;
+  }
+  function drawC2(f, m) {
+    let g = `<rect x="0" y="0" width="320" height="180" ${F(m, COL.wallR)}/>`;
+    g += girl({ mode: m, x: 118, y: 56, k: 2.9, hair: "yui", outfit: f.yui, pose: "stand", face: "down", arms: false, legs: false });
+    g += guitarBody(m, f.guitar, 96, 178, 1);
+    const a1 = c2p(1, 7), a2 = c2p(1, -7), b1 = c2p(0, 7), b2 = c2p(0, -7);
+    g += poly([a1, b1, b2, a2], F(m, COL.neck));
+    g += poly([c2p(0, 8), [C2B[0] + 16, C2B[1] - 12], [C2B[0] + 20, C2B[1] + 6], c2p(0, -8)], F(m, COL.neck));
+    for (const t of [0.07, 0.135, 0.195, 0.25, 0.3, 0.35, 0.4]) { const p1 = c2p(t, 7), p2 = c2p(t, -7); g += `<line x1="${n1(p1[0])}" y1="${n1(p1[1])}" x2="${n1(p2[0])}" y2="${n1(p2[1])}" ${Ln(m)}/>`; }
+    // arm from the shoulder to the hand at the capo
+    const sh = [144, 96], hand = c2p(0.15, -13);
+    if (f.yui === "s") { const mid = [sh[0] + (hand[0] - sh[0]) * 0.18, sh[1] + (hand[1] - sh[1]) * 0.18]; g += limb(m, sh[0], sh[1], mid[0], mid[1], 10, COL.white) + limb(m, mid[0], mid[1], hand[0], hand[1], 6.5, COL.skin); }
+    else { g += limb(m, sh[0], sh[1], hand[0] - 10, hand[1] - 3, 9, COL.navy); g += limb(m, hand[0] - 14, hand[1] - 4, hand[0] - 8, hand[1] - 2, 9.5, COL.navy); }
+    let hg = `<ellipse cx="${n1(hand[0])}" cy="${n1(hand[1])}" rx="11" ry="8" transform="rotate(-18 ${n1(hand[0])} ${n1(hand[1])})" ${F(m, COL.skin)}/>`;
+    for (const t of [0.105, 0.14, 0.175]) { const p1 = c2p(t, -9), p2 = c2p(t, 9); hg += limb(m, p1[0], p1[1], p2[0], p2[1], 2.7, COL.skin); }
+    if (f.handBad) { const p1 = c2p(0.21, -9), p2 = c2p(0.3, 14), p3 = c2p(0.25, 26); hg += limb(m, p1[0], p1[1], p2[0], p2[1], 2.7, COL.skin) + limb(m, p2[0], p2[1], p3[0], p3[1], 2.7, COL.skin); }
+    let cg = "";
+    if (f.capo) { const c = c2p(0.122, 0), L = 164.4, ux = (C2A[0] - C2B[0]) / L, uy = (C2A[1] - C2B[1]) / L, nx = -uy, ny = ux; const q = (a, b) => [c[0] + ux * a + nx * b, c[1] + uy * a + ny * b]; cg = poly([q(-3.5, -12), q(3.5, -12), q(3.5, 12), q(-3.5, 12)], solid(m, COL.capo)); }
+    g += `<g class="capo-g">${hg}${cg}</g>`;
+    return g;
+  }
+  // C3: the fretboard across the frame; fingers are tips at (string, fret space)
+  const FRET = [20, 80, 136, 188, 236, 280, 318];
+  const SY = (i) => 72 + i * 8.4;
+  const SHAPES = { G: [[0, 5], [1, 4], [5, 5]], C: [[1, 5], [2, 4], [4, 3]], X: [[2, 4], [3, 4], [2, 5]] };
+  function fretboard(m, o) {
+    let g = `<rect x="0" y="66" width="320" height="52" ${F(m, COL.board)}/>`;
+    for (const x of FRET) g += `<line x1="${x}" y1="66" x2="${x}" y2="118" ${Lc(m, "#d9d9d9", x === 20 ? 4 : 1.6)}/>`;
+    g += `<g class="str">`; for (let i = 0; i < 6; i++) g += `<line x1="0" y1="${SY(i)}" x2="320" y2="${SY(i)}" ${Lc(m, "#e8e8e8", 0.9 + i * 0.15)}/>`; g += `</g>`;
+    if (o.capo) g += `<rect x="124" y="60" width="9" height="64" ${solid(m, COL.capo)}/>`;
+    const shift = o.capo ? 0 : -2;
+    const tips = (SHAPES[o.chord] || SHAPES.X).map(([i, sp]) => [FRET[Math.max(1, sp + shift)] - 10, SY(i) + 2]);
+    const cx = tips.reduce((a, t) => a + t[0], 0) / tips.length - 14, cy = 168;
+    // forearm and sleeve, from the palm down to the lower left
+    let fg = poly([[cx - 30, 158], [cx + 4, 172], [cx - 46, 186], [cx - 92, 186]], F(m, COL.skin));
+    if (o.yui !== "s") fg += poly([[cx - 74, 160], [cx - 67, 155], [cx - 43, 171], [cx - 50, 176]], F(m, COL.white)) + poly([[cx - 112, 186], [cx - 74, 160], [cx - 50, 176], [cx - 68, 186]], F(m, COL.navy)) + `<circle cx="${n1(cx - 70)}" cy="177" r="2.4" ${F(m, "#d7c48a")}/>`;
+    fg += `<ellipse cx="${n1(cx)}" cy="${cy}" rx="40" ry="18" ${F(m, COL.skin)}/>`;
+    tips.forEach(([x, y]) => { fg += limb(m, x - 10, 152, x, y + 1, 5, COL.skin) + `<circle cx="${n1(x)}" cy="${n1(y)}" r="5" ${F(m, COL.skin)}/>`; });
+    if (o.handBad) fg += limb(m, cx + 26, 152, cx + 58, 100, 5, COL.skin) + limb(m, cx + 58, 100, cx + 30, 56, 5, COL.skin);
+    fg += `<ellipse cx="${n1(cx + 4)}" cy="60" rx="12" ry="6" ${F(m, COL.skin)}/>`;
+    g += `<g class="fingers">${fg}</g>`;
+    return g;
+  }
+  function drawC4(f, m) {
+    let g = `<rect x="0" y="0" width="320" height="142" ${F(m, COL.wallR)}/><rect x="0" y="142" width="320" height="38" ${F(m, COL.floor)}/>`;
+    g += `<rect x="26" y="28" width="66" height="114" ${F(m, COL.hall)}/>`;
+    g += `<g class="mio">${girl({ mode: m, x: 60, y: 56, k: 0.95, hair: "mio", outfit: f.mio, pose: "stand", face: "r", muffler: f.muffler })}</g>`;
+    g += `<g class="door-p">${poly([[26, 28], [48, 36], [48, 134], [26, 142]], F(m, COL.door))}</g>`;
+    g += yuiBack(m, 232, 96, 2.6, f.yui);
+    return f.door === "R" ? `<g transform="translate(320 0) scale(-1 1)">${g}</g>` : g;
+  }
+  function drawCut(c, f, m, cls = "") {
+    const label = `${c}（${m === "conte" ? "コンテ" : m === "genga" ? "原画" : "映像"}）`;
+    if (c === "C1") return svg(m, room(m, f.rain, true, f.yui), label, cls);
+    if (c === "C2") return svg(m, drawC2(f, m), label, cls);
+    if (c === "C3") return svg(m, `<rect x="0" y="0" width="320" height="180" ${F(m, COL.wallR)}/>` + fretboard(m, { capo: f.capo, chord: f.chord, yui: f.yui, handBad: f.handBad }), label, cls);
+    return svg(m, drawC4(f, m), label, cls + (f.stiff ? " stiff" : ""));
+  }
+  function drawMat(id) {
+    const m = "color", nm = E.MATS[id].name;
+    const person = (hair, outfit) => svg(m, girl({ mode: m, x: 160, y: 30, k: 1.7, hair, outfit, pose: "stand", face: "f" }), nm);
+    if (id === "yui_w") return person("yui", "w");
+    if (id === "yui_s") return person("yui", "s");
+    if (id === "mio_w") return person("mio", "w");
+    if (id === "mio_p") return person("mio", "p");
+    if (id === "guitar_a" || id === "guitar_e") return svg(m, guitarBody(m, id === "guitar_a" ? "a" : "e", 110, 100, 0.95) + poly([[176, 92], [300, 88], [300, 102], [176, 108]], F(m, COL.neck)) + poly([[300, 84], [318, 80], [318, 108], [300, 106]], F(m, COL.neck)), nm);
+    if (id === "capo") return svg(m, `<rect x="140" y="40" width="18" height="100" rx="4" ${F(m, COL.capo)}/><path d="M158,52 Q210,60 196,128" fill="none" stroke="#555" stroke-width="7" stroke-linecap="round"/>`, nm);
+    if (id === "muffler") return svg(m, poly([[90, 60], [230, 60], [230, 84], [90, 84]], F(m, COL.muffler)) + poly([[190, 70], [214, 70], [222, 160], [198, 160]], F(m, COL.muffler)) + `<path d="M110,60 L110,84 M140,60 L140,84 M170,60 L170,84 M200,60 L200,84 M196,100 L218,100 M198,130 L221,130" ${Lc(m, COL.check, 1.5)}/>`, nm);
+    if (id === "bg_rain" || id === "bg_day") return svg(m, room(m, id === "bg_rain", false), nm);
+    if (id === "bg_door") return svg(m, `<rect x="0" y="0" width="320" height="142" ${F(m, COL.wallR)}/><rect x="0" y="142" width="320" height="38" ${F(m, COL.floor)}/><rect x="26" y="28" width="66" height="114" ${F(m, COL.door)}/><circle cx="84" cy="88" r="2.4" ${F(m, COL.skin)}/><rect x="150" y="40" width="120" height="60" ${F(m, "#cdbfa9")}/>`, nm);
+    if (id === "bg_hall") return svg(m, `<rect x="0" y="0" width="320" height="180" ${F(m, "#c9a77f")}/><path d="M0,40 L120,80 L200,80 L320,40 M0,160 L120,110 L200,110 L320,160 M120,80 L120,110 M200,80 L200,110" ${Ln(m, 2)}/><rect x="30" y="60" width="40" height="80" ${F(m, COL.door)}/>`, nm);
+    if (id === "ref_g" || id === "ref_c") return svg(m, `<rect x="0" y="0" width="320" height="180" fill="#f2efe6"/>` + fretboard(m, { capo: false, chord: id === "ref_g" ? "G" : "C", yui: "w", handBad: false }) + `<text x="16" y="44" font-size="34" font-weight="700" fill="#1d2236">${id === "ref_g" ? "G" : "C"}</text>`, nm);
+    return svg(m, "", nm);
+  }
+  function drawSample(id) {
+    const m = "genga", nm = E.ANIMS[id].sample;
+    if (id === "mori") { let g = `<rect x="20" y="100" width="280" height="60" ${F(m, "#fff")}/>`; for (let x = 20; x < 300; x += 28) g += `<line x1="${x}" y1="100" x2="${x}" y2="160" ${Ln(m)}/>`; for (const x of [40, 68, 124, 152, 180, 236, 264]) g += `<rect x="${x}" y="100" width="16" height="34" ${solid(m)}/>`; g += `<ellipse cx="160" cy="70" rx="56" ry="26" ${F(m)}/>`; for (const [x, y] of [[118, 112], [140, 118], [162, 120], [184, 116], [204, 106]]) g += limb(m, x + 6, 80, x, y, 5, "#fff"); return svg(m, g, nm); }
+    if (id === "miyashita") return svg(m, girl({ mode: m, x: 150, y: 40, k: 1.5, hair: "yui", outfit: "w", pose: "stand", face: "l" }) + `<path d="M200,40 Q230,60 210,90 M214,34 Q252,62 226,100" ${Ln(m, 1.4)}/>`, nm);
+    if (id === "hayase") return svg(m, `<circle cx="170" cy="48" r="14" ${F(m)}/><path d="M168,62 L158,108 M162,76 L190,90 L204,80 M162,76 L136,90 L124,82 M158,108 L184,130 L182,154 M158,108 L136,134 L112,136" ${Ln(m, 3)}/><path d="M40,60 L100,60 M30,90 L96,90 M48,120 L104,120" ${Ln(m, 1.2)}/>`, nm);
+    return svg(m, girl({ mode: m, x: 150, y: 46, k: 1.5, hair: "mio", outfit: "w", pose: "sit", face: "r" }) + `<rect x="128" y="104" width="60" height="7" ${F(m)}/>`, nm);
+  }
+
+  // ================= references to things on the desk =================
+  const split = (r) => { const i = r.indexOf(":"); return [r.slice(0, i), r.slice(i + 1)]; };
+  function title(r) {
+    const [k, v] = split(r);
+    if (k === "conte") return `コンテ ${v}`;
+    if (k === "genga") return `原画 ${v}`;
+    if (k === "mat") return E.MATS[v].name;
+    if (k === "anim") return `${E.ANIMS[v].name}さん`;
+    if (k === "bag") return `${E.ANIMS[v].name}さんの袋`;
+    if (k === "person") return v === "oshima" ? "大島さん（作監）" : "ミナト（仕上げ）";
+    if (k === "res") return `${v}の映像`;
+    return r;
+  }
+  const valid = (r) => { if (!r || typeof r !== "string" || r.indexOf(":") < 0) return false; const [k, v] = split(r); return k === "conte" ? !!E.CUT[v] : k === "res" ? !!(E.CUT[v] && s.res) : k === "genga" ? !!(E.CUT[v] && s.ret) : k === "mat" ? !!E.MATS[v] : (k === "anim" || k === "bag") ? !!E.ANIMS[v] : k === "person" ? (v === "oshima" || v === "minato") : false; };
+  function thumb(r) {
+    const [k, v] = split(r);
+    if (k === "conte") return drawCut(v, E.RIGHT, "conte");
+    if (k === "genga") return drawCut(v, s.ret.cut[v].f, "genga");
+    if (k === "mat") return drawMat(v);
+    if (k === "anim") return drawSample(v);
+    if (k === "res") { const c = s.res.cut[v]; return drawCut(v, c.f, c.painted ? "color" : "genga"); }
+    return "";
+  }
+  const dragAttr = (r) => (accepts(null, r, true) ? ` draggable="true" data-drag="${r}"` : "");
+  function item(r, sub = "", mark = "", warn = false) {
+    return `<button class="item ${ui.sel === r ? "on" : ""}" data-act="sel" data-v="${r}"${dragAttr(r)}><span class="th">${thumb(r)}</span><span class="tx"><b>${esc(title(r))}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span>${mark ? `<span class="mk ${warn ? "warn" : ""}">${esc(mark)}</span>` : ""}</button>`;
+  }
+
+  // ================= where things can go =================
+  // zone: "tray" | "shelf" | "bag:<anim>" | "anim:<anim>" | "unassign" | "slot:<i>" | "bundle:kan|shi"; zone null = can it go anywhere
+  function accepts(zone, r, any) {
+    if (!r || !valid(r)) return false;
+    const [k, v] = split(r);
+    const zs = any ? zonesNow() : [zone];
+    return zs.some((z) => {
+      if (!z) return false;
+      if (z === "tray") return s.phase <= 3 && !s.ret && k === "mat" && !s.tray.includes(v);
+      if (z === "shelf") return s.phase <= 3 && !s.ret && k === "mat" && s.tray.includes(v);
+      if (z.startsWith("bag:")) { const a = z.slice(4); return s.phase === 3 && !s.ret && k === "mat" && s.tray.includes(v) && E.cutsOf(s, a).length > 0 && !s.bags[a].includes(v); }
+      if (z.startsWith("anim:")) { const a = z.slice(5); return s.phase === 2 && !s.ret && k === "conte" && s.assign[v] !== a && !E.assignWhy(s, v, a); }
+      if (z === "unassign") return s.phase === 2 && !s.ret && k === "conte" && !!s.assign[v];
+      if (z.startsWith("slot:")) return s.phase === 4 && ["conte", "genga", "mat", "bag"].includes(k) && s.bench[+z.slice(5)] !== r;
+      if (z.startsWith("bundle:")) return s.phase === 4 && k === "genga" && s.bundle[v] !== z.slice(7);
+      return false;
+    });
+  }
+  function zonesNow() {
+    if (s.phase === 1) return ["tray", "shelf"];
+    if (s.phase === 2) return E.ANIM_IDS.map((a) => "anim:" + a).concat("unassign");
+    if (s.phase === 3) return E.ANIM_IDS.map((a) => "bag:" + a).concat("shelf");
+    if (s.phase === 4) return ["slot:0", "slot:1", "slot:2", "bundle:kan", "bundle:shi"];
+    return [];
+  }
+  function put(zone, r) {
+    if (!accepts(zone, r)) return false;
+    const [, v] = split(r);
+    let why = "";
+    if (zone === "tray" || zone === "shelf") why = E.trayToggle(s, v);
+    else if (zone.startsWith("bag:")) why = E.bagToggle(s, zone.slice(4), v);
+    else if (zone.startsWith("anim:")) why = E.assign(s, v, zone.slice(5));
+    else if (zone === "unassign") why = E.assign(s, v, null);
+    else if (zone.startsWith("slot:")) why = E.bench(s, +zone.slice(5), r);
+    else if (zone.startsWith("bundle:")) why = E.bundle(s, v, zone.slice(7));
+    if (why) { ui.flash = why; return false; }
+    return true;
+  }
+  const putBtn = (zone, label) => (ui.sel && accepts(zone, ui.sel) ? `<button class="put" data-act="put" data-zone="${zone}">${esc(label)}</button>` : "");
+  const zoneCls = (zone) => (ui.sel && accepts(zone, ui.sel) ? " hot" : "");
+
+  // ================= header =================
+  const STEPS = ["コンテ", "原画マン", "発注", "照合", "渡す", "映像"];
+  function header() {
+    const st = STEPS.map((n, i) => { const p = i + 1, why = E.goWhy(s, p); return `<li><button data-act="go" data-v="${p}" class="${s.phase === p ? "on" : p < s.phase ? "done" : ""}" ${why || s.phase === p ? "disabled" : ""} title="${esc(why)}">${p} ${n}</button></li>`; }).join("");
+    const clock = s.phase <= 3 ? `月 10:00<small>12:30に佐伯が出る</small>` : s.phase <= 5 ? `火 13:00<small>原画が戻った</small>` : `水 10:00<small>撮影入れ</small>`;
+    return `<header class="top"><h1>4カットの発注<small>制作デスクの机（試作）</small></h1><ol class="steps" aria-label="段取り">${st}</ol><span class="clock">${clock}</span><span class="sp"></span><button class="tb" data-act="help">遊び方</button><button class="tb" data-act="restartAsk">最初から</button></header>`;
+  }
+
+  // ================= 佐伯 =================
+  function saeki() {
+    let t = "", warn = false;
+    if (s.phase === 1) t = s.tray.length ? `今回の資料、${s.tray.length}枚出てます。足りないものはないですか？ 袋に入れるのは発注のときです。` : "コンテ来ました！ 4カットです。要る資料を棚から「今回の資料」に出しておいてください。";
+    if (s.phase === 2) { const un = E.CUT_IDS.filter((c) => !s.assign[c]); const over = E.used(s).filter((a) => !E.fits(s, a)); if (over.length) { warn = true; t = `${over.map((a) => E.ANIMS[a].name + "さん").join("・")}、空いてる時間に収まりません！`; } else t = un.length ? `今週空いてる原画マンさんは4人です。作例と空き予定、見てください。まだ決まってないのは ${un.join("・")} です。` : "4カットとも頼む人が決まりました！ 次は袋づめです。"; }
+    if (s.phase === 3) { const why = E.dispatchWhy(s); if (why) { warn = true; t = why.includes("描き終わらない") ? `${why.replace("火曜12:00までに描き終わらない", "")}……このままだと火曜の昼に間に合いません！ 回る順番か、頼む人を変えないと。` : `${why}みたいです。`; } else t = "袋の中身と回る順番、これでいいですか？ よければ12:30に出ます！"; }
+    if (s.phase === 4) t = "戻りました！ 4カットです。作監の大島さんに見てもらう束と、そのまま仕上げに回す束に分けてください。";
+    if (s.phase === 5) t = "どっちから持っていきます？ ミナトさんは届いた順に塗るそうです。";
+    if (s.phase === 6) t = s.res.unpainted ? "映像、来ました……塗りが間に合わなかったカットがあります。" : s.res.remain ? "映像、来ました！ ……あれ、ちょっと気になるところが。" : "映像、来ました！ つながってます！";
+    if (ui.flash) { t = ui.flash; warn = true; }
+    return `<div class="saeki ${warn ? "warn" : ""}" role="status"><b>佐伯</b><span>${esc(t)}</span></div>`;
+  }
+
+  // ================= gantt =================
+  function gantt(rows, t0, t1, ticks, due, offs = []) {
+    const pc = (t) => `${Math.max(0, Math.min(100, ((t - t0) / (t1 - t0)) * 100)).toFixed(2)}%`;
+    const wd = (a, b) => `${Math.max(0, ((Math.min(b, t1) - Math.max(a, t0)) / (t1 - t0)) * 100).toFixed(2)}%`;
+    const axis = `<div class="gaxis" aria-hidden="true">${ticks.map(([t, l]) => `<span style="left:${pc(t)}">${l}</span>`).join("")}</div>`;
+    const body = rows.map((r) => `<div class="grow"><div class="gl">${esc(r.label)}${r.sub ? `<small>${esc(r.sub)}</small>` : ""}</div><div class="gbar">${offs.map(([a, b]) => `<span class="gseg off" style="left:${pc(a)};width:${wd(a, b)}"></span>`).join("")}${r.segs.map((g) => `<span class="gseg ${g.cls}" style="left:${pc(g.a)};width:${wd(g.a, g.b)}" title="${esc(g.title || "")}">${esc(g.text || "")}</span>`).join("")}${(r.marks || []).map((t) => `<span class="gmark" style="left:${pc(t)}" title="着く"></span>`).join("")}${due ? `<span class="gdue" style="left:${pc(due)}"></span>` : ""}</div></div>${r.note ? `<p class="gnote ${r.ok ? "ok" : "ng"}">${esc(r.note)}</p>` : ""}`).join("");
+    return `<div class="gantt">${axis}${body}</div>`;
+  }
+  const T = E.T;
+  const MON_TICKS = [[T(0, 12), "月12"], [T(0, 15), "15"], [T(0, 18), "18"], [T(0, 21), "21"], [T(1, 0), "火0"], [T(1, 3), "3"], [T(1, 6), "6"], [T(1, 9), "9"], [T(1, 12), "12"]];
+  const TUE_TICKS = [[T(1, 13), "火13"], [T(1, 16), "16"], [T(1, 19), "19"], [T(1, 22), "22"], [T(2, 1), "水1"], [T(2, 4), "4"], [T(2, 7), "7"], [T(2, 10), "10"]];
+
+  // ================= phase 1: storyboard and model sheets =================
+  function conteSheet(sel = true) {
+    return `<p class="scene">${esc(E.SCENE)}　演出：三宅</p><div class="conte">${E.CUTS.map((c) => `<button class="cpanel ${ui.sel === "conte:" + c.id ? "on" : ""}" data-act="sel" data-v="conte:${c.id}"${sel ? dragAttr("conte:" + c.id) : ""}>
+      ${drawCut(c.id, E.RIGHT, "conte")}<span class="ch"><b>${c.id}</b><span>${esc(c.shot)}・${c.sec}秒</span>${c.star ? `<span class="star">★${esc(c.star)}</span>` : ""}</span><p>${esc(c.text)}${c.line ? `<br>${esc(c.line)}` : ""}</p></button>`).join("")}</div>`;
+  }
+  function shelf(markTray = true) {
+    const kinds = ["人物", "小物", "背景", "参考"];
+    return kinds.map((k) => `<h3>${k}</h3><div class="items">${E.MAT_IDS.filter((m) => E.MATS[m].kind === k).map((m) => item("mat:" + m, "", markTray && s.tray.includes(m) ? "出した" : "")).join("")}</div>`).join("");
+  }
+  function list1() { return `<div class="box zone" data-drop="shelf"><h2>資料棚 <small>押すと中身が見られる</small></h2>${putBtn("shelf", "棚に戻す")}${shelf()}</div>`; }
+  function desk1() {
+    const tray = s.tray.length ? `<div class="items wrapit">${s.tray.map((m) => item("mat:" + m)).join("")}</div>` : `<p class="empty">まだ何も出していない。棚の資料を選んで「今回の資料に出す」、またはここへドラッグ。</p>`;
+    return `${saeki()}<div class="box"><h2>コンテ <small>4カット</small></h2>${conteSheet()}</div>
+      <div class="zone traybar${zoneCls("tray")}" data-drop="tray"><div class="zh"><b>今回の資料</b><small>袋に入れられるのは、ここに出した資料だけ</small>${putBtn("tray", "選んだ資料を出す")}</div>${tray}</div>
+      <div class="box"><ul class="rule"><li>袋にない設定は、原画マンが<b>記憶で描く</b>（第1話の前半は夏だった）。</li><li>資料には、別の資料を見るように書いてあるものがある。</li></ul></div>
+      <div class="foot"><button class="go" data-act="go" data-v="2">次へ：原画マンを探す</button></div>`;
+  }
+
+  // ================= phase 2: animators =================
+  function availSegs(a) { return E.ANIMS[a].avail.map(([x, y]) => ({ a: x, b: y, cls: "av", title: "空き" })); }
+  function list2() {
+    return `<div class="box"><h2>原画マン <small>今週空いている4人</small></h2><div class="items">${E.ANIM_IDS.map((a) => { const n = E.cutsOf(s, a).length; return item("anim:" + a, `${E.ANIMS[a].good ? "得意：" + E.ANIMS[a].good + "　" : ""}${E.ANIMS[a].bad ? "苦手：" + E.ANIMS[a].bad : ""}`.trim() || "新人", n ? `${n}カット` : ""); }).join("")}</div></div>
+      <div class="box"><h2>コンテ</h2><div class="items">${E.CUT_IDS.map((c) => item("conte:" + c, `${E.CUT[c].shot}${E.CUT[c].star ? "　★" + E.CUT[c].star : ""}`, s.assign[c] ? E.ANIMS[s.assign[c]].name + "さん" : "未定", !s.assign[c])).join("")}</div></div>`;
+  }
+  function desk2() {
+    const cuts = `<div class="grid4">${E.CUTS.map((c) => { const a = s.assign[c.id]; return `<button class="cutcard ${ui.sel === "conte:" + c.id ? "on" : ""}" data-act="sel" data-v="conte:${c.id}"${dragAttr("conte:" + c.id)}>${drawCut(c.id, E.RIGHT, "conte")}<b>${c.id} ${esc(c.shot)}${c.star ? ` <span class="star">★${esc(c.star)}</span>` : ""}</b><span class="who ${a ? "" : "none"}">${a ? esc(E.ANIMS[a].name) + "さん" : "未定"}</span></button>`; }).join("")}</div>`;
+    const anims = `<div class="grid2">${E.ANIM_IDS.map((a) => { const A = E.ANIMS[a], cs = E.cutsOf(s, a), ok = E.fits(s, a); return `<div class="zone anim${zoneCls("anim:" + a)}" data-drop="anim:${a}"><div class="zh"><b>${esc(A.name)}さん</b><small>${esc(A.where)}</small>${putBtn("anim:" + a, "このカットを頼む")}</div>
+      <div class="samp">${drawSample(a)}<ul><li>作例：${esc(A.sample)}</li><li>得意：${esc(A.good || "とくになし")}${A.good === "手" ? "（★手元を描ける）" : A.good === "芝居" ? "（★芝居を描ける）" : ""}</li><li>苦手：${esc(A.bad || "とくになし")}</li><li>1カット${A.speed}時間</li></ul></div>
+      <div class="cuts">${cs.length ? cs.map((c) => `<button class="chipbtn" data-act="sel" data-v="conte:${c}">${c}</button>`).join("") : '<span class="empty">まだ頼んでいない</span>'}</div>
+      ${cs.length ? `<p class="fit ${ok ? "ok" : "ng"}">${ok ? `${cs.length}カットで${cs.length * A.speed}時間。空きに収まる` : `${cs.length}カットで${cs.length * A.speed}時間。空き（${esc(A.availText)}）に収まらない`}</p>` : ""}</div>`; }).join("")}</div>`;
+    const rows = E.ANIM_IDS.map((a) => ({ label: E.ANIMS[a].name + "さん", sub: `1カット${E.ANIMS[a].speed}時間`, segs: availSegs(a) }));
+    return `${saeki()}<div class="box"><h2>カット <small>選んで、頼む原画マンを決める（ドラッグでもよい）</small></h2>${cuts}<div class="zone${zoneCls("unassign")}" data-drop="unassign" style="margin-top:8px"><div class="zh"><small>頼むのをやめるときは、ここへ</small>${putBtn("unassign", "頼むのをやめる")}</div></div></div>
+      <div class="box"><h2>原画マン</h2>${anims}</div>
+      <div class="box"><h2>空き予定 <small>緑が空いている時間。赤い線が回収（火曜12:00）</small></h2>${gantt(rows, T(0, 12), T(1, 13), MON_TICKS, E.DUE)}</div>
+      <div class="box"><ul class="rule"><li>コンテに<b>★</b>がついたカットは見せ場。★手元は手が得意な人、★芝居は芝居が得意な人でないと、崩れたり硬くなったりする。</li><li><b>苦手</b>なものは、★がなくても崩れる（小物が苦手な人は小物を描き落とす）。</li><li>一人に頼めるのは2カットまで。</li></ul></div>
+      <div class="foot"><button class="sub" data-act="go" data-v="1">戻る：コンテ</button><button class="go" data-act="go" data-v="3">次へ：発注する</button></div>`;
+  }
+
+  // ================= phase 3: bags and the round =================
+  function list3() {
+    const tray = s.tray.length ? `<div class="items">${s.tray.map((m) => item("mat:" + m, E.MATS[m].kind)).join("")}</div>` : `<p class="empty">今回の資料がない。「1 コンテ」に戻って棚から出す。</p>`;
+    return `<div class="box zone" data-drop="shelf"><h2>今回の資料 <small>袋にドラッグ、または選んで袋を押す</small></h2>${tray}</div>
+      <div class="box"><h2>コンテ</h2><div class="items">${E.CUT_IDS.map((c) => item("conte:" + c, s.assign[c] ? E.ANIMS[s.assign[c]].name + "さん" : "未定")).join("")}</div></div>`;
+  }
+  function desk3() {
+    const u = E.used(s), p = E.plan(s);
+    const bags = u.length ? `<div class="grid2">${u.map((a) => { const cs = E.cutsOf(s, a), bag = s.bags[a], conf = E.conflicts(bag); return `<div class="zone bag${zoneCls("bag:" + a)}" data-drop="bag:${a}"><div class="zh"><b>${esc(E.ANIMS[a].name)}さんの袋</b><small>${cs.join("・")}</small>${putBtn("bag:" + a, "この袋に入れる")}</div>
+      <div class="mats">${cs.map((c) => `<button class="chipbtn" data-act="sel" data-v="conte:${c}">コンテ ${c}</button>`).join("")}</div>
+      <h3>資料</h3><div class="mats">${bag.length ? bag.map((m) => `<span class="mchip"><button data-act="sel" data-v="mat:${m}">${esc(E.MATS[m].name)}</button><button data-act="bagDel" data-a="${a}" data-m="${m}" aria-label="${esc(E.MATS[m].name)}を出す">×</button></span>`).join("") : '<span class="empty">まだ入っていない</span>'}</div>
+      ${conf.length ? `<p class="why">同じものが2種類入っている（${conf.map((g) => ({ yui: "ユイ", mio: "ミオ", guitar: "ギター", room: "部室", chord: "コード" })[g]).join("・")}）：電話がきて1時間ずつ遅れる</p>` : ""}</div>`; }).join("")}</div>` : `<p class="empty">まだ誰にも頼んでいない。「2 原画マン」で決める。</p>`;
+    const route = s.route.length ? `<div class="route">${s.route.map((a, i) => { const A = E.ANIMS[a]; return `<div class="rrow"><span class="n">${i + 1}</span><span><b>${esc(A.name)}さん</b>　<small>${esc(A.where)}</small><br><small>${E.fmt(p[a].arrive)} に着く</small></span><span class="ud"><button data-act="route" data-a="${a}" data-d="-1" ${i === 0 ? "disabled" : ""} aria-label="${esc(A.name)}さんを先に">↑</button><button data-act="route" data-a="${a}" data-d="1" ${i === s.route.length - 1 ? "disabled" : ""} aria-label="${esc(A.name)}さんをあとに">↓</button></span></div>`; }).join("")}</div>
+      <p class="map">月12:30にスタジオを出る。車で スタジオ↔森さん 20分／スタジオ↔宮下さん 30分／森さん↔宮下さん 20分。作画部屋の人に渡すのは10分（外にいるときは、いったんスタジオに戻る）。</p>` : "";
+    const rows = s.route.map((a) => { const r = p[a]; const segs = availSegs(a).concat(r.blocks.map(([x, y]) => ({ a: x, b: y, cls: "wk" + (r.ok ? "" : " late"), text: r.cuts.join("・"), title: "描いている" }))); return { label: E.ANIMS[a].name + "さん", sub: r.conf.length ? `迷って電話 +${r.conf.length}時間` : `${r.cuts.length}カット`, segs, marks: [r.arrive], ok: r.ok, note: r.ok ? `${E.fmt(r.finish)}に描き終わる` : (r.finish === null ? `空きのうちに描き終わらない（あと${Math.ceil(r.left / 60)}時間ぶん）` : `${E.fmt(r.finish)}まで。回収に間に合わない`) }; });
+    const why = E.dispatchWhy(s);
+    return `${saeki()}<div class="box"><h2>袋づめ <small>原画マンごとに、そのカットに要る資料を入れる</small></h2>${bags}</div>
+      <div class="box"><h2>佐伯の回る順番</h2>${route || '<p class="empty">頼む人が決まると、ここに並ぶ。</p>'}</div>
+      ${rows.length ? `<div class="box"><h2>見込み <small>青い線が袋の届く時刻、緑が空き、濃い色が描いている時間、赤い点線が回収</small></h2>${gantt(rows, T(0, 12), T(1, 13), MON_TICKS, E.DUE)}</div>` : ""}
+      <div class="box"><ul class="rule"><li>同じものの違う版（服・背景・ギター・コード）が袋に2つ入っていると、原画マンが迷って電話してくる。佐伯がコンテを見て答えるが、<b>1つにつき1時間</b>遅れる。</li><li>火曜12:00までに描き終わったカットを、佐伯が回収して13:00に戻る。</li></ul></div>
+      <div class="foot"><button class="sub" data-act="go" data-v="2">戻る：原画マン</button><button class="go" data-act="dispatch" ${why ? "disabled" : ""}>佐伯に手配を頼む（月12:30出発）</button>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
+  }
+
+  // ================= phase 4: check what came back =================
+  function gmeta(c) {
+    const r = s.ret.cut[c], cut = E.CUT[c], keys = r.f.stiff ? 2 : cut.keys;
+    return `${E.ANIMS[r.anim].name}さん　タイムシート ${cut.sec}+0　原画${keys}枚${c === "C4" ? (r.f.stiff ? "（溜めなし）" : "（溜めあり）") : ""}`;
+  }
+  function bagRecord(a) { const r = s.ret; return `<ul class="bagrec"><li>カット：${E.cutsOf(s, a).join("・")}</li><li>資料：${r.bags[a].length ? r.bags[a].map((m) => esc(E.MATS[m].name)).join("、") : "なし"}</li><li>袋が届いた：${E.fmt(r.plan[a].arrive)}　描き終えた：${E.fmt(r.plan[a].finish)}</li></ul>`; }
+  function list4() {
+    const st = (c) => (s.bundle[c] === "kan" ? "作監へ" : s.bundle[c] === "shi" ? "仕上げへ" : "まだ");
+    return `<div class="box"><h2>戻った原画</h2><div class="items">${E.CUT_IDS.map((c) => item("genga:" + c, gmeta(c).split("　")[0], st(c), !s.bundle[c])).join("")}</div><p class="note"><button class="see" data-act="log">昨日からの記録を見る</button></p></div>
+      <div class="box"><h2>コンテ</h2><div class="items">${E.CUT_IDS.map((c) => item("conte:" + c, E.CUT[c].shot)).join("")}</div></div>
+      <div class="box"><h2>袋の記録 <small>何を入れて発注したか</small></h2><div class="items">${s.ret.route.map((a) => `<button class="item ${ui.sel === "bag:" + a ? "on" : ""}" data-act="sel" data-v="bag:${a}" draggable="true" data-drag="bag:${a}"><span class="tx"><b>${esc(E.ANIMS[a].name)}さんの袋</b><small>${E.cutsOf(s, a).join("・")}／資料${s.ret.bags[a].length}枚</small></span></button>`).join("")}</div></div>
+      <details class="box" data-k="shelf" ${ui.shelfOpen ? "open" : ""}><summary>資料棚 <small>設定を確かめるときに開く</small></summary>${shelf(false)}</details>`;
+  }
+  function slotView(i) {
+    const r = s.bench[i], zone = "slot:" + i;
+    if (!r || !valid(r)) return `<div class="zone slot${zoneCls(zone)}" data-drop="${zone}"><div class="zh"><b>${i + 1}</b><small>ここに並べる</small>${putBtn(zone, "ここに並べる")}</div><p class="empty">左の一覧から選んで「ここに並べる」、またはドラッグ。</p></div>`;
+    const [k, v] = split(r);
+    let body = "";
+    if (k === "conte") body = thumb(r) + `<p class="meta">${esc(E.CUT[v].text)}${E.CUT[v].line ? `<br>${esc(E.CUT[v].line)}` : ""}<br><small>${E.CUT[v].sec}秒${E.CUT[v].star ? "　★" + esc(E.CUT[v].star) : ""}</small></p>`;
+    else if (k === "genga") body = thumb(r) + `<p class="meta">${esc(gmeta(v))}</p>`;
+    else if (k === "mat") body = thumb(r) + `<p class="meta">${esc(E.MATS[v].text)}</p>`;
+    else if (k === "bag") body = bagRecord(v);
+    return `<div class="zone slot${zoneCls(zone)}" data-drop="${zone}"><div class="st"><b>${i + 1}　${esc(title(r))}</b><span class="sb">${putBtn(zone, "入れ替える")}<button data-act="benchClear" data-i="${i}">外す</button></span></div>${body}</div>`;
+  }
+  function gcard(c, inKan) {
+    return `<div class="gcard ${ui.sel === "genga:" + c ? "on" : ""}"><div class="gh"><button class="nm" data-act="sel" data-v="genga:${c}" draggable="true" data-drag="genga:${c}">${thumb("genga:" + c)}<b>${c}</b></button><button class="back" data-act="bundle" data-c="${c}" data-w="">戻す</button></div>
+      ${inKan ? `<div class="memo">確認メモ：${E.CATS.map((cat) => `<button class="chipbtn ${s.memo[c].includes(cat) ? "on" : ""}" data-act="memo" data-c="${c}" data-cat="${cat}" aria-pressed="${s.memo[c].includes(cat)}">${cat}</button>`).join("")}</div>` : ""}</div>`;
+  }
+  function desk4() {
+    const kan = E.CUT_IDS.filter((c) => s.bundle[c] === "kan"), shi = E.CUT_IDS.filter((c) => s.bundle[c] === "shi"), why = E.goWhy(s, 5);
+    return `${saeki()}<div class="box"><h2>見比べ台 <small>コンテ・原画・資料・袋の記録を並べる</small></h2><div class="slots">${[0, 1, 2].map(slotView).join("")}</div></div>
+      <div class="grid2"><div class="zone kan${zoneCls("bundle:kan")}" data-drop="bundle:kan"><div class="zh"><b>作監に確認する束</b><small>大島さんが直す</small>${putBtn("bundle:kan", "この束へ")}</div><div class="items">${kan.length ? kan.map((c) => gcard(c, true)).join("") : '<p class="empty">直しが要りそうな原画をここへ。</p>'}</div></div>
+      <div class="zone shi${zoneCls("bundle:shi")}" data-drop="bundle:shi"><div class="zh"><b>仕上げへ渡す束</b><small>そのまま色を塗る</small>${putBtn("bundle:shi", "この束へ")}</div><div class="items">${shi.length ? shi.map((c) => gcard(c, false)).join("") : '<p class="empty">そのままでいい原画をここへ。</p>'}</div></div></div>
+      <div class="box"><ul class="rule"><li>作監の大島さんは火曜14:00から。1カット見るのに15分、直しは1か所30分。<b>確認メモ</b>で直す場所を伝えれば15分（違う場所を書くと5分むだ）。</li><li>仕上げのミナトは届いた順に、1カット3時間で塗る。撮影入れ（水曜10:00）までに塗り終わらないと、線のまま撮影に入る。</li></ul></div>
+      <div class="foot"><button class="go" data-act="go" data-v="5" ${why ? "disabled" : ""}>次へ：渡す順番を決める</button>${why ? `<span class="why">${esc(why)}</span>` : ""}</div>`;
+  }
+
+  // ================= phase 5: hand on =================
+  function list5() {
+    const kan = E.CUT_IDS.filter((c) => s.bundle[c] === "kan"), shi = E.CUT_IDS.filter((c) => s.bundle[c] === "shi");
+    return `<div class="box"><h2>作監に確認する束</h2><div class="items">${kan.length ? kan.map((c) => item("genga:" + c, s.memo[c].length ? "メモ：" + s.memo[c].join("・") : "メモなし")).join("") : '<p class="empty">なし</p>'}</div></div>
+      <div class="box"><h2>仕上げへ渡す束</h2><div class="items">${shi.length ? shi.map((c) => item("genga:" + c)).join("") : '<p class="empty">なし</p>'}</div></div>
+      <div class="box"><h2>渡す先</h2><div class="items">${["oshima", "minato"].map((p) => `<button class="item ${ui.sel === "person:" + p ? "on" : ""}" data-act="sel" data-v="person:${p}"><span class="tx"><b>${esc(title("person:" + p))}</b><small>${p === "oshima" ? "スタジオ・火曜14:00から" : "車で30分・届いた順に塗る"}</small></span></button>`).join("")}</div></div>`;
+  }
+  function deliverChart(d, real) {
+    const rows = [];
+    rows.push({ label: "大島さん", sub: "作監", segs: d.kan.map((k) => ({ a: k.start, b: k.end, cls: "kn", text: k.cut, title: `${k.cut} ${k.mins}分` })), note: d.kan.length ? `${E.fmt(d.kanDone)}に直し終わる${real ? "" : "見込み"}` : "作監に回すカットなし", ok: true });
+    rows.push({ label: "佐伯", sub: "ミナトへ", segs: d.trips.map((t) => ({ a: t.depart, b: t.arrive, cls: "tr", title: t.cuts.join("・") })), marks: d.trips.map((t) => t.arrive), note: d.trips.map((t) => `${E.fmt(t.arrive)} ${t.cuts.join("・")}`).join("　／　"), ok: true });
+    rows.push({ label: "ミナト", sub: "仕上げ", segs: d.paint.flatMap((p) => p.blocks.map(([a, b]) => ({ a, b, cls: "pt" + (p.ok ? "" : " late"), text: p.cut }))), note: d.paint.map((p) => `${p.cut} ${p.ok ? E.fmt(p.finish) + "に塗り上がり" : "線のまま"}`).join("　／　"), ok: d.paint.every((p) => p.ok) });
+    return gantt(rows, T(1, 13), T(2, 10, 30), TUE_TICKS, E.SHOOT, [[T(2, 0), T(2, 8)]]);
+  }
+  function desk5() {
+    const d = E.deliver(s, false), kanN = E.CUT_IDS.filter((c) => s.bundle[c] === "kan").length, shiN = 4 - kanN;
+    const both = kanN && shiN;
+    return `${saeki()}<div class="box"><h2>佐伯に、渡す順番を指示する</h2>${both ? `<div class="order"><button data-act="order" data-v="first" class="${s.order === "first" ? "on" : ""}" aria-pressed="${s.order === "first"}"><b>仕上げの束を先に届ける</b><span>13:00に出て13:30にミナトへ。作監の束は、直し終わったら届ける。</span></button><button data-act="order" data-v="together" class="${s.order === "together" ? "on" : ""}" aria-pressed="${s.order === "together"}"><b>作監の直しを待って、まとめて届ける</b><span>大島さんが直し終わってから、4カットいっしょにミナトへ。</span></button></div>` : `<p class="meta">${kanN ? "4カットとも作監に回す。直し終わったらミナトへ届ける。" : "4カットとも仕上げに回す。13:00に出て13:30にミナトへ。"}</p>`}</div>
+      <div class="box"><h2>見込み <small>確認メモの数で計算（メモのないカットは、大島さんが探して1か所直すとみる）。メモにない直しがほかにあれば、そのぶん遅れる</small></h2>${deliverChart(d, false)}</div>
+      <div class="box"><ul class="rule"><li>大島さん：火曜14:00から。見るのは1カット15分、直しは1か所30分（メモで伝えた場所は15分）。</li><li>ミナト：届いた順に1カット3時間。作業は火曜24:00まで、水曜は8:00から（斜線は作業しない時間）。撮影入れは水曜10:00。</li></ul></div>
+      <div class="foot"><button class="sub" data-act="go" data-v="4">戻る：照合</button><button class="go" data-act="send">この順番で送る</button></div>`;
+  }
+
+  // ================= phase 6: the footage =================
+  function verdict() {
+    const r = s.res, first = E.CUT_IDS.map((c) => r.cut[c].remain[0]).find(Boolean);
+    if (r.unpainted) return `${E.CUT_IDS.filter((c) => !r.cut[c].painted).join("・")}が線のまま撮影に入った……`;
+    if (r.remain) return `つながったけど、${first.label}……`;
+    return "4カット、ちゃんとつながった。";
+  }
+  function list6() { return `<div class="box"><h2>カット</h2><div class="items">${E.CUT_IDS.map((c) => { const r = s.res.cut[c]; return item("res:" + c, r.painted ? (r.remain.length ? `気になるところ ${r.remain.length}` : "いい") : "線のまま", r.painted && !r.remain.length ? "○" : "△", !(r.painted && !r.remain.length)); }).join("")}</div></div>`; }
+  function frame(i) {
+    if (i >= 4) return `<div class="frame">${svg("color", `<rect x="0" y="0" width="320" height="180" fill="#111"/><text x="160" y="96" text-anchor="middle" font-size="16" fill="#fff">おわり</text>`, "おわり")}</div><div class="cap"><button class="sub" data-act="play">もう一度見る</button></div><div class="sub2"></div>`;
+    const c = E.CUT_IDS[i], r = s.res.cut[c];
+    return `<div class="frame">${drawCut(c, r.f, r.painted ? "color" : "genga", "play")}</div><div class="cap"><b>${c}</b><span>${E.CUT[c].sec}秒</span>${r.painted ? "" : '<span class="line">線のまま（塗りが間に合わなかった）</span>'}</div><div class="sub2">${c === "C4" ? "<span class='c4line'>ミオ「……まだいたの？」</span>" : ""}</div>`;
+  }
+  function playVideo(from = 0) {
+    clearTimeout(ui.vidTimer); ui.vid = from;
+    const step = () => { const el = $("video"); if (!el || s.phase !== 6) return; el.innerHTML = frame(ui.vid); if (ui.vid < 4) { const ms = E.CUT[E.CUT_IDS[ui.vid]].sec * 1000; ui.vid++; ui.vidTimer = setTimeout(step, ms); } };
+    step();
+  }
+  function desk6() {
+    const r = s.res, d = r.d;
+    const cuts = E.CUT_IDS.map((c) => { const x = r.cut[c], a = s.ret.cut[c].anim; return `<button class="rcut ${ui.sel === "res:" + c ? "on" : ""}" data-act="sel" data-v="res:${c}">${thumb("res:" + c)}<span><b>${c} ${esc(E.CUT[c].shot)}</b>　<small>原画：${esc(E.ANIMS[a].name)}さん</small><ul>
+      ${x.kan ? (x.fixed.length ? x.fixed.map((f) => `<li><span class="ok">作監が直した</span>：${esc(f.label)}<br><small>発注で防げた：${esc(f.cause)}</small></li>`).join("") : '<li>作監：<span class="so">見たが、直すところはなかった</span></li>') : ""}
+      ${x.remain.map((f) => `<li><span class="ng">${esc(f.label)}</span>：${esc(f.cause)}</li>`).join("")}
+      <li>仕上げ：${E.fmt(x.arrive)}に届く → ${x.painted ? `<span class="ok">${E.fmt(x.finish)}に塗り上がり</span>` : '<span class="ng">撮影入れに間に合わず、線のまま</span>'}</li>
+      ${!x.kan && !x.remain.length ? '<li><span class="ok">直すところなし</span></li>' : ""}</ul></span></button>`; }).join("");
+    const log = s.ret.log.concat(d.kan.map((k) => ({ t: k.start, who: "大島", text: `${k.cut}を見る：${k.mins}分。${k.fixes.length ? "直した：" + k.fixes.map((f) => f.label + (f.memo ? "［メモあり］" : "")).join("、") : "直しなし"}${k.wrong.length ? `。メモの「${k.wrong.join("・")}」は違った` : ""}` })), d.trips.map((t) => ({ t: t.arrive, who: "佐伯", text: `ミナトに${t.cuts.join("・")}を届ける` })), d.paint.map((p) => ({ t: p.ok ? p.finish : E.SHOOT, who: "ミナト", text: p.ok ? `${p.cut}を塗り終える` : `${p.cut}は塗り終わらなかった` }))).sort((x, y) => x.t - y.t);
+    return `${saeki()}<div class="box vid"><div id="video"></div></div>
+      <div class="box"><p class="verdict">${esc(verdict())}</p><div class="counts"><span>作監で直した ${r.fixed}か所</span><span>見逃した ${r.remain}か所</span><span>作監に回したが直しなし ${r.wasted}カット</span><span>線のまま ${r.unpainted}カット</span></div></div>
+      <div class="box"><h2>カットごとの結果</h2><div class="res">${cuts}</div></div>
+      <div class="box"><h2>誰がどう動いたか</h2><ul class="log">${log.map((l) => `<li><span class="t">${E.fmt(l.t)}</span><span class="w">${esc(l.who)}</span><span>${esc(l.text)}</span></li>`).join("")}</ul></div>
+      <div class="foot"><button class="go" data-act="restartAsk">最初からもう一度</button></div>`;
+  }
+
+  // ================= the picked thing =================
+  const act = (label, a, data, opt = {}) => `<div class="a"><button data-act="${a}" ${Object.entries(data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(" ")} class="${opt.on ? "on" : ""}" ${opt.why ? "disabled" : ""}>${esc(label)}</button>${opt.note ? `<small>${esc(opt.note)}</small>` : ""}${opt.why ? `<span class="why">${esc(opt.why)}</span>` : ""}</div>`;
+  const TODO = {
+    1: ["コンテを読んで、4カットに要る資料を棚から「今回の資料」に出す。", "資料を押すと中身が出る。別の資料を見るように書いてあることもある。", "袋に入れるのは「3 発注」で。"],
+    2: ["カットごとに、頼む原画マンを決める（一人2カットまで）。", "★のカットは、その得意な人でないと崩れる。苦手なものは★がなくても崩れる。", "空き予定と速さを見て、火曜12:00までに描き終わるように。"],
+    3: ["原画マンごとの袋に、そのカットに要る資料を入れる。", "同じものの違う版を2つ入れると、電話がきて1時間遅れる。", "佐伯が回る順番を決めて、手配を頼む（月12:30出発）。"],
+    4: ["コンテ・原画・資料・袋の記録を見比べ台に並べて、違うところを探す。", "直しが要りそうな原画は「作監に確認する束」、そのままでいい原画は「仕上げへ渡す束」へ。", "作監の束には、直す場所を確認メモで添えられる。"],
+    5: ["佐伯に、どちらの束から届けるかを指示する。", "ミナトは届いた順に塗る。撮影入れまでに塗り終わらないカットは線のまま。"],
+    6: ["映像を見る。自分が扱ったカットがつながったか。", "カットを押すと、何がどうしてそうなったかが出る。"],
+  };
+  function pane() {
+    const r = ui.sel && valid(ui.sel) ? ui.sel : null;
+    if (!r) return `<aside class="pane"><div class="box"><h2>この場面でやること</h2><ul class="todo">${TODO[s.phase].map((t) => `<li>${esc(t)}</li>`).join("")}</ul><p class="note" style="font-size:13px;color:var(--soft)">机の上のものを押すと、ここに詳しく出る。</p></div></aside>`;
+    const [k, v] = split(r);
+    let body = "", acts = [];
+    if (k === "conte") {
+      const c = E.CUT[v];
+      body = `<div class="big">${thumb(r)}</div><dl><dt>カット</dt><dd>${v}　${esc(c.shot)}・${c.sec}秒${c.star ? `　<span class="star">★${esc(c.star)}</span>` : ""}</dd><dt>内容</dt><dd>${esc(c.text)}${c.line ? `<br>${esc(c.line)}` : ""}</dd><dt>場面</dt><dd>${esc(E.SCENE)}</dd>${s.assign[v] ? `<dt>原画</dt><dd>${esc(E.ANIMS[s.assign[v]].name)}さん</dd>` : ""}</dl>`;
+      if (s.phase === 2) { acts = E.ANIM_IDS.map((a) => act(s.assign[v] === a ? `${E.ANIMS[a].name}さんに頼んでいる` : `${E.ANIMS[a].name}さんに頼む`, "assign", { c: v, a }, { on: s.assign[v] === a, why: s.assign[v] === a ? "" : E.assignWhy(s, v, a) })); if (s.assign[v]) acts.push(act("頼むのをやめる", "assign", { c: v, a: "" })); }
+      if (s.phase === 4) acts = [0, 1, 2].map((i) => act(`見比べ台の${i + 1}に並べる`, "bench", { i, r }, { why: s.bench[i] === r ? "もう並べている" : "" }));
+    }
+    if (k === "mat") {
+      const M = E.MATS[v];
+      body = `<div class="big">${thumb(r)}</div><dl><dt>種類</dt><dd>${esc(M.kind)}</dd><dt>メモ</dt><dd>${esc(M.text)}</dd></dl>${M.see ? `<p>見る資料：${M.see.map((x) => `<button class="see" data-act="sel" data-v="mat:${x}">${esc(E.MATS[x].name)}</button>`).join(" ")}</p>` : ""}`;
+      if (s.phase <= 3 && !s.ret) acts.push(act(s.tray.includes(v) ? "今回の資料から棚に戻す" : "今回の資料に出す", "tray", { m: v }, { on: s.tray.includes(v), note: s.tray.includes(v) && s.phase === 3 ? "棚に戻すと、袋からも出る" : "" }));
+      if (s.phase === 3) for (const a of E.used(s)) { const inb = s.bags[a].includes(v); acts.push(act(inb ? `${E.ANIMS[a].name}さんの袋から出す` : `${E.ANIMS[a].name}さんの袋に入れる（${E.cutsOf(s, a).join("・")}）`, "bag", { a, m: v }, { on: inb, why: E.bagWhy(s, a, v) })); }
+      if (s.phase === 4) acts = [0, 1, 2].map((i) => act(`見比べ台の${i + 1}に並べる`, "bench", { i, r }, { why: s.bench[i] === r ? "もう並べている" : "" }));
+    }
+    if (k === "anim") {
+      const A = E.ANIMS[v];
+      body = `<div class="big">${thumb(r)}</div><dl><dt>作例</dt><dd>${esc(A.sample)}</dd><dt>得意</dt><dd>${esc(A.good || "とくになし")}${A.good === "手" ? "（★手元を描ける）" : A.good === "芝居" ? "（★芝居を描ける）" : ""}</dd><dt>苦手</dt><dd>${esc(A.bad || "とくになし")}</dd><dt>速さ</dt><dd>1カット${A.speed}時間</dd><dt>空き</dt><dd>${esc(A.availText)}</dd><dt>場所</dt><dd>${esc(A.where)}</dd></dl><p>${esc(A.note)}</p>`;
+      if (s.phase === 2) acts = E.CUT_IDS.map((c) => act(s.assign[c] === v ? `${c}を頼んでいる（やめる）` : `${c}を頼む${s.assign[c] ? `（いまは${E.ANIMS[s.assign[c]].name}さん）` : ""}`, "assign", { c, a: s.assign[c] === v ? "" : v }, { on: s.assign[c] === v, why: s.assign[c] === v ? "" : E.assignWhy(s, c, v) }));
+      if (s.phase === 3 && s.route.includes(v)) { const i = s.route.indexOf(v); acts = [act("先に回る", "route", { a: v, d: -1 }, { why: i === 0 ? "もういちばん先" : "" }), act("あとに回る", "route", { a: v, d: 1 }, { why: i === s.route.length - 1 ? "もういちばんあと" : "" })]; }
+    }
+    if (k === "bag") {
+      body = s.ret ? bagRecord(v) : `<ul class="bagrec"><li>カット：${E.cutsOf(s, v).join("・") || "なし"}</li><li>資料：${s.bags[v].map((m) => esc(E.MATS[m].name)).join("、") || "なし"}</li></ul>`;
+      if (s.phase === 4) acts = [0, 1, 2].map((i) => act(`見比べ台の${i + 1}に並べる`, "bench", { i, r }, { why: s.bench[i] === r ? "もう並べている" : "" }));
+    }
+    if (k === "genga") {
+      body = `<div class="big">${thumb(r)}</div><dl><dt>原画</dt><dd>${esc(gmeta(v))}</dd><dt>ひとこと</dt><dd>${esc(E.ANIMS[s.ret.cut[v].anim].name)}さん「${esc(E.ANIMS[s.ret.cut[v].anim].back)}」</dd></dl>`;
+      if (s.phase === 4) {
+        acts.push(act("コンテと並べる（見比べ台の1と2）", "pair", { c: v }));
+        acts.push(...[0, 1, 2].map((i) => act(`見比べ台の${i + 1}に並べる`, "bench", { i, r }, { why: s.bench[i] === r ? "もう並べている" : "" })));
+        acts.push(act(s.bundle[v] === "kan" ? "作監に確認する束に入っている" : "作監に確認する束へ", "bundle", { c: v, w: "kan" }, { on: s.bundle[v] === "kan", why: s.bundle[v] === "kan" ? "もう入っている" : "" }));
+        acts.push(act(s.bundle[v] === "shi" ? "仕上げへ渡す束に入っている" : "仕上げへ渡す束へ", "bundle", { c: v, w: "shi" }, { on: s.bundle[v] === "shi", why: s.bundle[v] === "shi" ? "もう入っている" : "" }));
+        if (s.bundle[v] === "kan") acts.push(`<div class="a"><small>確認メモ（直す場所を大島さんに伝える）</small><div class="row">${E.CATS.map((cat) => `<button class="chipbtn ${s.memo[v].includes(cat) ? "on" : ""}" data-act="memo" data-c="${v}" data-cat="${cat}" aria-pressed="${s.memo[v].includes(cat)}">${cat}</button>`).join("")}</div></div>`);
+      }
+    }
+    if (k === "person") {
+      body = v === "oshima" ? `<p>作画監督。火曜は午前中ほかの話数を見ていて、14:00から空く。</p><dl><dt>見る</dt><dd>1カット15分</dd><dt>直す</dt><dd>1か所30分。確認メモで場所を伝えれば15分。違う場所を書くと5分むだ。</dd></dl>` : `<p>仕上げ（色を塗る会社）。スタジオから車で30分。</p><dl><dt>塗る</dt><dd>届いた順に、1カット3時間</dd><dt>時間</dt><dd>火曜24:00まで。水曜は8:00から</dd><dt>締切</dt><dd>撮影入れ 水曜10:00。塗り終わらないカットは線のまま撮影に入る</dd></dl>`;
+    }
+    if (k === "res") {
+      const x = s.res.cut[v];
+      body = `<div class="big">${thumb(r)}</div><dl><dt>原画</dt><dd>${esc(E.ANIMS[s.ret.cut[v].anim].name)}さん</dd><dt>作監</dt><dd>${x.kan ? (x.fixed.length ? "直した：" + x.fixed.map((f) => `${esc(f.label)}（${esc(f.cause)}）`).join("、") : "見たが、直すところはなかった") : "回していない"}</dd><dt>仕上げ</dt><dd>${x.painted ? E.fmt(x.finish) + "に塗り上がり" : "線のまま"}</dd></dl>${x.remain.length ? `<p><b>残ったところ</b></p><ul class="bagrec">${x.remain.map((f) => `<li>${esc(f.label)}：${esc(f.cause)}</li>`).join("")}</ul>` : ""}`;
+      acts = [act("このカットから映像を見る", "playFrom", { i: E.CUT[v].i })];
+    }
+    return `<aside class="pane"><div class="box"><h2>${esc(title(r))}</h2>${body}${acts.length ? `<div class="acts"><h3>${esc(title(r))}にできること</h3>${acts.join("")}</div>` : ""}</div></aside>`;
+  }
+
+  // ================= dialogs =================
+  const RULES = `<ul>
+    <li>あなたは制作デスク。演出の三宅さんから届いた4カットのコンテを、新人の制作進行・佐伯と一緒に原画マンへ発注し、戻った原画を確かめて仕上げへ渡す。</li>
+    <li>目標は、水曜10:00の撮影入れで4カットがつながる映像にすること。</li>
+    <li>机で考えている間は時間が進まない。時間が進むのは、佐伯を動かしたとき（月12:30の手配と、火13:00の受け渡し）だけ。</li>
+    <li>机の上のものは押すと右に詳しく出て、そこからできることを選べる。ドラッグして置き場所に落としてもよい。</li>
+    <li>袋にない設定は、原画マンが記憶で描く。同じものの違う版が2つ入っていると、電話がきて1時間遅れる。</li>
+    <li>★のカットは、その得意な人でないと崩れる。苦手なものは★がなくても崩れる。</li>
+    <li>作監の大島さんは直すが時間がかかる。仕上げのミナトは届いた順に塗る。</li>
+  </ul>`;
+  function modal() {
+    if (ui.modal === "intro") return `<div class="modal-bg"><div class="dlg" role="dialog" aria-modal="true" aria-label="はじめに"><h2>4カットの発注（試作）</h2><p>10分ほどの試作です。</p>${RULES}<div class="acts2"><button data-act="start">はじめる</button></div></div></div>`;
+    if (ui.modal === "help") return `<div class="modal-bg"><div class="dlg" role="dialog" aria-modal="true" aria-label="遊び方"><h2>遊び方</h2>${RULES}<div class="acts2"><button data-act="close">閉じる</button></div></div></div>`;
+    if (ui.modal === "restart") return `<div class="modal-bg"><div class="dlg" role="dialog" aria-modal="true" aria-label="最初から"><h2>最初からやり直しますか？</h2><p>いまの発注は消える。</p><div class="acts2"><button data-act="restart">やり直す</button><button class="sub" data-act="close">やめる</button></div></div></div>`;
+    if (ui.modal === "log" && s.ret) return `<div class="modal-bg"><div class="dlg" role="dialog" aria-modal="true" aria-label="昨日からの記録"><h2>昨日からの記録</h2><ul class="log">${s.ret.log.map((l) => `<li><span class="t">${E.fmt(l.t)}</span><span class="w">${esc(l.who)}</span><span>${esc(l.text)}</span></li>`).join("")}</ul><div class="acts2"><button data-act="close">原画を確かめる</button></div></div></div>`;
+    return "";
+  }
+
+  // ================= render =================
+  const LIST = { 1: list1, 2: list2, 3: list3, 4: list4, 5: list5, 6: list6 };
+  const DESK = { 1: desk1, 2: desk2, 3: desk3, 4: desk4, 5: desk5, 6: desk6 };
+  function render() {
+    if (ui.sel && !valid(ui.sel)) ui.sel = null;
+    const y = window.scrollY, oldPane = document.querySelector(".pane"), py = oldPane && ui.paneFor === ui.sel ? oldPane.scrollTop : 0;
+    const oldList = document.querySelector(".list"), ly = oldList && ui.listFor === s.phase ? oldList.scrollTop : 0;
+    $("app").innerHTML = header() + `<div class="wrap"><aside class="list">${LIST[s.phase]()}</aside><main class="desk">${DESK[s.phase]()}</main>${pane()}</div>`;
+    $("modal-root").innerHTML = modal();
+    ui.flash = "";
+    if (s.phase === 6 && $("video")) { if (!$("video").innerHTML) $("video").innerHTML = frame(Math.min(ui.vid, 4)); }
+    window.scrollTo(0, y);
+    const np = document.querySelector(".pane"); if (np) np.scrollTop = py; ui.paneFor = ui.sel;
+    const nl = document.querySelector(".list"); if (nl) nl.scrollTop = ly; ui.listFor = s.phase;
+    topHeight();
+  }
+  // the header wraps on narrow windows; the sticky list and detail sit just under it
+  function topHeight() { const t = document.querySelector(".top"); if (t) document.documentElement.style.setProperty("--top", `${Math.ceil(t.getBoundingClientRect().height)}px`); }
+  window.addEventListener("resize", topHeight);
+  function scrollPane() { if (window.innerWidth <= 860) { const p = document.querySelector(".pane"); if (p) setTimeout(() => p.scrollIntoView({ behavior: "smooth", block: "start" }), 30); } }
+
+  // ================= input =================
+  document.addEventListener("click", (ev) => {
+    const b = ev.target.closest("[data-act]"); if (!b || b.disabled) return;
+    const a = b.dataset.act, d = b.dataset;
+    if (a === "sel") { ui.sel = ui.sel === d.v ? null : d.v; save(); render(); if (ui.sel) scrollPane(); return; }
+    if (a === "put") { if (ui.sel) put(d.zone, ui.sel); save(); render(); return; }
+    if (a === "go") { const p = +d.v, why = E.go(s, p); if (why) ui.flash = why; else { ui.sel = null; window.scrollTo(0, 0); } save(); render(); if (p === 6) playVideo(0); return; }
+    if (a === "tray") { ui.flash = E.trayToggle(s, d.m); save(); render(); return; }
+    if (a === "assign") { ui.flash = E.assign(s, d.c, d.a || null); save(); render(); return; }
+    if (a === "bag") { ui.flash = E.bagToggle(s, d.a, d.m); save(); render(); return; }
+    if (a === "bagDel") { ui.flash = E.bagToggle(s, d.a, d.m); save(); render(); return; }
+    if (a === "route") { ui.flash = E.routeMove(s, d.a, +d.d); save(); render(); return; }
+    if (a === "dispatch") { const why = E.dispatch(s); if (why) ui.flash = why; else { ui.sel = null; ui.modal = "log"; window.scrollTo(0, 0); } save(); render(); return; }
+    if (a === "bench") { ui.flash = E.bench(s, +d.i, d.r); save(); render(); return; }
+    if (a === "benchClear") { E.bench(s, +d.i, null); save(); render(); return; }
+    if (a === "pair") { E.bench(s, 0, "conte:" + d.c); E.bench(s, 1, "genga:" + d.c); save(); render(); return; }
+    if (a === "bundle") { ui.flash = E.bundle(s, d.c, d.w || null); save(); render(); return; }
+    if (a === "memo") { ui.flash = E.memo(s, d.c, d.cat); save(); render(); return; }
+    if (a === "order") { ui.flash = E.setOrder(s, d.v); save(); render(); return; }
+    if (a === "send") { const why = E.send(s); if (why) ui.flash = why; else { ui.sel = null; window.scrollTo(0, 0); } save(); render(); if (!why) playVideo(0); return; }
+    if (a === "play") { playVideo(0); return; }
+    if (a === "playFrom") { const v = document.querySelector(".vid"); if (v) v.scrollIntoView({ behavior: "smooth", block: "start" }); playVideo(+d.i); return; }
+    if (a === "log") { ui.modal = "log"; save(); render(); return; }
+    if (a === "help") { ui.modal = "help"; render(); return; }
+    if (a === "start" || a === "close") { ui.modal = null; save(); render(); return; }
+    if (a === "restartAsk") { ui.modal = "restart"; render(); return; }
+    if (a === "restart") { clearTimeout(ui.vidTimer); s = E.newGame(); ui.sel = null; ui.modal = null; ui.vid = 0; save(); render(); window.scrollTo(0, 0); return; }
+  });
+  // drag and drop (mouse); the same moves are on every item's detail and on the zones' buttons
+  let dragRef = null;
+  document.addEventListener("dragstart", (ev) => { const el = ev.target.closest && ev.target.closest("[data-drag]"); if (!el) return; dragRef = el.dataset.drag; try { ev.dataTransfer.setData("text/plain", dragRef); ev.dataTransfer.effectAllowed = "move"; } catch (e) { /* old browsers */ } });
+  document.addEventListener("dragend", () => { dragRef = null; document.querySelectorAll(".zone.over").forEach((z) => z.classList.remove("over")); });
+  document.addEventListener("dragover", (ev) => { const z = ev.target.closest && ev.target.closest("[data-drop]"); if (!z || !dragRef || !accepts(z.dataset.drop, dragRef)) return; ev.preventDefault(); document.querySelectorAll(".zone.over").forEach((x) => x !== z && x.classList.remove("over")); z.classList.add("over"); });
+  document.addEventListener("dragleave", (ev) => { const z = ev.target.closest && ev.target.closest("[data-drop]"); if (z && !z.contains(ev.relatedTarget)) z.classList.remove("over"); });
+  document.addEventListener("drop", (ev) => { const z = ev.target.closest && ev.target.closest("[data-drop]"); if (!z || !dragRef) return; ev.preventDefault(); const r = dragRef; dragRef = null; if (put(z.dataset.drop, r)) ui.sel = r; save(); render(); });
+  document.addEventListener("toggle", (ev) => { if (ev.target.matches && ev.target.matches("details[data-k=shelf]")) ui.shelfOpen = ev.target.open; }, true);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && ["help", "restart", "log"].includes(ui.modal)) { ui.modal = null; save(); render(); } });
+  window.addEventListener("pagehide", () => { if (s) save(); });
+
+  if (!load()) { s = E.newGame(); ui.modal = "intro"; }
+  render();
+  if (s.phase === 6) playVideo(0);
+})();
+</script>
+</body>
+</html>
